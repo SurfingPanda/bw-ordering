@@ -107,7 +107,7 @@ function NavBar() {
             Sign In
           </Link>
           <Link
-            to="/register"
+            to="/menu"
             className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
           >
             Order Now
@@ -147,7 +147,7 @@ function NavBar() {
               Sign In
             </Link>
             <Link
-              to="/register"
+              to="/menu"
               className="flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
             >
               Order Now
@@ -221,12 +221,12 @@ function HeroSlide({ slide }) {
           {slide.text}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-          <a
-            href="#best-sellers"
+          <Link
+            to="/menu"
             className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
           >
             Order Now
-          </a>
+          </Link>
           <a
             href="#categories"
             className="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -279,12 +279,12 @@ function Stat({ value, label }) {
 /* ------------------------------------------------------------------ */
 
 const CATEGORIES = [
-  { name: 'Cakes', emoji: '🎂' },
-  { name: 'Breads', emoji: '🍞' },
-  { name: 'Pastries', emoji: '🥐' },
-  { name: 'Delicacies', emoji: '🍡' },
-  { name: 'Cupcakes', emoji: '🧁' },
-  { name: 'Cookies', emoji: '🍪' },
+  { name: 'Cakes', img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=300&h=300&q=80' },
+  { name: 'Breads', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&h=300&q=80' },
+  { name: 'Pastries', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=300&h=300&q=80' },
+  { name: 'Delicacies', img: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=300&h=300&q=80' },
+  { name: 'Cupcakes', img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=300&h=300&q=80' },
+  { name: 'Cookies', img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=300&h=300&q=80' },
 ]
 
 function Categories() {
@@ -297,17 +297,21 @@ function Categories() {
           subtitle="Browse our full range of freshly baked goodies for every occasion."
         />
       </Reveal>
-      <div className="mt-10 grid grid-cols-3 gap-4 sm:grid-cols-6">
+      <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
         {CATEGORIES.map((c, i) => (
           <Reveal key={c.name} delay={i * 80}>
             <a
               href="#best-sellers"
-              className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
+              className="group flex flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
             >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy-50 text-3xl transition group-hover:bg-brand-100">
-                {c.emoji}
+              <span className="h-28 w-28 overflow-hidden rounded-full ring-1 ring-slate-100 transition group-hover:ring-brand-200">
+                <img
+                  src={c.img}
+                  alt={c.name}
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                />
               </span>
-              <span className="text-sm font-semibold text-navy-700">{c.name}</span>
+              <span className="text-lg font-semibold text-navy-700">{c.name}</span>
             </a>
           </Reveal>
         ))}

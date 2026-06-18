@@ -49,13 +49,14 @@ export default function Stores() {
       <StoresHeader />
 
       {/* hero + search */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-navy-700 via-navy-800 to-navy-900">
-        <div className="pointer-events-none absolute inset-0 select-none text-5xl opacity-[0.06]">
-          <div className="absolute left-8 top-10">🥐</div>
-          <div className="absolute right-16 top-24">🧁</div>
-          <div className="absolute left-1/3 top-32">🍞</div>
-          <div className="absolute right-8 bottom-10">🍰</div>
-        </div>
+      <section className="relative overflow-hidden bg-navy-900">
+        <img
+          src="/images/bakery-interior.jpg"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90" />
         <div className="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
           <span className="flex mx-auto h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
             <StoreIcon className="h-7 w-7 text-brand-400" />

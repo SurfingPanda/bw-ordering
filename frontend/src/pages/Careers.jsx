@@ -69,13 +69,14 @@ function CareersHeader() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-navy-700 via-navy-800 to-navy-900">
-      <div className="pointer-events-none absolute inset-0 select-none text-5xl opacity-[0.06]">
-        <div className="absolute left-8 top-10">🥐</div>
-        <div className="absolute right-16 top-24">🧁</div>
-        <div className="absolute left-1/3 top-40">🍞</div>
-        <div className="absolute right-8 bottom-16">🍰</div>
-      </div>
+    <section className="relative overflow-hidden bg-navy-900">
+      <img
+        src="/images/bakery-team.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90" />
       <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
         
         <h1 className="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">

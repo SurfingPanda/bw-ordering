@@ -118,7 +118,7 @@ export default function Menu() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
+    <div className="animate-page-in flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* left — full-height categories sidebar (with logo on top) */}
       <CategorySidebar active={active} onChange={setActive} />
 
