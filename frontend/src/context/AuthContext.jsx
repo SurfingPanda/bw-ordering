@@ -3,6 +3,12 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+// Admins are identified by an email allowlist in frontend/.env (VITE_ADMIN_EMAILS).
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean)
+
 // Map a Supabase user onto the shape the rest of the app expects (it reads `name`).
 function normalize(supaUser) {
   if (!supaUser) return null
@@ -83,9 +89,11 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const isAdmin = !!user && ADMIN_EMAILS.includes((user.email || '').toLowerCase())
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, loginWithGoogle, register, updateContactNumber, logout }}
+      value={{ user, loading, isAdmin, login, loginWithGoogle, register, logout }}
     >
       {children}
     </AuthContext.Provider>

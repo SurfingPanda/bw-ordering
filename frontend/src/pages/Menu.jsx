@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { createOrder } from '../lib/orders'
 
 // Shopping / menu page — browse foods by category and build a cart.
 // Cart state is local for now; "Proceed to checkout" sends guests to sign in.
@@ -100,6 +102,21 @@ export default function Menu() {
       return next
     })
 
+  const [placing, setPlacing] = useState(false)
+  const checkout = async (summary) => {
+    setPlacing(true)
+    try {
+      await createOrder(summary)
+      window.alert('🧡 Thank you! Your order has been placed.')
+      setCart({})
+      setCartOpen(false)
+    } catch (err) {
+      window.alert(`Sorry, we couldn't place your order: ${err.message}`)
+    } finally {
+      setPlacing(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* left — full-height categories sidebar (with logo on top) */}
@@ -158,6 +175,8 @@ export default function Menu() {
               onInc={add}
               onDec={dec}
               onRemove={remove}
+              onCheckout={checkout}
+              placing={placing}
             />
           </div>
         </div>
@@ -202,6 +221,8 @@ export default function Menu() {
               onInc={add}
               onDec={dec}
               onRemove={remove}
+              onCheckout={checkout}
+              placing={placing}
             />
           </div>
         </div>
@@ -250,17 +271,48 @@ function CategorySidebar({ active, onChange }) {
 }
 
 function MenuHeader({ itemCount }) {
+  const { user, isAdmin, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/')
+  }
+
   return (
     <header className="z-20 border-b border-slate-100 bg-white/90 backdrop-blur lg:sticky lg:top-0">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         <h2 className="text-lg font-bold text-navy-800">Order Online</h2>
         <div className="flex items-center gap-4">
-          <Link
-            to="/"
-            className="text-sm font-medium text-navy-700 transition hover:text-brand-600"
-          >
-            ← Back to home
-          </Link>
+          {user ? (
+            <>
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Admin
+                </Link>
+              )}
+              <span className="hidden text-sm text-navy-700 sm:block">
+                Hi, <span className="font-semibold">{user.name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-sm font-medium text-navy-700 transition hover:text-brand-600"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/"
+              className="text-sm font-medium text-navy-700 transition hover:text-brand-600"
+            >
+              ← Back to home
+            </Link>
+          )}
           {/* cart icon shown on desktop only; mobile uses the floating button */}
           <div className="relative hidden h-10 w-10 items-center justify-center rounded-full bg-navy-50 text-navy-800 lg:flex">
             <CartIcon className="h-5 w-5" />
@@ -329,7 +381,8 @@ function QtyButton({ children, onClick, label }) {
   )
 }
 
-function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove }) {
+function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, placing }) {
+  const { user } = useAuth()
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
   const [error, setError] = useState('')
@@ -483,15 +536,42 @@ function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove }) {
               )}
             </div>
 
-            <Link
-              to="/login"
-              className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-            >
-              Proceed to Checkout
-            </Link>
-            <p className="mt-2 text-center text-xs text-slate-400">
-              Sign in to complete your order
-            </p>
+            {user ? (
+              <button
+                type="button"
+                disabled={placing}
+                onClick={() =>
+                  onCheckout({
+                    items: lines.map(({ product, qty }) => ({
+                      name: product.name,
+                      qty,
+                      price: product.price,
+                    })),
+                    subtotal,
+                    discount,
+                    delivery,
+                    vat,
+                    total,
+                    voucher: voucher?.code || null,
+                  })
+                }
+                className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {placing ? 'Placing order…' : 'Place Order'}
+              </button>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+                >
+                  Proceed to Checkout
+                </Link>
+                <p className="mt-2 text-center text-xs text-slate-400">
+                  Sign in to complete your order
+                </p>
+              </>
+            )}
           </div>
         </>
       )}
