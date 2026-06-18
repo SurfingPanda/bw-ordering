@@ -1,11 +1,17 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
+import GoogleIcon from '../components/GoogleIcon'
+import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Shown once after a successful registration redirect.
+  const [notice] = useState(location.state?.registered ? 'Account created! Please sign in.' : '')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,13 +28,19 @@ export default function Login() {
       await login(email, password)
       navigate('/dashboard')
     } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.errors?.email?.[0] ||
-        'Unable to sign in. Please try again.'
-      setError(message)
+      setError(err.message || 'Unable to sign in. Please try again.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    setError('')
+    try {
+      // Redirects to Google; on success the browser returns to /dashboard.
+      await loginWithGoogle()
+    } catch (err) {
+      setError(err.message || 'Unable to sign in with Google.')
     }
   }
 
@@ -49,6 +61,12 @@ export default function Login() {
               </p>
             </div>
 
+            {notice && (
+              <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {notice}
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -56,7 +74,7 @@ export default function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Field label="Username">
+              <Field label="Email">
                 <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
@@ -64,7 +82,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                   className="w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                 />
               </Field>
@@ -113,6 +131,22 @@ export default function Login() {
                 {submitting ? 'Signing in…' : 'Sign In'}
               </button>
             </form>
+
+            <div className="my-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-400">or</span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <GoogleIcon className="h-5 w-5" />
+              Continue with Google
+            </button>
 
             <div className="mt-6 flex items-center gap-3 rounded-lg bg-navy-50 px-4 py-3 text-sm">
               <HelpIcon className="h-5 w-5 shrink-0 text-brand-500" />
@@ -168,26 +202,6 @@ function LockIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
-
-function EyeIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function EyeOffIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9.88 9.88a3 3 0 0 0 4.24 4.24" />
-      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-      <line x1="2" y1="2" x2="22" y2="22" />
     </svg>
   )
 }
