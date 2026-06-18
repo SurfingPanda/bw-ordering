@@ -3,6 +3,28 @@
 .env.*
 !.env.example
 
+# Secrets / credentials / keys
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+auth.json
+secrets.json
+*.secret
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Local screenshots / scratch images
+/image/
+
+# Markdown files
+*.md
+
 # Dependencies
 /vendor/
 node_modules/
