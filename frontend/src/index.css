@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-script: "Pacifico", cursive;
+
+  --color-navy-50: #eef3fb;
+  --color-navy-700: #173a6a;
+  --color-navy-800: #102a4f;
+  --color-navy-900: #0b1f3d;
+
+  --color-brand-400: #f59b3f;
+  --color-brand-500: #ef7d1a;
+  --color-brand-600: #e06f10;
+}
+
+body {
+  font-family: var(--font-sans);
+}
