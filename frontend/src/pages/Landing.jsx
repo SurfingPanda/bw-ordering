@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import Reveal from '../components/Reveal'
 
 // Goldilocks-style marketing landing page for the Bakery Ordering System,
 // built entirely with our existing navy + brand-orange palette.
@@ -123,12 +124,15 @@ function NavBar() {
 
 function Logo() {
   return (
-    <Link to="/" className="flex items-center">
+    <Link to="/" className="flex items-center gap-2">
       <img
         src="/images/logo (1).png"
         alt="bw Superbakeshop"
         className="h-16 w-auto"
       />
+      <span className="font-brand text-2xl font-bold text-brand-500 sm:text-3xl">
+        Superbakeshop
+      </span>
     </Link>
   )
 }
@@ -239,23 +243,26 @@ const CATEGORIES = [
 function Categories() {
   return (
     <section id="categories" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <SectionHeading
-        eyebrow="Shop by category"
-        title="What are you craving today?"
-        subtitle="Browse our full range of freshly baked goodies for every occasion."
-      />
+      <Reveal>
+        <SectionHeading
+          eyebrow="Shop by category"
+          title="What are you craving today?"
+          subtitle="Browse our full range of freshly baked goodies for every occasion."
+        />
+      </Reveal>
       <div className="mt-10 grid grid-cols-3 gap-4 sm:grid-cols-6">
-        {CATEGORIES.map((c) => (
-          <a
-            key={c.name}
-            href="#best-sellers"
-            className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
-          >
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy-50 text-3xl transition group-hover:bg-brand-100">
-              {c.emoji}
-            </span>
-            <span className="text-sm font-semibold text-navy-700">{c.name}</span>
-          </a>
+        {CATEGORIES.map((c, i) => (
+          <Reveal key={c.name} delay={i * 80}>
+            <a
+              href="#best-sellers"
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
+            >
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy-50 text-3xl transition group-hover:bg-brand-100">
+                {c.emoji}
+              </span>
+              <span className="text-sm font-semibold text-navy-700">{c.name}</span>
+            </a>
+          </Reveal>
         ))}
       </div>
     </section>
@@ -321,14 +328,18 @@ function BestSellers() {
   return (
     <section id="best-sellers" className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow="Crowd favorites"
-          title="Our Best Sellers"
-          subtitle="Tried, tested, and loved — the treats our customers can't get enough of."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="Crowd favorites"
+            title="Our Best Sellers"
+            subtitle="Tried, tested, and loved — the treats our customers can't get enough of."
+          />
+        </Reveal>
         <div className="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
-          {PRODUCTS.map((p) => (
-            <ProductCard key={p.name} product={p} />
+          {PRODUCTS.map((p, i) => (
+            <Reveal key={p.name} delay={(i % 4) * 80}>
+              <ProductCard product={p} />
+            </Reveal>
           ))}
         </div>
         <div className="mt-10 text-center">
@@ -380,7 +391,7 @@ function ProductCard({ product }) {
 
 function PromoBanner() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+    <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
         <div className="pointer-events-none absolute -right-6 -top-6 text-[9rem] opacity-20">
           🎉
@@ -402,7 +413,7 @@ function PromoBanner() {
           </Link>
         </div>
       </div>
-    </section>
+    </Reveal>
   )
 }
 
@@ -437,24 +448,25 @@ function Features() {
   return (
     <section className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow="Why choose us"
-          title="Baked better, served with care"
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="Why choose us"
+            title="Baked better, served with care"
+          />
+        </Reveal>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl bg-white p-6 text-center shadow-sm transition hover:shadow-lg"
-            >
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white">
-                <f.icon className="h-7 w-7" />
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-navy-800">
-                {f.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-500">{f.text}</p>
-            </div>
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={i * 100}>
+              <div className="rounded-2xl bg-white p-6 text-center shadow-sm transition hover:shadow-lg">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white">
+                  <f.icon className="h-7 w-7" />
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-navy-800">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">{f.text}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -470,7 +482,7 @@ function Story() {
   return (
     <section id="about" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="grid items-center gap-10 lg:grid-cols-2">
-        <div className="relative">
+        <Reveal direction="left" className="relative">
           <img
             src="/images/Screenshot_5.png"
             alt="An assortment of freshly baked breads"
@@ -480,8 +492,8 @@ function Story() {
             <p className="font-script text-2xl text-brand-400">Since 1966</p>
             <p className="text-xs text-navy-50/80">Baking happiness</p>
           </div>
-        </div>
-        <div>
+        </Reveal>
+        <Reveal direction="right" delay={120}>
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
             Our story
           </span>
@@ -512,7 +524,7 @@ function Story() {
               Find a store
             </a>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   )
@@ -525,7 +537,7 @@ function Story() {
 function StoreLocator() {
   return (
     <section id="stores" className="bg-navy-900 py-16">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+      <Reveal className="mx-auto max-w-3xl px-4 text-center sm:px-6">
         <span className="flex mx-auto h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
           <StoreIcon className="h-7 w-7 text-brand-400" />
         </span>
@@ -548,7 +560,7 @@ function StoreLocator() {
             Find a store
           </button>
         </div>
-      </div>
+      </Reveal>
     </section>
   )
 }
@@ -560,7 +572,7 @@ function StoreLocator() {
 function Newsletter() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
+      <Reveal className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
         <h2 className="text-2xl font-bold text-navy-800 sm:text-3xl">
           Get sweet deals in your inbox 🍰
         </h2>
@@ -584,7 +596,7 @@ function Newsletter() {
             Subscribe
           </button>
         </form>
-      </div>
+      </Reveal>
     </section>
   )
 }

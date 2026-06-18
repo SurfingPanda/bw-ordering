@@ -3,6 +3,7 @@
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --font-script: "Pacifico", cursive;
+  --font-brand: "Fredoka", ui-sans-serif, system-ui, sans-serif;
 
   --color-navy-50: #eef3fb;
   --color-navy-700: #173a6a;
