@@ -16,5 +16,10 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
+  // Google sign-ins arrive without a phone number — make them add one first.
+  if (!user.contact_number) {
+    return <Navigate to="/complete-profile" replace />
+  }
+
   return children
 }

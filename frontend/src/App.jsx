@@ -5,6 +5,7 @@ import Careers from './pages/Careers'
 import Stores from './pages/Stores'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import CompleteProfile from './pages/CompleteProfile'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/stores" element={<Stores />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route
         path="/dashboard"
         element={
