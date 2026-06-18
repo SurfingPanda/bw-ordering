@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
+import BakeryBackdrop from '../components/BakeryBackdrop'
 import GoogleIcon from '../components/GoogleIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 
@@ -45,19 +46,20 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy-900 p-4 sm:p-6">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_1.1fr]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 p-4 sm:p-6">
+      <BakeryBackdrop />
+      <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_1.1fr]">
         <BrandPanel />
 
         {/* form panel */}
         <div className="flex flex-col justify-center px-7 py-10 sm:px-12">
           <div className="mx-auto w-full max-w-sm">
             <div className="mb-6 flex flex-col items-center text-center">
-              <BakeryBadge />
+              
               <h2 className="mt-4 text-2xl font-bold text-navy-800">Welcome Back!</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Please sign in to continue to your <br className="hidden sm:block" />
-                Bakery Ordering System
+                BW Ordering System
               </p>
             </div>
 
@@ -148,12 +150,6 @@ export default function Login() {
               Continue with Google
             </button>
 
-            <div className="mt-6 flex items-center gap-3 rounded-lg bg-navy-50 px-4 py-3 text-sm">
-              <HelpIcon className="h-5 w-5 shrink-0 text-brand-500" />
-              <p className="text-slate-600">
-                <span className="font-semibold text-navy-800">Need help?</span> Contact our support team
-              </p>
-            </div>
 
             <p className="mt-6 text-center text-xs text-slate-400">
               Don&apos;t have an account?{' '}
@@ -162,7 +158,7 @@ export default function Login() {
               </Link>
             </p>
             <p className="mt-3 text-center text-xs text-slate-400">
-              🧡 Thank you for supporting local bakeries! 🧡
+              
             </p>
           </div>
         </div>

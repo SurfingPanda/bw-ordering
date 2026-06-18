@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
+import BakeryBackdrop from '../components/BakeryBackdrop'
 import GoogleIcon from '../components/GoogleIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 
@@ -76,8 +77,9 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy-900 p-4 sm:p-6">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_1.1fr]">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 p-4 sm:p-6">
+      <BakeryBackdrop />
+      <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_1.1fr]">
         <BrandPanel />
 
         <div className="flex flex-col justify-center px-7 py-10 sm:px-12">
