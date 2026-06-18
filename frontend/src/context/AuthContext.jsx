@@ -69,13 +69,24 @@ export function AuthProvider({ children }) {
     return normalize(data.user)
   }
 
+  // Save a contact number onto the current user (used by the complete-profile
+  // step after Google sign-in, where no phone was collected).
+  const updateContactNumber = async (contact_number) => {
+    const { data, error } = await supabase.auth.updateUser({ data: { contact_number } })
+    if (error) throw error
+    setUser(normalize(data.user))
+    return normalize(data.user)
+  }
+
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, loginWithGoogle, register, updateContactNumber, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

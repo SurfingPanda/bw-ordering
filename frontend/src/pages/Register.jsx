@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
 import GoogleIcon from '../components/GoogleIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
+import { sanitizePhone, isValidPhone } from '../lib/phone'
 
 export default function Register() {
   const { register, loginWithGoogle } = useAuth()
@@ -30,8 +31,7 @@ export default function Register() {
 
   // Phone numbers only: keep digits plus the few valid symbols (+, space, -, (), ).
   const updateContact = (e) => {
-    const cleaned = e.target.value.replace(/[^\d+\-\s()]/g, '')
-    setForm((prev) => ({ ...prev, contact_number: cleaned }))
+    setForm((prev) => ({ ...prev, contact_number: sanitizePhone(e.target.value) }))
     setFieldErrors((prev) => ({ ...prev, contact_number: '' }))
   }
 
@@ -40,7 +40,7 @@ export default function Register() {
     const errs = {}
     if (form.name.trim().length < 2) errs.name = 'Please enter your full name.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Please enter a valid email address.'
-    if (form.contact_number.replace(/\D/g, '').length < 7) errs.contact_number = 'Please enter a valid contact number.'
+    if (!isValidPhone(form.contact_number)) errs.contact_number = 'Please enter a valid contact number.'
     if (form.password.length < 6) errs.password = 'Password should be at least 6 characters.'
     if (form.password !== form.password_confirmation) errs.password_confirmation = 'Passwords do not match.'
     return errs
