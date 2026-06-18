@@ -1,5 +1,43 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import Reveal from '../components/Reveal'
+import Carousel from '../components/Carousel'
+
+const HERO_SLIDES = [
+  {
+    badge: 'Freshly baked, made with love',
+    title: 'Freshly Baked Happiness,',
+    accent: 'Delivered.',
+    text: 'From classic cakes to warm pandesal, order your favorite bakeshop treats online and have them delivered straight to your door.',
+    img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80',
+    alt: 'A beautifully decorated layered chocolate cake',
+    floatEmoji: '🎂',
+    floatTitle: 'Signature Cakes',
+    floatSub: 'Baked fresh every day',
+  },
+  {
+    badge: 'Celebrate every moment',
+    title: 'Custom Cakes for',
+    accent: 'Every Occasion.',
+    text: 'Birthdays, weddings, or just because — design a personalized cake and we’ll bake it fresh, exactly how you imagined it.',
+    img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=900&q=80',
+    alt: 'A rich mocha cake topped with cream',
+    floatEmoji: '🎉',
+    floatTitle: 'Custom Orders',
+    floatSub: 'Made just for you',
+  },
+  {
+    badge: 'Warm from the oven',
+    title: 'Breads & Pastries,',
+    accent: 'Baked Daily.',
+    text: 'Wake up to the smell of fresh bread. Our pandesal, ensaymada, and pastries are baked every morning and delivered fast.',
+    img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80',
+    alt: 'Assorted freshly baked breads and rolls',
+    floatEmoji: '🍞',
+    floatTitle: 'Fresh Daily',
+    floatSub: 'Baked every morning',
+  },
+]
 
 // Goldilocks-style marketing landing page for the Bakery Ordering System,
 // built entirely with our existing navy + brand-orange palette.
@@ -47,8 +85,8 @@ function NavBar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/90 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
         <ul className="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
@@ -80,7 +118,7 @@ function NavBar() {
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-label="Toggle menu"
-          className="text-navy-800 lg:hidden"
+          className="ml-2 shrink-0 text-navy-800 lg:hidden"
         >
           <MenuIcon className="h-6 w-6" />
         </button>
@@ -123,12 +161,15 @@ function NavBar() {
 
 function Logo() {
   return (
-    <Link to="/" className="flex items-center">
+    <Link to="/" className="flex min-w-0 items-center gap-2">
       <img
         src="/images/logo (1).png"
         alt="bw Superbakeshop"
-        className="h-16 w-auto"
+        className="h-9 w-auto shrink-0 sm:h-11"
       />
+      <span className="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">
+        Superbakeshop
+      </span>
     </Link>
   )
 }
@@ -152,65 +193,75 @@ function Hero() {
         <div className="absolute left-12 bottom-10">🥨</div>
       </div>
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
-        <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-400 ring-1 ring-white/20">
-            <SparkleIcon className="h-4 w-4" />
-            Freshly baked, made with love
-          </span>
-          <h1 className="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">
-            Freshly Baked Happiness,{' '}
-            <span className="font-script font-normal text-brand-400">
-              Delivered.
-            </span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-md text-base text-navy-50/80 lg:mx-0">
-            From classic cakes to warm pandesal, order your favorite bakeshop
-            treats online and have them delivered straight to your door.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-            <a
-              href="#best-sellers"
-              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-            >
-              Order Now
-            </a>
-            <a
-              href="#categories"
-              className="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              View Menu
-            </a>
-          </div>
+      <Carousel
+        className="relative"
+        slides={HERO_SLIDES.map((s) => (
+          <HeroSlide key={s.title} slide={s} />
+        ))}
+      />
+    </section>
+  )
+}
 
-          <div className="mt-10 flex items-center justify-center gap-8 lg:justify-start">
-            <Stat value="50+" label="Treats baked daily" />
-            <span className="h-10 w-px bg-white/20" />
-            <Stat value="120+" label="Stores nationwide" />
-            <span className="h-10 w-px bg-white/20" />
-            <Stat value="30k+" label="Happy customers" />
-          </div>
+function HeroSlide({ slide }) {
+  return (
+    <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
+      <div className="text-center lg:text-left">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-400 ring-1 ring-white/20">
+          <SparkleIcon className="h-4 w-4" />
+          {slide.badge}
+        </span>
+        <h1 className="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">
+          {slide.title}{' '}
+          <span className="font-script font-normal text-brand-400">
+            {slide.accent}
+          </span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-md text-base text-navy-50/80 lg:mx-0">
+          {slide.text}
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+          <a
+            href="#best-sellers"
+            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+          >
+            Order Now
+          </a>
+          <a
+            href="#categories"
+            className="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            View Menu
+          </a>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-4 rounded-[2.5rem] bg-brand-500/20 blur-2xl" />
-          <img
-            src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80"
-            alt="A beautifully decorated layered cake"
-            className="relative h-80 w-full rounded-[2rem] object-cover shadow-2xl sm:h-[26rem]"
-          />
-          <div className="absolute -bottom-5 -left-2 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl sm:flex">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-xl">
-              🎂
-            </span>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-navy-800">Signature Cakes</p>
-              <p className="text-xs text-slate-500">Baked fresh every day</p>
-            </div>
+        <div className="mt-10 flex items-center justify-center gap-8 lg:justify-start">
+          <Stat value="50+" label="Treats baked daily" />
+          <span className="h-10 w-px bg-white/20" />
+          <Stat value="120+" label="Stores nationwide" />
+          <span className="h-10 w-px bg-white/20" />
+          <Stat value="30k+" label="Happy customers" />
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="absolute -inset-4 rounded-[2.5rem] bg-brand-500/20 blur-2xl" />
+        <img
+          src={slide.img}
+          alt={slide.alt}
+          className="relative h-80 w-full rounded-[2rem] object-cover shadow-2xl sm:h-[26rem]"
+        />
+        <div className="absolute -bottom-5 -left-2 z-10 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl sm:flex">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-xl">
+            {slide.floatEmoji}
+          </span>
+          <div className="text-left">
+            <p className="text-sm font-semibold text-navy-800">{slide.floatTitle}</p>
+            <p className="text-xs text-slate-500">{slide.floatSub}</p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -239,23 +290,26 @@ const CATEGORIES = [
 function Categories() {
   return (
     <section id="categories" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <SectionHeading
-        eyebrow="Shop by category"
-        title="What are you craving today?"
-        subtitle="Browse our full range of freshly baked goodies for every occasion."
-      />
+      <Reveal>
+        <SectionHeading
+          eyebrow="Shop by category"
+          title="What are you craving today?"
+          subtitle="Browse our full range of freshly baked goodies for every occasion."
+        />
+      </Reveal>
       <div className="mt-10 grid grid-cols-3 gap-4 sm:grid-cols-6">
-        {CATEGORIES.map((c) => (
-          <a
-            key={c.name}
-            href="#best-sellers"
-            className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
-          >
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy-50 text-3xl transition group-hover:bg-brand-100">
-              {c.emoji}
-            </span>
-            <span className="text-sm font-semibold text-navy-700">{c.name}</span>
-          </a>
+        {CATEGORIES.map((c, i) => (
+          <Reveal key={c.name} delay={i * 80}>
+            <a
+              href="#best-sellers"
+              className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
+            >
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy-50 text-3xl transition group-hover:bg-brand-100">
+                {c.emoji}
+              </span>
+              <span className="text-sm font-semibold text-navy-700">{c.name}</span>
+            </a>
+          </Reveal>
         ))}
       </div>
     </section>
@@ -321,19 +375,23 @@ function BestSellers() {
   return (
     <section id="best-sellers" className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow="Crowd favorites"
-          title="Our Best Sellers"
-          subtitle="Tried, tested, and loved — the treats our customers can't get enough of."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="Crowd favorites"
+            title="Our Best Sellers"
+            subtitle="Tried, tested, and loved — the treats our customers can't get enough of."
+          />
+        </Reveal>
         <div className="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
-          {PRODUCTS.map((p) => (
-            <ProductCard key={p.name} product={p} />
+          {PRODUCTS.map((p, i) => (
+            <Reveal key={p.name} delay={(i % 4) * 80}>
+              <ProductCard product={p} />
+            </Reveal>
           ))}
         </div>
         <div className="mt-10 text-center">
           <Link
-            to="/register"
+            to="/menu"
             className="inline-block rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
           >
             See full menu
@@ -380,7 +438,7 @@ function ProductCard({ product }) {
 
 function PromoBanner() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+    <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
         <div className="pointer-events-none absolute -right-6 -top-6 text-[9rem] opacity-20">
           🎉
@@ -402,7 +460,7 @@ function PromoBanner() {
           </Link>
         </div>
       </div>
-    </section>
+    </Reveal>
   )
 }
 
@@ -437,24 +495,25 @@ function Features() {
   return (
     <section className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <SectionHeading
-          eyebrow="Why choose us"
-          title="Baked better, served with care"
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="Why choose us"
+            title="Baked better, served with care"
+          />
+        </Reveal>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl bg-white p-6 text-center shadow-sm transition hover:shadow-lg"
-            >
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white">
-                <f.icon className="h-7 w-7" />
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-navy-800">
-                {f.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-500">{f.text}</p>
-            </div>
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={i * 100}>
+              <div className="rounded-2xl bg-white p-6 text-center shadow-sm transition hover:shadow-lg">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white">
+                  <f.icon className="h-7 w-7" />
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-navy-800">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">{f.text}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -470,7 +529,7 @@ function Story() {
   return (
     <section id="about" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="grid items-center gap-10 lg:grid-cols-2">
-        <div className="relative">
+        <Reveal direction="left" className="relative">
           <img
             src="/images/Screenshot_5.png"
             alt="An assortment of freshly baked breads"
@@ -480,8 +539,8 @@ function Story() {
             <p className="font-script text-2xl text-brand-400">Since 1966</p>
             <p className="text-xs text-navy-50/80">Baking happiness</p>
           </div>
-        </div>
-        <div>
+        </Reveal>
+        <Reveal direction="right" delay={120}>
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
             Our story
           </span>
@@ -512,7 +571,7 @@ function Story() {
               Find a store
             </a>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   )
@@ -525,12 +584,12 @@ function Story() {
 function StoreLocator() {
   return (
     <section id="stores" className="bg-navy-900 py-16">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+      <Reveal className="mx-auto max-w-3xl px-4 text-center sm:px-6">
         <span className="flex mx-auto h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
           <StoreIcon className="h-7 w-7 text-brand-400" />
         </span>
         <h2 className="mt-5 text-3xl font-bold text-white sm:text-4xl">
-          120+ stores, always near you
+          60+ stores, always near you
         </h2>
         <p className="mt-3 text-sm text-navy-50/80">
           Find your nearest branch or simply order online for delivery and pickup.
@@ -548,7 +607,7 @@ function StoreLocator() {
             Find a store
           </button>
         </div>
-      </div>
+      </Reveal>
     </section>
   )
 }
@@ -560,7 +619,7 @@ function StoreLocator() {
 function Newsletter() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
+      <Reveal className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
         <h2 className="text-2xl font-bold text-navy-800 sm:text-3xl">
           Get sweet deals in your inbox 🍰
         </h2>
@@ -584,7 +643,7 @@ function Newsletter() {
             Subscribe
           </button>
         </form>
-      </div>
+      </Reveal>
     </section>
   )
 }
@@ -604,10 +663,12 @@ function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
-              <ChefHat className="h-6 w-6 text-brand-400" />
-            </span>
-            <span className="font-script text-2xl text-white">Bakery</span>
+            <img
+              src="/images/logo (1).png"
+              alt="bw Superbakeshop"
+              className="h-12 w-auto"
+            />
+            <span className="font-brand text-2xl font-bold text-white">Superbakeshop</span>
           </div>
           <p className="mt-4 max-w-xs text-sm text-navy-50/70">
             Freshly baked. Made with love. Ordered with ease. Bringing bakeshop
@@ -644,8 +705,8 @@ function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-navy-50/60 sm:flex-row sm:px-6">
-          <p>© {2026} Bakery Ordering System. All rights reserved.</p>
-          <p>Made with 🧡 for local bakeshops</p>
+          <p>© {2026} BW Superbakeshop Ordering. All rights reserved.</p>
+          
         </div>
       </div>
     </footer>
