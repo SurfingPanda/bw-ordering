@@ -564,12 +564,12 @@ function Story() {
             >
               Start ordering
             </a>
-            <a
-              href="#stores"
+            <Link
+              to="/stores"
               className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
             >
               Find a store
-            </a>
+            </Link>
           </div>
         </Reveal>
       </div>
@@ -600,12 +600,12 @@ function StoreLocator() {
             placeholder="Enter your city or area"
             className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 sm:w-72"
           />
-          <button
-            type="button"
+          <Link
+            to="/stores"
             className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
           >
             Find a store
-          </button>
+          </Link>
         </div>
       </Reveal>
     </section>
@@ -652,6 +652,16 @@ function Newsletter() {
 /* Footer                                                              */
 /* ------------------------------------------------------------------ */
 
+// Footer link labels that map to real routes (others are placeholders).
+const FOOTER_ROUTES = {
+  Cakes: '/menu',
+  Breads: '/menu',
+  Pastries: '/menu',
+  Delicacies: '/menu',
+  Careers: '/careers',
+  'Our Stores': '/stores',
+}
+
 function Footer() {
   const cols = [
     { title: 'Shop', links: ['Cakes', 'Breads', 'Pastries', 'Delicacies'] },
@@ -692,13 +702,22 @@ function Footer() {
           <div key={col.title}>
             <h4 className="text-sm font-semibold text-white">{col.title}</h4>
             <ul className="mt-4 space-y-2 text-sm">
-              {col.links.map((l) => (
-                <li key={l}>
-                  <a href="#" className="transition hover:text-brand-400">
-                    {l}
-                  </a>
-                </li>
-              ))}
+              {col.links.map((l) => {
+                const route = FOOTER_ROUTES[l]
+                return (
+                  <li key={l}>
+                    {route ? (
+                      <Link to={route} className="transition hover:text-brand-400">
+                        {l}
+                      </Link>
+                    ) : (
+                      <a href="#" className="transition hover:text-brand-400">
+                        {l}
+                      </a>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}
