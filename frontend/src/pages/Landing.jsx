@@ -1,31 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Reveal from '../components/Reveal'
+import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
+import { DEFAULT_CONTENT, getSiteContent } from '../lib/content'
 
-// Promotional banner carousel. Each slide is a full banner image (designs with
-// baked-in text), shown uncropped at a 1408:768 ratio and linking to the menu.
-const HERO_SLIDES = [
-  {
-    img: '/images/Gemini_Generated_Image_wrt1thwrt1thwrt1.png',
-    alt: 'For the Best Dad — cake promo',
-  },
-  {
-    img: '/images/Gemini_Generated_Image_wugzcgwugzcgwugz.png',
-    alt: 'For the Best Mom — cake promo',
-  },
-]
+// Goldilocks-style marketing landing page. Editable sections (announcement,
+// promo banners, categories, best sellers) are loaded from Supabase via the
+// admin Site Content editor, falling back to DEFAULT_CONTENT.
+//
+// When `content` is passed in (the admin live preview), the page is fully
+// controlled by that prop and skips its own fetch, so edits show instantly.
+// `preview` renders all reveal-on-scroll sections statically.
+export default function Landing({ content: controlledContent, preview = false }) {
+  const isControlled = controlledContent != null
+  const [fetched, setFetched] = useState(DEFAULT_CONTENT)
 
-// Goldilocks-style marketing landing page for the Bakery Ordering System,
-// built entirely with our existing navy + brand-orange palette.
-export default function Landing() {
-  return (
+  useEffect(() => {
+    if (isControlled) return
+    getSiteContent().then(setFetched)
+  }, [isControlled])
+
+  const content = isControlled ? controlledContent : fetched
+
+  const page = (
     <div className="min-h-screen bg-white text-navy-800">
-      <AnnouncementBar />
+      <AnnouncementBar text={content.announcement} />
       <NavBar />
-      <Hero />
-      <Categories />
-      <BestSellers />
+      <Hero banners={content.banners} />
+      <Categories items={content.categories} />
+      <BestSellers products={content.bestSellers} />
       <PromoBanner />
       <Features />
       <Story />
@@ -34,19 +37,21 @@ export default function Landing() {
       <Footer />
     </div>
   )
+
+  if (preview) {
+    return <StaticRevealContext.Provider value={true}>{page}</StaticRevealContext.Provider>
+  }
+  return page
 }
 
 /* ------------------------------------------------------------------ */
 /* Top bar + navigation                                                */
 /* ------------------------------------------------------------------ */
 
-function AnnouncementBar() {
+function AnnouncementBar({ text }) {
   return (
     <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-center text-xs font-medium tracking-wide text-white">
-      <p className="px-4 py-2">
-        🚚 Free delivery on orders over ₱1,000 &nbsp;•&nbsp; Freshly baked every
-        morning &nbsp;•&nbsp; Order now and taste the love!
-      </p>
+      <p className="px-4 py-2">{text}</p>
     </div>
   )
 }
@@ -155,12 +160,12 @@ function Logo() {
 /* Hero                                                                */
 /* ------------------------------------------------------------------ */
 
-function Hero() {
+function Hero({ banners }) {
   return (
     <section id="home" className="bg-navy-900">
       <Carousel
-        slides={HERO_SLIDES.map((s) => (
-          <HeroSlide key={s.img} slide={s} />
+        slides={banners.map((s, i) => (
+          <HeroSlide key={s.img + i} slide={s} />
         ))}
       />
     </section>
@@ -183,16 +188,7 @@ function HeroSlide({ slide }) {
 /* Categories                                                          */
 /* ------------------------------------------------------------------ */
 
-const CATEGORIES = [
-  { name: 'Cakes', img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=300&h=300&q=80' },
-  { name: 'Breads', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&h=300&q=80' },
-  { name: 'Pastries', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=300&h=300&q=80' },
-  { name: 'Delicacies', img: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=300&h=300&q=80' },
-  { name: 'Cupcakes', img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=300&h=300&q=80' },
-  { name: 'Cookies', img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=300&h=300&q=80' },
-]
-
-function Categories() {
+function Categories({ items }) {
   return (
     <section id="categories" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <Reveal>
@@ -203,8 +199,8 @@ function Categories() {
         />
       </Reveal>
       <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
-        {CATEGORIES.map((c, i) => (
-          <Reveal key={c.name} delay={i * 80}>
+        {items.map((c, i) => (
+          <Reveal key={c.name + i} delay={i * 80}>
             <a
               href="#best-sellers"
               className="group flex flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg"
@@ -229,58 +225,7 @@ function Categories() {
 /* Best sellers                                                        */
 /* ------------------------------------------------------------------ */
 
-const PRODUCTS = [
-  {
-    name: 'Classic Mocha Cake',
-    price: '₱650',
-    tag: 'Best Seller',
-    img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Ube Chiffon Cake',
-    price: '₱720',
-    tag: 'New',
-    img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Soft Ensaymada',
-    price: '₱45',
-    tag: 'Popular',
-    img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Fresh Pandesal (12pcs)',
-    price: '₱60',
-    tag: 'Daily',
-    img: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Chocolate Cupcakes',
-    price: '₱180',
-    tag: 'Best Seller',
-    img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Buttery Croissant',
-    price: '₱85',
-    tag: 'Popular',
-    img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Red Velvet Slice',
-    price: '₱150',
-    tag: 'New',
-    img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    name: 'Assorted Cookies',
-    price: '₱220',
-    tag: 'Popular',
-    img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80',
-  },
-]
-
-function BestSellers() {
+function BestSellers({ products }) {
   return (
     <section id="best-sellers" className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -292,8 +237,8 @@ function BestSellers() {
           />
         </Reveal>
         <div className="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
-          {PRODUCTS.map((p, i) => (
-            <Reveal key={p.name} delay={(i % 4) * 80}>
+          {products.map((p, i) => (
+            <Reveal key={p.name + i} delay={(i % 4) * 80}>
               <ProductCard product={p} />
             </Reveal>
           ))}

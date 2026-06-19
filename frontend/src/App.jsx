@@ -8,8 +8,10 @@ import Register from './pages/Register'
 import CompleteProfile from './pages/CompleteProfile'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminContent from './pages/AdminContent'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import EditorRoute from './components/EditorRoute'
 
 export default function App() {
   return (
@@ -35,6 +37,14 @@ export default function App() {
           <AdminRoute>
             <AdminDashboard />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/content"
+        element={
+          <EditorRoute>
+            <AdminContent />
+          </EditorRoute>
         }
       />
       <Route path="*" element={<Navigate to="/login" replace />} />

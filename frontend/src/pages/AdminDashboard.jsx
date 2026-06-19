@@ -193,6 +193,13 @@ function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
           active={view === 'reports'}
           onClick={() => onView('reports')}
         />
+        <Link
+          to="/admin/content"
+          className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
+        >
+          <EditIcon className="h-5 w-5 shrink-0" />
+          <span>Site Content</span>
+        </Link>
 
         <p className="hidden px-3 pb-1 pt-4 text-[0.65rem] font-semibold uppercase tracking-wider text-navy-50/40 lg:block">
           Orders
@@ -515,6 +522,14 @@ function ChartIcon(p) {
       <line x1="12" y1="20" x2="12" y2="10" />
       <line x1="18" y1="20" x2="18" y2="4" />
       <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  )
+}
+function EditIcon(p) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   )
 }
