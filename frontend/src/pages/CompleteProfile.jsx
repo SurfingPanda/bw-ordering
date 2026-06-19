@@ -5,7 +5,7 @@ import BrandPanel from '../components/BrandPanel'
 import { sanitizePhone, isValidPhone } from '../lib/phone'
 
 export default function CompleteProfile() {
-  const { user, loading, updateContactNumber } = useAuth()
+  const { user, loading, updateContactNumber, logout } = useAuth()
   const navigate = useNavigate()
 
   const [contact, setContact] = useState('')
@@ -39,6 +39,11 @@ export default function CompleteProfile() {
       setError(err.message || 'Unable to save your number. Please try again.')
       setSubmitting(false)
     }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
   }
 
   return (
@@ -89,6 +94,18 @@ export default function CompleteProfile() {
                 {submitting ? 'Saving…' : 'Continue'}
               </button>
             </form>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Don&apos;t want to add a number?{' '}
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={submitting}
+                className="font-semibold text-brand-600 underline-offset-2 transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Log out
+              </button>
+            </p>
           </div>
         </div>
       </div>
