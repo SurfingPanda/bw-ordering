@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { normalizePhone } from '../lib/phone'
 
 const AuthContext = createContext(null)
 
@@ -63,21 +64,67 @@ export function AuthProvider({ children }) {
     if (password_confirmation !== undefined && password !== password_confirmation) {
       throw new Error('Passwords do not match.')
     }
+
+    // Reject duplicate numbers before creating the account. The user isn't
+    // signed in yet, so we ask the database via a SECURITY DEFINER function.
+    const normalized = normalizePhone(contact_number)
+    const { data: taken, error: checkError } = await supabase.rpc('contact_number_taken', {
+      p_number: normalized,
+    })
+    if (checkError) throw checkError
+    if (taken) throw new Error('This contact number is already in use by another account.')
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: name, contact_number } },
     })
     if (error) throw error
-    // If email confirmation is off, Supabase auto-creates a session. We want the
-    // user to sign in explicitly afterwards, so drop that session here.
+
+    // If email confirmation is off, Supabase auto-creates a session. Use that
+    // brief window to claim the number in profiles so the UNIQUE constraint
+    // closes any race between two simultaneous sign-ups.
+    if (data.session && data.user) {
+      const { error: claimError } = await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, contact_number: normalized }, { onConflict: 'id' })
+      if (claimError && claimError.code === '23505') {
+        await supabase.auth.signOut()
+        throw new Error('This contact number is already in use by another account.')
+      }
+    }
+
+    // We want the user to sign in explicitly afterwards, so drop that session.
     await supabase.auth.signOut()
     return normalize(data.user)
   }
 
   // Save a contact number onto the current user (used by the complete-profile
-  // step after Google sign-in, where no phone was collected).
+  // step after Google sign-in, where no phone was collected). Uniqueness is
+  // enforced by a UNIQUE constraint on public.profiles.contact_number — the
+  // client can't read other users' metadata, so the database is the gatekeeper.
   const updateContactNumber = async (contact_number) => {
+    const {
+      data: { user: current },
+    } = await supabase.auth.getUser()
+    if (!current) throw new Error('You must be signed in to add a contact number.')
+
+    // Claim the normalized number in profiles first; a duplicate trips the
+    // UNIQUE constraint (Postgres error 23505) before we touch user metadata.
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert(
+        { id: current.id, contact_number: normalizePhone(contact_number), updated_at: new Date().toISOString() },
+        { onConflict: 'id' },
+      )
+    if (profileError) {
+      if (profileError.code === '23505') {
+        throw new Error('This contact number is already in use by another account.')
+      }
+      throw profileError
+    }
+
+    // Keep the user-entered value on the auth user for display.
     const { data, error } = await supabase.auth.updateUser({ data: { contact_number } })
     if (error) throw error
     setUser(normalize(data.user))

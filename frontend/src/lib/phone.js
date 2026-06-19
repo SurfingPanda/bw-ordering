@@ -9,3 +9,11 @@ export function sanitizePhone(value) {
 export function isValidPhone(value) {
   return value.replace(/\D/g, '').length >= 7
 }
+
+// Canonical form used for uniqueness checks so that "0917 123 4567" and
+// "09171234567" are treated as the same number. Keeps a leading + if present.
+export function normalizePhone(value) {
+  const trimmed = value.trim()
+  const digits = trimmed.replace(/\D/g, '')
+  return trimmed.startsWith('+') ? `+${digits}` : digits
+}
