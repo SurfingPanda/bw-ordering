@@ -3,39 +3,16 @@ import { Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
 import Carousel from '../components/Carousel'
 
+// Promotional banner carousel. Each slide is a full banner image (designs with
+// baked-in text), shown uncropped at a 1408:768 ratio and linking to the menu.
 const HERO_SLIDES = [
   {
-    badge: 'Freshly baked, made with love',
-    title: 'Freshly Baked Happiness,',
-    accent: 'Delivered.',
-    text: 'From classic cakes to warm pandesal, order your favorite bakeshop treats online and have them delivered straight to your door.',
-    img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80',
-    alt: 'A beautifully decorated layered chocolate cake',
-    floatEmoji: '🎂',
-    floatTitle: 'Signature Cakes',
-    floatSub: 'Baked fresh every day',
+    img: '/images/Gemini_Generated_Image_wrt1thwrt1thwrt1.png',
+    alt: 'For the Best Dad — cake promo',
   },
   {
-    badge: 'Celebrate every moment',
-    title: 'Custom Cakes for',
-    accent: 'Every Occasion.',
-    text: 'Birthdays, weddings, or just because — design a personalized cake and we’ll bake it fresh, exactly how you imagined it.',
-    img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=900&q=80',
-    alt: 'A rich mocha cake topped with cream',
-    floatEmoji: '🎉',
-    floatTitle: 'Custom Orders',
-    floatSub: 'Made just for you',
-  },
-  {
-    badge: 'Warm from the oven',
-    title: 'Breads & Pastries,',
-    accent: 'Baked Daily.',
-    text: 'Wake up to the smell of fresh bread. Our pandesal, ensaymada, and pastries are baked every morning and delivered fast.',
-    img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80',
-    alt: 'Assorted freshly baked breads and rolls',
-    floatEmoji: '🍞',
-    floatTitle: 'Fresh Daily',
-    floatSub: 'Baked every morning',
+    img: '/images/Gemini_Generated_Image_wugzcgwugzcgwugz.png',
+    alt: 'For the Best Mom — cake promo',
   },
 ]
 
@@ -180,23 +157,10 @@ function Logo() {
 
 function Hero() {
   return (
-    <section
-      id="home"
-      className="relative overflow-hidden bg-gradient-to-b from-navy-700 via-navy-800 to-navy-900"
-    >
-      {/* faint baking-icon pattern */}
-      <div className="pointer-events-none absolute inset-0 select-none text-5xl opacity-[0.06]">
-        <div className="absolute left-8 top-10">🥐</div>
-        <div className="absolute right-16 top-24">🧁</div>
-        <div className="absolute left-1/3 top-40">🍞</div>
-        <div className="absolute right-8 bottom-16">🍰</div>
-        <div className="absolute left-12 bottom-10">🥨</div>
-      </div>
-
+    <section id="home" className="bg-navy-900">
       <Carousel
-        className="relative"
         slides={HERO_SLIDES.map((s) => (
-          <HeroSlide key={s.title} slide={s} />
+          <HeroSlide key={s.img} slide={s} />
         ))}
       />
     </section>
@@ -205,72 +169,13 @@ function Hero() {
 
 function HeroSlide({ slide }) {
   return (
-    <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
-      <div className="text-center lg:text-left">
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-400 ring-1 ring-white/20">
-          <SparkleIcon className="h-4 w-4" />
-          {slide.badge}
-        </span>
-        <h1 className="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">
-          {slide.title}{' '}
-          <span className="font-script font-normal text-brand-400">
-            {slide.accent}
-          </span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-md text-base text-navy-50/80 lg:mx-0">
-          {slide.text}
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
-          <Link
-            to="/menu"
-            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-          >
-            Order Now
-          </Link>
-          <a
-            href="#categories"
-            className="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            View Menu
-          </a>
-        </div>
-
-        <div className="mt-10 flex items-center justify-center gap-8 lg:justify-start">
-          <Stat value="50+" label="Treats baked daily" />
-          <span className="h-10 w-px bg-white/20" />
-          <Stat value="120+" label="Stores nationwide" />
-          <span className="h-10 w-px bg-white/20" />
-          <Stat value="30k+" label="Happy customers" />
-        </div>
-      </div>
-
-      <div className="relative">
-        <div className="absolute -inset-4 rounded-[2.5rem] bg-brand-500/20 blur-2xl" />
-        <img
-          src={slide.img}
-          alt={slide.alt}
-          className="relative h-80 w-full rounded-[2rem] object-cover shadow-2xl sm:h-[26rem]"
-        />
-        <div className="absolute -bottom-5 -left-2 z-10 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl sm:flex">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-xl">
-            {slide.floatEmoji}
-          </span>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-navy-800">{slide.floatTitle}</p>
-            <p className="text-xs text-slate-500">{slide.floatSub}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Stat({ value, label }) {
-  return (
-    <div className="text-center lg:text-left">
-      <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-navy-50/70">{label}</p>
-    </div>
+    <Link to="/menu" className="block">
+      <img
+        src={slide.img}
+        alt={slide.alt}
+        className="aspect-[12/5] max-h-[800px] w-full object-cover object-top"
+      />
+    </Link>
   )
 }
 
@@ -782,14 +687,6 @@ function PlusIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  )
-}
-
-function SparkleIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Z" />
     </svg>
   )
 }
