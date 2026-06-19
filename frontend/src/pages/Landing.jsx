@@ -309,10 +309,12 @@ function ProductCard({ product }) {
 function PromoBanner({ buttons }) {
   return (
     <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
-        <div className="pointer-events-none absolute -right-6 -top-6 text-[9rem] opacity-20">
-          🎉
-        </div>
+      <div className="relative rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
+        <img
+          src="/images/promo-cake.png"
+          alt="Custom tiered celebration cake"
+          className="pointer-events-none absolute bottom-0 right-6 hidden h-[135%] w-auto object-contain drop-shadow-2xl sm:block lg:right-16"
+        />
         <div className="relative max-w-xl">
           <p className="font-script text-2xl text-white/90">Celebrate every moment</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
