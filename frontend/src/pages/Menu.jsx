@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createOrder } from '../lib/orders'
 import { fetchMenuProducts } from '../lib/content'
+import { useSeo } from '../lib/seo'
 
 // Shopping / menu page — browse foods by category and build a cart.
 // Cart state is local for now; "Proceed to checkout" sends guests to sign in.
@@ -60,6 +61,7 @@ function pairedSuggestions(lines, menu, limit = 3) {
 }
 
 export default function Menu() {
+  useSeo('/menu')
   const [searchParams, setSearchParams] = useSearchParams()
   const [menu, setMenu] = useState([])
   const [menuLoading, setMenuLoading] = useState(true)

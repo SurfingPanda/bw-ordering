@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
-import StoreMap from '../components/StoreMap'
 import api from '../lib/api'
+import { useSeo } from '../lib/seo'
+
+// Lazy so the heavy, browser-only MapLibre bundle is code-split and never pulled
+// into the server/prerender module graph (it touches window at import).
+const StoreMap = lazy(() => import('../components/StoreMap'))
 
 // "Find a Store" page — search and filter bw Superbakeshop branches.
 
@@ -13,6 +17,7 @@ const dirHref = (address) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
 export default function Stores() {
+  useSeo('/stores')
   const [stores, setStores] = useState([])
   const [region, setRegion] = useState('All')
   const [query, setQuery] = useState('')
@@ -121,11 +126,11 @@ export default function Stores() {
             <div className="order-1 lg:order-2">
               <div className="lg:sticky lg:top-20">
                 <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-                  <StoreMap
-                    stores={visible}
-                    selected={selected}
-                    onSelect={setSelectedName}
-                  />
+                  <Suspense
+                    fallback={<div className="h-72 w-full bg-slate-100 lg:h-[26rem]" />}
+                  >
+                    <StoreMap stores={visible} selected={selected} onSelect={setSelectedName} />
+                  </Suspense>
                 </div>
                 <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">

@@ -1,16 +1,26 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 
-createRoot(document.getElementById('root')).render(
+const app = (
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <App />
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
+
+const root = document.getElementById('root')
+
+// Prerendered pages (production build) ship real HTML in #root → hydrate it.
+// The dev server ships an empty #root → mount fresh.
+if (root.hasChildNodes()) {
+  hydrateRoot(root, app)
+} else {
+  createRoot(root).render(app)
+}

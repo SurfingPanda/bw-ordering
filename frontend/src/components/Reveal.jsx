@@ -17,7 +17,10 @@ export default function Reveal({
 }) {
   const ref = useRef(null)
   const isStatic = useContext(StaticRevealContext)
-  const [visible, setVisible] = useState(false)
+  // Start visible so the prerendered/SSR HTML (and the first client paint) show
+  // real content — good for crawlers and gives identical server/client markup
+  // (no hydration mismatch). The observer then re-animates on scroll.
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     if (isStatic) return
@@ -43,10 +46,6 @@ export default function Reveal({
     down: '-translate-y-8',
     left: 'translate-x-8',
     right: '-translate-x-8',
-  }
-
-  if (isStatic) {
-    return <Tag className={className}>{children}</Tag>
   }
 
   return (

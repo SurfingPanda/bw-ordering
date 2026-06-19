@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
 import { getCachedContent, getSiteContent } from '../lib/content'
+import { useSeo } from '../lib/seo'
 
 // Goldilocks-style marketing landing page. Editable sections (announcement,
 // promo banners, categories, best sellers) are loaded from Supabase via the
@@ -12,6 +13,7 @@ import { getCachedContent, getSiteContent } from '../lib/content'
 // controlled by that prop and skips its own fetch, so edits show instantly.
 // `preview` renders all reveal-on-scroll sections statically.
 export default function Landing({ content: controlledContent, preview = false }) {
+  useSeo('/', !preview)
   const isControlled = controlledContent != null
   const [fetched, setFetched] = useState(getCachedContent)
 

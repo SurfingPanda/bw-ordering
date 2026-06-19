@@ -1,9 +1,10 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Menu from './pages/Menu'
 import Careers from './pages/Careers'
 import Franchise from './pages/Franchise'
 import Stores from './pages/Stores'
+import NotFound from './pages/NotFound'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import CompleteProfile from './pages/CompleteProfile'
@@ -49,7 +50,7 @@ export default function App() {
           </EditorRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

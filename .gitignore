@@ -32,6 +32,7 @@ node_modules/
 # Build output
 /frontend/dist/
 /frontend/dist-ssr/
+/frontend/dist-server/
 /frontend/public/images
 
 # Logs

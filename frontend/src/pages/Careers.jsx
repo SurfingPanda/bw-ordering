@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
+import { useSeo } from '../lib/seo'
 
 // Careers / "Join our team" page, built with the navy + brand-orange theme.
 
@@ -25,6 +26,7 @@ const applyHref = (title) =>
   `mailto:careers@bwsuperbakeshop.com?subject=${encodeURIComponent(`Application: ${title}`)}`
 
 export default function Careers() {
+  useSeo('/careers')
   return (
     <div className="min-h-screen bg-white text-navy-800">
       <CareersHeader />

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
 import { DEFAULT_CONTENT, getCachedContent, getSiteContent } from '../lib/content'
+import { useSeo } from '../lib/seo'
 
 // Franchise / "Own a bakeshop" page. Content is editable from the admin Site
 // Editor (Franchise section) and stored in site_content.franchise.
@@ -13,6 +14,7 @@ const inquireHref = (email) =>
   )
 
 export default function Franchise() {
+  useSeo('/franchise')
   const [content, setContent] = useState(getCachedContent)
 
   useEffect(() => {
