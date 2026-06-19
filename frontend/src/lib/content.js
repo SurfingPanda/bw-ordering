@@ -1,5 +1,27 @@
 import { supabase } from './supabase'
 
+// Toggleable call-to-action buttons on the landing page. The admin "Buttons"
+// editor renders a switch per entry; Landing hides a button when its key is set
+// to false. Keys default to visible (anything other than an explicit false).
+export const LANDING_BUTTONS = [
+  { key: 'navSignIn', label: 'Sign In', group: 'Navigation bar' },
+  { key: 'navOrder', label: 'Order Now', group: 'Navigation bar' },
+  { key: 'bestSellersMenu', label: 'See full menu', group: 'Best Sellers' },
+  { key: 'promoOrder', label: 'Order a custom cake', group: 'Promo banner' },
+  { key: 'storyStart', label: 'Start ordering', group: 'Our Story' },
+  { key: 'storyFindStore', label: 'Find a store', group: 'Our Story' },
+  { key: 'storeLocatorFind', label: 'Find a store (+ search box)', group: 'Store locator' },
+  { key: 'newsletterSubscribe', label: 'Subscribe form', group: 'Newsletter' },
+]
+
+// True unless the button has been explicitly switched off. Unknown keys (e.g.
+// buttons added after a save) default to visible.
+export function isButtonVisible(content, key) {
+  return content?.buttons?.[key] !== false
+}
+
+const ALL_BUTTONS_VISIBLE = Object.fromEntries(LANDING_BUTTONS.map((b) => [b.key, true]))
+
 // Editable landing-page content. These defaults render the site even before an
 // admin saves anything (or if Supabase isn't set up yet).
 export const DEFAULT_CONTENT = {
@@ -27,6 +49,7 @@ export const DEFAULT_CONTENT = {
     { name: 'Red Velvet Slice', price: '₱150', tag: 'New', img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80' },
     { name: 'Assorted Cookies', price: '₱220', tag: 'Popular', img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80' },
   ],
+  buttons: ALL_BUTTONS_VISIBLE,
 }
 
 // Read the saved landing content (merged over defaults). Returns defaults on any

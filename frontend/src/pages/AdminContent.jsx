@@ -2,7 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Landing from './Landing'
-import { DEFAULT_CONTENT, getSiteContent, saveSiteContent, uploadImage } from '../lib/content'
+import {
+  DEFAULT_CONTENT,
+  LANDING_BUTTONS,
+  getSiteContent,
+  saveSiteContent,
+  uploadImage,
+} from '../lib/content'
 
 // Admin "Site Content" editor — full-width CMS layout with a section sidebar.
 // Edits the landing page's announcement, promo banners, categories, best sellers.
@@ -12,7 +18,17 @@ const SECTIONS = [
   { key: 'banners', label: 'Promo Banners', Icon: ImageIcon },
   { key: 'categories', label: 'Categories', Icon: GridIcon },
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
+  { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
 ]
+
+// LANDING_BUTTONS grouped by their `group` field, preserving first-seen order,
+// for the "Buttons" editor's sectioned switch list.
+const BUTTON_GROUPS = LANDING_BUTTONS.reduce((acc, b) => {
+  const entry = acc.find(([g]) => g === b.group)
+  if (entry) entry[1].push(b)
+  else acc.push([b.group, [b]])
+  return acc
+}, [])
 
 export default function AdminContent() {
   const { logout, isAdmin, user } = useAuth()
@@ -50,6 +66,8 @@ export default function AdminContent() {
   }
 
   const setField = (key, value) => setContent((c) => ({ ...c, [key]: value }))
+  const setButton = (key, on) =>
+    setContent((c) => ({ ...c, buttons: { ...(c.buttons || {}), [key]: on } }))
   const updateItem = (key, idx, patch) =>
     setContent((c) => ({
       ...c,
@@ -210,7 +228,7 @@ export default function AdminContent() {
                 className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
               />
               <p className="mt-3 mb-1 text-xs font-medium text-slate-500">Live preview</p>
-              <div className="overflow-hidden rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-center text-xs font-medium text-white">
+              <div className="overflow-hidden rounded-lg bg-navy-900 px-4 py-2 text-center text-xs font-medium text-white">
                 {content.announcement || '—'}
               </div>
             </Panel>
@@ -325,6 +343,39 @@ export default function AdminContent() {
               </AddButton>
             </Panel>
           )}
+
+          {active === 'buttons' && (
+            <Panel
+              title="Buttons & Calls-to-Action"
+              subtitle="Show or hide the action buttons across your landing page. Hidden buttons disappear from the live site."
+            >
+              <div className="space-y-6">
+                {BUTTON_GROUPS.map(([group, items]) => (
+                  <div key={group}>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      {group}
+                    </p>
+                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                      {items.map((b, i) => {
+                        const on = content.buttons?.[b.key] !== false
+                        return (
+                          <div
+                            key={b.key}
+                            className={`flex items-center justify-between gap-4 px-4 py-3 ${
+                              i > 0 ? 'border-t border-slate-100' : ''
+                            }`}
+                          >
+                            <span className="text-sm font-medium text-navy-800">{b.label}</span>
+                            <Toggle on={on} onChange={(v) => setButton(b.key, v)} />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
         </main>
 
         {/* live preview */}
@@ -358,6 +409,7 @@ const SECTION_ANCHOR = {
   banners: '#home',
   categories: '#categories',
   bestSellers: '#best-sellers',
+  buttons: null,
 }
 
 function FullPreview({ content, active }) {
@@ -486,6 +538,27 @@ function AddButton({ children, onClick }) {
   )
 }
 
+function Toggle({ on, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+        on ? 'bg-brand-500' : 'bg-slate-300'
+      }`}
+    >
+      <span className="sr-only">{on ? 'Visible' : 'Hidden'}</span>
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+          on ? 'translate-x-5' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  )
+}
+
 function TextRow({ label, value, onChange }) {
   return (
     <label className="block">
@@ -604,6 +677,14 @@ function StarIcon(p) {
   return (
     <svg {...iconBase({ ...p, fill: 'none' })}>
       <path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9Z" />
+    </svg>
+  )
+}
+function ToggleIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <rect x="2" y="7" width="20" height="10" rx="5" />
+      <circle cx="9" cy="12" r="2.5" />
     </svg>
   )
 }

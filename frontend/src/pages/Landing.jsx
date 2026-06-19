@@ -22,18 +22,20 @@ export default function Landing({ content: controlledContent, preview = false })
 
   const content = isControlled ? controlledContent : fetched
 
+  const buttons = content.buttons
+
   const page = (
     <div className="min-h-screen bg-white text-navy-800">
       <AnnouncementBar text={content.announcement} />
-      <NavBar />
+      <NavBar buttons={buttons} />
       <Hero banners={content.banners} />
       <Categories items={content.categories} />
-      <BestSellers products={content.bestSellers} />
-      <PromoBanner />
+      <BestSellers products={content.bestSellers} buttons={buttons} />
+      <PromoBanner buttons={buttons} />
       <Features />
-      <Story />
-      <StoreLocator />
-      <Newsletter />
+      <Story buttons={buttons} />
+      <StoreLocator buttons={buttons} />
+      <Newsletter buttons={buttons} />
       <Footer />
     </div>
   )
@@ -50,14 +52,16 @@ export default function Landing({ content: controlledContent, preview = false })
 
 function AnnouncementBar({ text }) {
   return (
-    <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-center text-xs font-medium tracking-wide text-white">
+    <div className="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
       <p className="px-4 py-2">{text}</p>
     </div>
   )
 }
 
-function NavBar() {
+function NavBar({ buttons }) {
   const [open, setOpen] = useState(false)
+  const showSignIn = buttons?.navSignIn !== false
+  const showOrder = buttons?.navOrder !== false
   const links = [
     { label: 'Home', href: '#home' },
     { label: 'Cakes', href: '#categories' },
@@ -82,18 +86,22 @@ function NavBar() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            to="/login"
-            className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
-          >
-            Sign In
-          </Link>
-          <Link
-            to="/menu"
-            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-          >
-            Order Now
-          </Link>
+          {showSignIn && (
+            <Link
+              to="/login"
+              className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
+            >
+              Sign In
+            </Link>
+          )}
+          {showOrder && (
+            <Link
+              to="/menu"
+              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            >
+              Order Now
+            </Link>
+          )}
         </div>
 
         <button
@@ -121,20 +129,26 @@ function NavBar() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 flex gap-3">
-            <Link
-              to="/login"
-              className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/menu"
-              className="flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
-            >
-              Order Now
-            </Link>
-          </div>
+          {(showSignIn || showOrder) && (
+            <div className="mt-3 flex gap-3">
+              {showSignIn && (
+                <Link
+                  to="/login"
+                  className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
+                >
+                  Sign In
+                </Link>
+              )}
+              {showOrder && (
+                <Link
+                  to="/menu"
+                  className="flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                >
+                  Order Now
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       )}
     </header>
@@ -225,7 +239,7 @@ function Categories({ items }) {
 /* Best sellers                                                        */
 /* ------------------------------------------------------------------ */
 
-function BestSellers({ products }) {
+function BestSellers({ products, buttons }) {
   return (
     <section id="best-sellers" className="bg-navy-50/60 py-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -243,14 +257,16 @@ function BestSellers({ products }) {
             </Reveal>
           ))}
         </div>
-        <div className="mt-10 text-center">
-          <Link
-            to="/menu"
-            className="inline-block rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-          >
-            See full menu
-          </Link>
-        </div>
+        {buttons?.bestSellersMenu !== false && (
+          <div className="mt-10 text-center">
+            <Link
+              to="/menu"
+              className="inline-block rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            >
+              See full menu
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )
@@ -290,7 +306,7 @@ function ProductCard({ product }) {
 /* Promo banner                                                        */
 /* ------------------------------------------------------------------ */
 
-function PromoBanner() {
+function PromoBanner({ buttons }) {
   return (
     <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
@@ -306,12 +322,14 @@ function PromoBanner() {
             Make it unforgettable with a personalized cake, baked fresh and
             decorated just the way you want it.
           </p>
-          <Link
-            to="/register"
-            className="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50"
-          >
-            Order a custom cake
-          </Link>
+          {buttons?.promoOrder !== false && (
+            <Link
+              to="/register"
+              className="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50"
+            >
+              Order a custom cake
+            </Link>
+          )}
         </div>
       </div>
     </Reveal>
@@ -379,15 +397,15 @@ function Features() {
 /* Story / About                                                       */
 /* ------------------------------------------------------------------ */
 
-function Story() {
+function Story({ buttons }) {
   return (
     <section id="about" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <Reveal direction="left" className="relative">
           <img
-            src="/images/Screenshot_5.png"
+            src="/images/476076311_1024913309666031_7008467077346838017_n.jpg"
             alt="An assortment of freshly baked breads"
-            className="h-80 w-full rounded-3xl object-cover shadow-xl"
+            className="h-80 w-full rounded-3xl bg-white object-contain shadow-xl"
           />
           <div className="absolute -bottom-5 -right-3 hidden rounded-2xl bg-navy-800 px-5 py-4 text-white shadow-xl sm:block">
             <p className="font-script text-2xl text-brand-400">Since 1966</p>
@@ -411,20 +429,26 @@ function Story() {
             Now, with our online ordering system, your favorites are just a few
             clicks away.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="#best-sellers"
-              className="rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-900"
-            >
-              Start ordering
-            </a>
-            <Link
-              to="/stores"
-              className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
-            >
-              Find a store
-            </Link>
-          </div>
+          {(buttons?.storyStart !== false || buttons?.storyFindStore !== false) && (
+            <div className="mt-6 flex flex-wrap gap-3">
+              {buttons?.storyStart !== false && (
+                <a
+                  href="#best-sellers"
+                  className="rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-900"
+                >
+                  Start ordering
+                </a>
+              )}
+              {buttons?.storyFindStore !== false && (
+                <Link
+                  to="/stores"
+                  className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
+                >
+                  Find a store
+                </Link>
+              )}
+            </div>
+          )}
         </Reveal>
       </div>
     </section>
@@ -435,7 +459,7 @@ function Story() {
 /* Store locator                                                       */
 /* ------------------------------------------------------------------ */
 
-function StoreLocator() {
+function StoreLocator({ buttons }) {
   return (
     <section id="stores" className="bg-navy-900 py-16">
       <Reveal className="mx-auto max-w-3xl px-4 text-center sm:px-6">
@@ -448,19 +472,21 @@ function StoreLocator() {
         <p className="mt-3 text-sm text-navy-50/80">
           Find your nearest branch or simply order online for delivery and pickup.
         </p>
-        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <input
-            type="text"
-            placeholder="Enter your city or area"
-            className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 sm:w-72"
-          />
-          <Link
-            to="/stores"
-            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-          >
-            Find a store
-          </Link>
-        </div>
+        {buttons?.storeLocatorFind !== false && (
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+            <input
+              type="text"
+              placeholder="Enter your city or area"
+              className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 sm:w-72"
+            />
+            <Link
+              to="/stores"
+              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            >
+              Find a store
+            </Link>
+          </div>
+        )}
       </Reveal>
     </section>
   )
@@ -470,7 +496,7 @@ function StoreLocator() {
 /* Newsletter                                                          */
 /* ------------------------------------------------------------------ */
 
-function Newsletter() {
+function Newsletter({ buttons }) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <Reveal className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
@@ -480,23 +506,25 @@ function Newsletter() {
         <p className="mt-2 text-sm text-slate-600">
           Subscribe for exclusive promos, new treats, and special occasion offers.
         </p>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
-        >
-          <input
-            type="email"
-            required
-            placeholder="Enter your email"
-            className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-          />
-          <button
-            type="submit"
-            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+        {buttons?.newsletterSubscribe !== false && (
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
           >
-            Subscribe
-          </button>
-        </form>
+            <input
+              type="email"
+              required
+              placeholder="Enter your email"
+              className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            />
+            <button
+              type="submit"
+              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            >
+              Subscribe
+            </button>
+          </form>
+        )}
       </Reveal>
     </section>
   )
