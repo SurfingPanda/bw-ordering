@@ -3,11 +3,15 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
-// Admins are identified by an email allowlist in frontend/.env (VITE_ADMIN_EMAILS).
-const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
-  .split(',')
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean)
+// Role allowlists from frontend/.env. Admins get the full /admin dashboard;
+// editors can only edit landing-page content (/admin/content).
+const toList = (v) =>
+  (v || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+const ADMIN_EMAILS = toList(import.meta.env.VITE_ADMIN_EMAILS)
+const EDITOR_EMAILS = toList(import.meta.env.VITE_EDITOR_EMAILS)
 
 // Map a Supabase user onto the shape the rest of the app expects (it reads `name`).
 function normalize(supaUser) {
@@ -89,11 +93,23 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const isAdmin = !!user && ADMIN_EMAILS.includes((user.email || '').toLowerCase())
+  const email = (user?.email || '').toLowerCase()
+  const isAdmin = !!user && ADMIN_EMAILS.includes(email)
+  const isEditor = !!user && EDITOR_EMAILS.includes(email)
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAdmin, login, loginWithGoogle, register, logout }}
+      value={{
+        user,
+        loading,
+        isAdmin,
+        isEditor,
+        login,
+        loginWithGoogle,
+        register,
+        updateContactNumber,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

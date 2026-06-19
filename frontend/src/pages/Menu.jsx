@@ -271,7 +271,7 @@ function CategorySidebar({ active, onChange }) {
 }
 
 function MenuHeader({ itemCount }) {
-  const { user, isAdmin, logout } = useAuth()
+  const { user, isAdmin, isEditor, logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -292,6 +292,14 @@ function MenuHeader({ itemCount }) {
                   className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                 >
                   Admin
+                </Link>
+              )}
+              {!isAdmin && isEditor && (
+                <Link
+                  to="/admin/content"
+                  className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Edit Site
                 </Link>
               )}
               <span className="hidden text-sm text-navy-700 sm:block">

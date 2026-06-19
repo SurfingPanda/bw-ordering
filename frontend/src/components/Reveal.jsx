@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
+
+// When true (provided by the admin live preview), Reveal renders its children
+// fully visible and skips the scroll observer — the scaled-down preview clone
+// isn't in the real viewport, so the observer would otherwise keep it hidden.
+export const StaticRevealContext = createContext(false)
 
 // Reveal-on-scroll wrapper. Fades + slides its children in when they enter the
 // viewport and back out when they leave, so it re-animates on scroll up *and*
@@ -11,9 +16,11 @@ export default function Reveal({
   as: Tag = 'div',
 }) {
   const ref = useRef(null)
+  const isStatic = useContext(StaticRevealContext)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    if (isStatic) return
     const el = ref.current
     if (!el) return
 
@@ -29,13 +36,17 @@ export default function Reveal({
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [isStatic])
 
   const offsets = {
     up: 'translate-y-8',
     down: '-translate-y-8',
     left: 'translate-x-8',
     right: '-translate-x-8',
+  }
+
+  if (isStatic) {
+    return <Tag className={className}>{children}</Tag>
   }
 
   return (
