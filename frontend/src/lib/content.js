@@ -52,8 +52,25 @@ export const DEFAULT_CONTENT = {
   buttons: ALL_BUTTONS_VISIBLE,
 }
 
+// Local cache of the last-loaded content, so the first paint on refresh already
+// reflects saved settings (e.g. hidden buttons) instead of flashing the
+// defaults while the network request is in flight.
+const CACHE_KEY = 'bw_site_content'
+
+// Synchronous best-effort read of the cached content for the initial render.
+// Falls back to defaults when nothing is cached or storage is unavailable.
+export function getCachedContent() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return DEFAULT_CONTENT
+    return { ...DEFAULT_CONTENT, ...JSON.parse(raw) }
+  } catch {
+    return DEFAULT_CONTENT
+  }
+}
+
 // Read the saved landing content (merged over defaults). Returns defaults on any
-// error or when nothing has been saved yet.
+// error or when nothing has been saved yet. Successful reads update the cache.
 export async function getSiteContent() {
   try {
     const { data, error } = await supabase
@@ -62,7 +79,13 @@ export async function getSiteContent() {
       .eq('id', 1)
       .maybeSingle()
     if (error || !data?.data) return DEFAULT_CONTENT
-    return { ...DEFAULT_CONTENT, ...data.data }
+    const merged = { ...DEFAULT_CONTENT, ...data.data }
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data.data))
+    } catch {
+      // storage full / unavailable — caching is best-effort
+    }
+    return merged
   } catch {
     return DEFAULT_CONTENT
   }
@@ -74,6 +97,11 @@ export async function saveSiteContent(content) {
     .from('site_content')
     .upsert({ id: 1, data: content, updated_at: new Date().toISOString() })
   if (error) throw error
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(content))
+  } catch {
+    // best-effort
+  }
 }
 
 // Admin: upload an image to the public "site-images" bucket, return its URL.

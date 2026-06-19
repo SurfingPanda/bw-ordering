@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
-import { DEFAULT_CONTENT, getSiteContent } from '../lib/content'
+import { getCachedContent, getSiteContent } from '../lib/content'
 
 // Goldilocks-style marketing landing page. Editable sections (announcement,
 // promo banners, categories, best sellers) are loaded from Supabase via the
@@ -13,7 +13,7 @@ import { DEFAULT_CONTENT, getSiteContent } from '../lib/content'
 // `preview` renders all reveal-on-scroll sections statically.
 export default function Landing({ content: controlledContent, preview = false }) {
   const isControlled = controlledContent != null
-  const [fetched, setFetched] = useState(DEFAULT_CONTENT)
+  const [fetched, setFetched] = useState(getCachedContent)
 
   useEffect(() => {
     if (isControlled) return
