@@ -1,45 +1,48 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Reveal from '../components/Reveal'
+import StoreMap from '../components/StoreMap'
+import api from '../lib/api'
 
 // "Find a Store" page — search and filter bw Superbakeshop branches.
 
 const REGIONS = ['All', 'Metro Manila', 'Luzon', 'Visayas', 'Mindanao']
 
-const STORES = [
-  { name: 'BW Superbakeshop — Commonwealth', region: 'Metro Manila', address: '123 Commonwealth Ave, Quezon City', hours: '6:00 AM – 9:00 PM', phone: '(02) 8123 4567' },
-  { name: 'BW Superbakeshop — Makati', region: 'Metro Manila', address: '88 Ayala Ave, Makati City', hours: '7:00 AM – 10:00 PM', phone: '(02) 8234 5678' },
-  { name: 'BW Superbakeshop — Pasig', region: 'Metro Manila', address: 'Ortigas Center, Pasig City', hours: '6:30 AM – 9:30 PM', phone: '(02) 8345 6789' },
-  { name: 'BW Superbakeshop — Pampanga', region: 'Luzon', address: 'MacArthur Hwy, San Fernando, Pampanga', hours: '6:00 AM – 9:00 PM', phone: '(045) 961 2345' },
-  { name: 'BW Superbakeshop — Baguio', region: 'Luzon', address: 'Session Rd, Baguio City', hours: '7:00 AM – 9:00 PM', phone: '(074) 442 1234' },
-  { name: 'BW Superbakeshop — Cebu', region: 'Visayas', address: 'Osmeña Blvd, Cebu City', hours: '6:30 AM – 10:00 PM', phone: '(032) 255 6789' },
-  { name: 'BW Superbakeshop — Iloilo', region: 'Visayas', address: 'Diversion Rd, Mandurriao, Iloilo City', hours: '7:00 AM – 9:00 PM', phone: '(033) 320 4567' },
-  { name: 'BW Superbakeshop — Davao', region: 'Mindanao', address: 'C.M. Recto St, Davao City', hours: '6:00 AM – 9:30 PM', phone: '(082) 224 7890' },
-  { name: 'BW Superbakeshop — Cagayan de Oro', region: 'Mindanao', address: 'Corrales Ave, Cagayan de Oro', hours: '7:00 AM – 9:00 PM', phone: '(088) 856 3456' },
-]
-
 // Directions link (turn-by-turn from the user's location).
 const dirHref = (address) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
-// Embeddable map for an address — no API key required.
-const embedSrc = (address) =>
-  `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
-
 export default function Stores() {
+  const [stores, setStores] = useState([])
   const [region, setRegion] = useState('All')
   const [query, setQuery] = useState('')
-  const [selectedName, setSelectedName] = useState(STORES[0].name)
+  const [selectedName, setSelectedName] = useState(null)
+
+  // Load branches (with coordinates) from the Laravel API.
+  useEffect(() => {
+    let active = true
+    api
+      .get('/stores')
+      .then((res) => {
+        if (active) setStores(res.data)
+      })
+      .catch(() => {
+        if (active) setStores([])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return STORES.filter((s) => {
+    return stores.filter((s) => {
       const inRegion = region === 'All' || s.region === region
       const matches =
         !q || s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q)
       return inRegion && matches
     })
-  }, [region, query])
+  }, [stores, region, query])
 
   // Selected store always falls back to the first one currently visible.
   const selected = visible.find((s) => s.name === selectedName) || visible[0]
@@ -118,15 +121,10 @@ export default function Stores() {
             <div className="order-1 lg:order-2">
               <div className="lg:sticky lg:top-20">
                 <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-                  <iframe
-                    key={selected.address}
-                    title={`Map of ${selected.name}`}
-                    src={embedSrc(selected.address)}
-                    className="h-72 w-full lg:h-[26rem]"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    allowFullScreen
+                  <StoreMap
+                    stores={visible}
+                    selected={selected}
+                    onSelect={setSelectedName}
                   />
                 </div>
                 <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
