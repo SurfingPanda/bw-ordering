@@ -94,9 +94,23 @@ export default function StoreMap({ stores = [], selected, onSelect }) {
       pitch: 55,
       bearing: -18,
       maxPitch: 85,
+      // Add the source credits ourselves (below) so they start collapsed.
+      attributionControl: false,
     })
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+
+    // The compact attribution opens expanded, and MapLibre re-expands it on every
+    // map.resize(). Collapse it to the small "ⓘ" button so the license credits
+    // don't cover the map; clicking the button still toggles the full list open.
+    const collapseAttribution = () => {
+      const el = containerRef.current?.querySelector('.maplibregl-ctrl-attrib')
+      el?.classList.remove('maplibregl-compact-show')
+      el?.removeAttribute('open')
+    }
+    collapseAttribution()
+    map.on('resize', collapseAttribution)
 
     map.on('load', () => {
       // Real 3D terrain relief from the DEM.
