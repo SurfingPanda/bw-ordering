@@ -5,19 +5,23 @@ import Landing from './Landing'
 import {
   DEFAULT_CONTENT,
   LANDING_BUTTONS,
+  fetchAllProducts,
   getSiteContent,
   saveSiteContent,
+  syncProducts,
   uploadImage,
 } from '../lib/content'
 
 // Admin "Site Content" editor — full-width CMS layout with a section sidebar.
-// Edits the landing page's announcement, promo banners, categories, best sellers.
+// Edits the landing page content, the Menu products, and the Franchise page.
 
 const SECTIONS = [
   { key: 'announcement', label: 'Announcement', Icon: MegaphoneIcon },
   { key: 'banners', label: 'Promo Banners', Icon: ImageIcon },
   { key: 'categories', label: 'Categories', Icon: GridIcon },
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
+  { key: 'products', label: 'Products', Icon: TagIcon },
+  { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
   { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
 ]
 
@@ -33,14 +37,18 @@ const BUTTON_GROUPS = LANDING_BUTTONS.reduce((acc, b) => {
 export default function AdminContent() {
   const { logout, isAdmin, user } = useAuth()
   const [content, setContent] = useState(null)
+  const [products, setProducts] = useState([])
+  const [originalIds, setOriginalIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('announcement')
 
   useEffect(() => {
-    getSiteContent().then((c) => {
+    Promise.all([getSiteContent(), fetchAllProducts().catch(() => [])]).then(([c, p]) => {
       setContent(c)
+      setProducts(p)
+      setOriginalIds(p.map((x) => x.id))
       setLoading(false)
     })
   }, [])
@@ -49,7 +57,10 @@ export default function AdminContent() {
     setSaving(true)
     setMessage('')
     try {
+      // Landing/franchise content lives in the site_content blob; products live
+      // in the shared products table (also used for order pricing) — save both.
       await saveSiteContent(content)
+      await syncProducts(products, originalIds)
       setMessage('saved')
     } catch (err) {
       setMessage(`error:${err.message}`)
@@ -85,6 +96,40 @@ export default function AdminContent() {
       return { ...c, [key]: arr }
     })
 
+  // Products (the shared catalogue table; edited locally, synced on Save). New
+  // products have no id yet (the DB assigns the UUID) — `_key` is a stable React
+  // key until then. Removed products get archived (soft-deleted) on save.
+  const updateProduct = (idx, patch) =>
+    setProducts((ps) => ps.map((p, i) => (i === idx ? { ...p, ...patch } : p)))
+  const addProduct = () =>
+    setProducts((ps) => [
+      ...ps,
+      {
+        _key: crypto.randomUUID(),
+        name: 'New product',
+        category: 'Bread',
+        price: 0,
+        originalPrice: null,
+        img: '',
+        desc: '',
+        features: [],
+        isFeatured: false,
+        status: null,
+      },
+    ])
+  const removeProduct = (idx) => setProducts((ps) => ps.filter((_, i) => i !== idx))
+
+  // Franchise content (nested under content.franchise).
+  const fr = content?.franchise || DEFAULT_CONTENT.franchise
+  const setFranchise = (patch) =>
+    setContent((c) => ({ ...c, franchise: { ...(c.franchise || DEFAULT_CONTENT.franchise), ...patch } }))
+  const setFranchiseHero = (patch) => setFranchise({ hero: { ...fr.hero, ...patch } })
+  const updateFrList = (listKey, idx, patch) =>
+    setFranchise({ [listKey]: (fr[listKey] || []).map((it, i) => (i === idx ? { ...it, ...patch } : it)) })
+  const addFrItem = (listKey, blank) => setFranchise({ [listKey]: [...(fr[listKey] || []), blank] })
+  const removeFrItem = (listKey, idx) =>
+    setFranchise({ [listKey]: (fr[listKey] || []).filter((_, i) => i !== idx) })
+
   if (loading || !content) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-navy-50/40 text-slate-500">
@@ -97,6 +142,7 @@ export default function AdminContent() {
     banners: content.banners.length,
     categories: content.categories.length,
     bestSellers: content.bestSellers.length,
+    products: products.length,
   }
   const activeLabel = SECTIONS.find((s) => s.key === active)?.label
 
@@ -344,6 +390,236 @@ export default function AdminContent() {
             </Panel>
           )}
 
+          {active === 'products' && (
+            <Panel
+              title="Menu Products"
+              subtitle="The shared product catalogue shown on /menu and used for order pricing. Removing a product archives it (soft-delete)."
+            >
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {products.map((p, i) => (
+                  <ItemCard
+                    key={p.id || p._key}
+                    index={i}
+                    total={products.length}
+                    hideMove
+                    onRemove={() => removeProduct(i)}
+                  >
+                    <ImageField
+                      label="Image"
+                      value={p.img}
+                      onChange={(img) => updateProduct(i, { img })}
+                    />
+                    <TextRow
+                      label="Name"
+                      value={p.name}
+                      onChange={(name) => updateProduct(i, { name })}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <TextRow
+                        label="Category"
+                        value={p.category}
+                        onChange={(category) => updateProduct(i, { category })}
+                      />
+                      <SelectRow
+                        label="Status"
+                        value={p.status || ''}
+                        onChange={(status) => updateProduct(i, { status: status || null })}
+                        options={[
+                          ['', 'None'],
+                          ['new', 'New'],
+                          ['best_seller', 'Best seller'],
+                          ['sold_out', 'Sold out'],
+                        ]}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <NumberRow
+                        label="Price (₱)"
+                        value={p.price}
+                        onChange={(price) => updateProduct(i, { price })}
+                      />
+                      <NumberRow
+                        label="Was (₱, optional)"
+                        value={p.originalPrice ?? ''}
+                        onChange={(originalPrice) => updateProduct(i, { originalPrice })}
+                      />
+                    </div>
+                    <TextAreaRow
+                      label="Description"
+                      value={p.desc}
+                      onChange={(desc) => updateProduct(i, { desc })}
+                    />
+                    <TextAreaRow
+                      label="Tags (one per line)"
+                      value={(p.features || []).join('\n')}
+                      onChange={(v) =>
+                        updateProduct(i, {
+                          features: v.split('\n').map((s) => s.trim()).filter(Boolean),
+                        })
+                      }
+                    />
+                    <label className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-medium text-slate-500">Featured</span>
+                      <Toggle
+                        on={!!p.isFeatured}
+                        onChange={(isFeatured) => updateProduct(i, { isFeatured })}
+                      />
+                    </label>
+                  </ItemCard>
+                ))}
+              </div>
+              <AddButton onClick={addProduct}>+ Add product</AddButton>
+            </Panel>
+          )}
+
+          {active === 'franchise' && (
+            <div className="space-y-6">
+              <Panel title="Franchise — Hero" subtitle="The top of the /franchise page.">
+                <TextRow
+                  label="Eyebrow"
+                  value={fr.hero?.eyebrow}
+                  onChange={(eyebrow) => setFranchiseHero({ eyebrow })}
+                />
+                <TextRow
+                  label="Title"
+                  value={fr.hero?.title}
+                  onChange={(title) => setFranchiseHero({ title })}
+                />
+                <TextAreaRow
+                  label="Subtitle"
+                  value={fr.hero?.subtitle}
+                  onChange={(subtitle) => setFranchiseHero({ subtitle })}
+                />
+                <TextRow
+                  label="Inquiry email (the Inquire buttons open this)"
+                  value={fr.email}
+                  onChange={(email) => setFranchise({ email })}
+                />
+              </Panel>
+
+              <Panel title="Franchise — Perks" subtitle="The “Why franchise with us” cards.">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {(fr.perks || []).map((p, i) => (
+                    <ItemCard
+                      key={i}
+                      index={i}
+                      total={fr.perks.length}
+                      hideMove
+                      onRemove={() => removeFrItem('perks', i)}
+                    >
+                      <TextRow
+                        label="Icon (emoji)"
+                        value={p.icon}
+                        onChange={(icon) => updateFrList('perks', i, { icon })}
+                      />
+                      <TextRow
+                        label="Title"
+                        value={p.title}
+                        onChange={(title) => updateFrList('perks', i, { title })}
+                      />
+                      <TextAreaRow
+                        label="Text"
+                        value={p.text}
+                        onChange={(text) => updateFrList('perks', i, { text })}
+                      />
+                    </ItemCard>
+                  ))}
+                </div>
+                <AddButton onClick={() => addFrItem('perks', { icon: '✨', title: 'New perk', text: '' })}>
+                  + Add perk
+                </AddButton>
+              </Panel>
+
+              <Panel title="Franchise — Steps" subtitle="The “How it works” path.">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {(fr.steps || []).map((s, i) => (
+                    <ItemCard
+                      key={i}
+                      index={i}
+                      total={fr.steps.length}
+                      hideMove
+                      onRemove={() => removeFrItem('steps', i)}
+                    >
+                      <TextRow
+                        label="Number"
+                        value={s.n}
+                        onChange={(n) => updateFrList('steps', i, { n })}
+                      />
+                      <TextRow
+                        label="Title"
+                        value={s.title}
+                        onChange={(title) => updateFrList('steps', i, { title })}
+                      />
+                      <TextAreaRow
+                        label="Text"
+                        value={s.text}
+                        onChange={(text) => updateFrList('steps', i, { text })}
+                      />
+                    </ItemCard>
+                  ))}
+                </div>
+                <AddButton onClick={() => addFrItem('steps', { n: '00', title: 'New step', text: '' })}>
+                  + Add step
+                </AddButton>
+              </Panel>
+
+              <Panel title="Franchise — Packages" subtitle="The franchise package cards.">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {(fr.packages || []).map((pkg, i) => (
+                    <ItemCard
+                      key={i}
+                      index={i}
+                      total={fr.packages.length}
+                      hideMove
+                      onRemove={() => removeFrItem('packages', i)}
+                    >
+                      <TextRow
+                        label="Name"
+                        value={pkg.name}
+                        onChange={(name) => updateFrList('packages', i, { name })}
+                      />
+                      <TextRow
+                        label="Price"
+                        value={pkg.price}
+                        onChange={(price) => updateFrList('packages', i, { price })}
+                      />
+                      <TextAreaRow
+                        label="Blurb"
+                        value={pkg.blurb}
+                        onChange={(blurb) => updateFrList('packages', i, { blurb })}
+                      />
+                      <TextAreaRow
+                        label="Features (one per line)"
+                        value={(pkg.features || []).join('\n')}
+                        onChange={(v) =>
+                          updateFrList('packages', i, {
+                            features: v.split('\n').map((s) => s.trim()).filter(Boolean),
+                          })
+                        }
+                      />
+                      <label className="flex items-center justify-between pt-1">
+                        <span className="text-xs font-medium text-slate-500">
+                          Highlight as “Most popular”
+                        </span>
+                        <Toggle
+                          on={!!pkg.featured}
+                          onChange={(featured) => updateFrList('packages', i, { featured })}
+                        />
+                      </label>
+                    </ItemCard>
+                  ))}
+                </div>
+                <AddButton
+                  onClick={() =>
+                    addFrItem('packages', { name: 'New package', price: '₱0', blurb: '', features: [], featured: false })
+                  }
+                >
+                  + Add package
+                </AddButton>
+              </Panel>
+            </div>
+          )}
+
           {active === 'buttons' && (
             <Panel
               title="Buttons & Calls-to-Action"
@@ -409,6 +685,8 @@ const SECTION_ANCHOR = {
   banners: '#home',
   categories: '#categories',
   bestSellers: '#best-sellers',
+  products: null,
+  franchise: null,
   buttons: null,
 }
 
@@ -487,7 +765,7 @@ function Panel({ title, subtitle, children }) {
   )
 }
 
-function ItemCard({ children, index, total, onMove, onRemove }) {
+function ItemCard({ children, index, total, onMove, onRemove, hideMove }) {
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -495,12 +773,16 @@ function ItemCard({ children, index, total, onMove, onRemove }) {
           #{index + 1}
         </span>
         <div className="flex items-center gap-1">
-          <IconBtn onClick={() => onMove(-1)} disabled={index === 0} label="Move up">
-            ↑
-          </IconBtn>
-          <IconBtn onClick={() => onMove(1)} disabled={index === total - 1} label="Move down">
-            ↓
-          </IconBtn>
+          {!hideMove && (
+            <>
+              <IconBtn onClick={() => onMove(-1)} disabled={index === 0} label="Move up">
+                ↑
+              </IconBtn>
+              <IconBtn onClick={() => onMove(1)} disabled={index === total - 1} label="Move down">
+                ↓
+              </IconBtn>
+            </>
+          )}
           <button
             onClick={onRemove}
             className="rounded-md px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
@@ -568,6 +850,54 @@ function TextRow({ label, value, onChange }) {
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
       />
+    </label>
+  )
+}
+
+function NumberRow({ label, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <input
+        type="number"
+        min="0"
+        value={value === null || value === undefined ? '' : value}
+        onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+    </label>
+  )
+}
+
+function TextAreaRow({ label, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <textarea
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+    </label>
+  )
+}
+
+function SelectRow({ label, value, onChange, options }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      >
+        {options.map(([val, lab]) => (
+          <option key={val} value={val}>
+            {lab}
+          </option>
+        ))}
+      </select>
     </label>
   )
 }
@@ -685,6 +1015,23 @@ function ToggleIcon(p) {
     <svg {...iconBase(p)}>
       <rect x="2" y="7" width="20" height="10" rx="5" />
       <circle cx="9" cy="12" r="2.5" />
+    </svg>
+  )
+}
+function TagIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z" />
+      <circle cx="7" cy="7" r="1.2" />
+    </svg>
+  )
+}
+function BriefcaseIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M2 13h20" />
     </svg>
   )
 }

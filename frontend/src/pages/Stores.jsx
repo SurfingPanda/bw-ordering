@@ -69,7 +69,7 @@ export default function Stores() {
             <span className="font-script font-normal text-brand-400">store</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-base text-navy-50/80">
-            120+ branches nationwide. Search for the bw Superbakeshop nearest you.
+            60+ branches nationwide. Search for the BW Superbakeshop nearest you.
           </p>
           <div className="relative mx-auto mt-7 max-w-md">
             <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />

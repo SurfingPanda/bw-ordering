@@ -64,10 +64,10 @@ function NavBar({ buttons }) {
   const showOrder = buttons?.navOrder !== false
   const links = [
     { label: 'Home', href: '#home' },
-    { label: 'Cakes', href: '#categories' },
+    { label: 'Products', href: '#categories' },
     { label: 'Best Sellers', href: '#best-sellers' },
     { label: 'Stores', href: '#stores' },
-    { label: 'About', href: '#about' },
+    { label: 'Franchise', to: '/franchise' },
   ]
 
   return (
@@ -78,9 +78,15 @@ function NavBar({ buttons }) {
         <ul className="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
           {links.map((l) => (
             <li key={l.label}>
-              <a href={l.href} className="transition hover:text-brand-600">
-                {l.label}
-              </a>
+              {l.to ? (
+                <Link to={l.to} className="transition hover:text-brand-600">
+                  {l.label}
+                </Link>
+              ) : (
+                <a href={l.href} className="transition hover:text-brand-600">
+                  {l.label}
+                </a>
+              )}
             </li>
           ))}
         </ul>
@@ -119,13 +125,23 @@ function NavBar({ buttons }) {
           <ul className="flex flex-col gap-1 text-sm font-medium text-navy-700">
             {links.map((l) => (
               <li key={l.label}>
-                <a
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600"
-                >
-                  {l.label}
-                </a>
+                {l.to ? (
+                  <Link
+                    to={l.to}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600"
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600"
+                  >
+                    {l.label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>
@@ -307,13 +323,13 @@ function ProductCard({ product }) {
         )}
         <div className="mt-3 flex items-center justify-between">
           <span className="text-lg font-bold text-brand-600">{product.price}</span>
-          <button
-            type="button"
+          <Link
+            to={`/menu?add=${encodeURIComponent(product.name)}`}
             aria-label={`Add ${product.name} to cart`}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600"
           >
             <PlusIcon className="h-5 w-5" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>
@@ -554,6 +570,13 @@ function Newsletter({ buttons }) {
 /* Footer                                                              */
 /* ------------------------------------------------------------------ */
 
+// Social links. Facebook is live; the others are placeholders until provided.
+const SOCIALS = [
+  { label: 'Facebook', icon: 'f', href: 'https://www.facebook.com/bwsuperbakeshop' },
+  { label: 'LinkedIn', icon: 'in', href: '#' },
+  { label: 'X (Twitter)', icon: '𝕏', href: '#' },
+]
+
 // Footer link labels that map to real routes (others are placeholders).
 const FOOTER_ROUTES = {
   Cakes: '/menu',
@@ -587,16 +610,20 @@ function Footer() {
             happiness to your doorstep.
           </p>
           <div className="mt-5 flex gap-3">
-            {['f', 'in', '𝕏'].map((s) => (
-              <a
-                key={s}
-                href="#"
-                aria-label="Social link"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white transition hover:bg-brand-600"
-              >
-                {s}
-              </a>
-            ))}
+            {SOCIALS.map((s) => {
+              const external = s.href !== '#'
+              return (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  aria-label={s.label}
+                  {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white transition hover:bg-brand-600"
+                >
+                  {s.icon}
+                </a>
+              )
+            })}
           </div>
         </div>
 
@@ -655,15 +682,6 @@ function SectionHeading({ eyebrow, title, subtitle }) {
 /* ------------------------------------------------------------------ */
 /* Icons (inline, matching the rest of the codebase)                  */
 /* ------------------------------------------------------------------ */
-
-function ChefHat({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M7 21h10a1 1 0 0 0 1-1v-5H6v5a1 1 0 0 0 1 1Z" />
-      <path d="M18.5 4.5a3.5 3.5 0 0 0-3.2 2.07 3.5 3.5 0 0 0-6.6 0A3.5 3.5 0 1 0 6 13.5h12a3.5 3.5 0 0 0 .5-9Z" />
-    </svg>
-  )
-}
 
 function MenuIcon({ className }) {
   return (

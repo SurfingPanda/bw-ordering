@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Menu from './pages/Menu'
 import Careers from './pages/Careers'
+import Franchise from './pages/Franchise'
 import Stores from './pages/Stores'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/menu" element={<Menu />} />
       <Route path="/careers" element={<Careers />} />
+      <Route path="/franchise" element={<Franchise />} />
       <Route path="/stores" element={<Stores />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

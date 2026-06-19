@@ -1,50 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createOrder } from '../lib/orders'
+import { fetchMenuProducts } from '../lib/content'
 
 // Shopping / menu page — browse foods by category and build a cart.
 // Cart state is local for now; "Proceed to checkout" sends guests to sign in.
-
-const CATEGORIES = [
-  { name: 'All', emoji: '🍽️' },
-  { name: 'Cakes', emoji: '🍰' },
-  { name: 'Breads', emoji: '🥖' },
-  { name: 'Pastries', emoji: '🥐' },
-  { name: 'Cupcakes', emoji: '🧁' },
-  { name: 'Cookies', emoji: '🍪' },
-  { name: 'Donuts', emoji: '🍩' },
-  { name: 'Pies', emoji: '🥧' },
-  { name: 'Desserts', emoji: '🍮' },
-  { name: 'Sandwiches', emoji: '🥪' },
-  { name: 'Beverages', emoji: '🥤' },
-]
-
-const MENU = [
-  { id: 1, name: 'Classic Mocha Cake', category: 'Cakes', price: 650, img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80', desc: 'Moist chocolate sponge layered with mocha cream.', calories: 420, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 2, name: 'Ube Chiffon Cake', category: 'Cakes', price: 720, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Soft purple yam chiffon with sweet glaze.', calories: 380, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 3, name: 'Red Velvet Slice', category: 'Cakes', price: 150, img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80', desc: 'Velvety cocoa cake with cream cheese frosting.', calories: 410, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 4, name: 'Soft Ensaymada', category: 'Pastries', price: 45, img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', desc: 'Buttery brioche topped with cheese and sugar.', calories: 290, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 5, name: 'Buttery Croissant', category: 'Pastries', price: 85, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', desc: 'Flaky, golden, freshly baked each morning.', calories: 270, allergens: ['Gluten', 'Milk'] },
-  { id: 6, name: 'Fresh Pandesal (12pcs)', category: 'Breads', price: 60, img: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=600&q=80', desc: 'The classic Filipino breakfast roll.', calories: 140, allergens: ['Gluten', 'Soy'] },
-  { id: 7, name: 'Wheat Loaf', category: 'Breads', price: 95, img: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=600&q=80', desc: 'Wholesome sliced wheat bread.', calories: 120, allergens: ['Gluten', 'Soy'] },
-  { id: 8, name: 'Chocolate Cupcakes', category: 'Cupcakes', price: 180, img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 rich chocolate cupcakes.', calories: 300, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 9, name: 'Vanilla Cupcakes', category: 'Cupcakes', price: 170, img: 'https://images.unsplash.com/photo-1599785209707-a456fc1337bb?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 classic vanilla cupcakes.', calories: 290, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 10, name: 'Assorted Cookies', category: 'Cookies', price: 220, img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80', desc: 'A dozen freshly baked cookies.', calories: 150, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 11, name: 'Chocolate Chip Cookies', category: 'Cookies', price: 240, img: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80', desc: 'Gooey chocolate chip, baked to order.', calories: 160, allergens: ['Gluten', 'Eggs', 'Milk', 'Soy'] },
-  { id: 12, name: 'Leche Flan', category: 'Desserts', price: 130, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Silky caramel custard, a Filipino favorite.', calories: 310, allergens: ['Eggs', 'Milk'] },
-  { id: 13, name: 'Buko Pandan Cup', category: 'Desserts', price: 95, img: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80', desc: 'Young coconut and pandan jelly in cream.', calories: 220, allergens: ['Milk'] },
-  { id: 14, name: 'Hopia (Box of 8)', category: 'Desserts', price: 120, img: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80', desc: 'Flaky mung bean filled pastry.', calories: 180, allergens: ['Gluten', 'Soy'] },
-  { id: 15, name: 'Iced Coffee', category: 'Beverages', price: 110, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80', desc: 'Chilled brewed coffee over ice.', calories: 90, allergens: ['Milk'] },
-  { id: 16, name: 'Hot Chocolate', category: 'Beverages', price: 90, img: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?auto=format&fit=crop&w=600&q=80', desc: 'Rich, creamy hot cocoa.', calories: 190, allergens: ['Milk', 'Soy'] },
-  { id: 17, name: 'Fresh Milk Tea', category: 'Beverages', price: 120, img: 'https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=600&q=80', desc: 'Classic milk tea with chewy pearls.', calories: 230, allergens: ['Milk'] },
-  { id: 18, name: 'Glazed Donut', category: 'Donuts', price: 55, img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80', desc: 'Soft ring donut with sweet glaze.', calories: 260, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 19, name: 'Chocolate Donut', category: 'Donuts', price: 60, img: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=600&q=80', desc: 'Glazed donut dipped in chocolate.', calories: 280, allergens: ['Gluten', 'Eggs', 'Milk', 'Soy'] },
-  { id: 20, name: 'Apple Pie', category: 'Pies', price: 240, img: 'https://images.unsplash.com/photo-1535920527002-b35e96722eb9?auto=format&fit=crop&w=600&q=80', desc: 'Buttery crust with cinnamon apples.', calories: 320, allergens: ['Gluten', 'Milk'] },
-  { id: 21, name: 'Buko Pie', category: 'Pies', price: 220, img: 'https://images.unsplash.com/photo-1621743478914-cc8a86d7e7b5?auto=format&fit=crop&w=600&q=80', desc: 'Creamy young coconut pie.', calories: 300, allergens: ['Gluten', 'Eggs', 'Milk'] },
-  { id: 22, name: 'Ham & Cheese Sandwich', category: 'Sandwiches', price: 90, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80', desc: 'Toasted sandwich with ham and cheese.', calories: 350, allergens: ['Gluten', 'Milk'] },
-  { id: 23, name: 'Clubhouse Sandwich', category: 'Sandwiches', price: 130, img: 'https://images.unsplash.com/photo-1567234669003-dce7a7a88821?auto=format&fit=crop&w=600&q=80', desc: 'Triple-decker with chicken and egg.', calories: 480, allergens: ['Gluten', 'Eggs', 'Milk'] },
-]
 
 const peso = (n) =>
   `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -60,29 +21,111 @@ const VOUCHERS = {
   FREEDEL: { type: 'freedel', label: 'Free delivery' },
 }
 
+// Which categories pair well together — drives the "Best paired with" cart
+// suggestions. Listed in priority order; a drink almost always pairs.
+const PAIRINGS = {
+  Cakes: ['Beverages', 'Desserts'],
+  Cupcakes: ['Beverages', 'Cookies'],
+  Cookies: ['Beverages', 'Desserts'],
+  Pastries: ['Beverages', 'Breads'],
+  Breads: ['Beverages', 'Sandwiches'],
+  Donuts: ['Beverages', 'Cookies'],
+  Pies: ['Beverages', 'Desserts'],
+  Desserts: ['Beverages', 'Cakes'],
+  Sandwiches: ['Beverages', 'Breads'],
+  Beverages: ['Pastries', 'Cookies', 'Cakes'],
+}
+
+// Up to 3 products to suggest, given the cart and the full menu. Prefers items
+// from paired categories, then fills with anything else not already added.
+function pairedSuggestions(lines, menu, limit = 3) {
+  const inCart = new Set(lines.map((l) => l.product.id))
+  const wanted = []
+  for (const { product } of lines) {
+    for (const cat of PAIRINGS[product.category] || []) {
+      if (!wanted.includes(cat)) wanted.push(cat)
+    }
+  }
+  const pick = []
+  const take = (predicate) => {
+    for (const p of menu) {
+      if (pick.length >= limit) break
+      if (inCart.has(p.id) || pick.includes(p)) continue
+      if (predicate(p)) pick.push(p)
+    }
+  }
+  for (const cat of wanted) take((p) => p.category === cat)
+  take(() => true) // backfill so we always show something
+  return pick.slice(0, limit)
+}
+
 export default function Menu() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [menu, setMenu] = useState([])
+  const [menuLoading, setMenuLoading] = useState(true)
   const [active, setActive] = useState('All')
   const [query, setQuery] = useState('')
   const [cart, setCart] = useState({}) // { [id]: qty }
   const [cartOpen, setCartOpen] = useState(false) // mobile cart drawer
 
+  // Load the menu from the products table (the same source the order-pricing
+  // trigger trusts). Once loaded, honor a /menu?add=<name> deep link from the
+  // landing "Best Sellers" by adding that product and filtering to its category.
+  useEffect(() => {
+    let alive = true
+    fetchMenuProducts()
+      .then((rows) => {
+        if (!alive) return
+        setMenu(rows)
+        setMenuLoading(false)
+        const name = searchParams.get('add')
+        if (name) {
+          const product = rows.find((p) => p.name.toLowerCase() === name.toLowerCase())
+          if (product) {
+            setCart((c) => ({ ...c, [product.id]: (c[product.id] || 0) + 1 }))
+            setActive(product.category)
+          }
+          searchParams.delete('add')
+          setSearchParams(searchParams, { replace: true })
+        }
+      })
+      .catch(() => alive && setMenuLoading(false))
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return MENU.filter((p) => {
+    return menu.filter((p) => {
       const inCategory = active === 'All' || p.category === active
       const matches =
-        !q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+        !q || p.name.toLowerCase().includes(q) || (p.desc || '').toLowerCase().includes(q)
       return inCategory && matches
     })
-  }, [active, query])
+  }, [menu, active, query])
 
   const lines = useMemo(
     () =>
       Object.entries(cart)
-        .map(([id, qty]) => ({ product: MENU.find((p) => p.id === Number(id)), qty }))
+        .map(([id, qty]) => ({ product: menu.find((p) => p.id === id), qty }))
         .filter((l) => l.product),
-    [cart],
+    [cart, menu],
   )
+
+  // Category tabs are derived from the products themselves (first product image
+  // per category is used as the badge), plus an "All" tab.
+  const categories = useMemo(() => {
+    const seen = new Map()
+    for (const p of menu) {
+      if (p.category && !seen.has(p.category)) seen.set(p.category, p.img)
+    }
+    return [
+      { name: 'All', img: '/images/bakery-interior.jpg' },
+      ...[...seen].map(([name, img]) => ({ name, img })),
+    ]
+  }, [menu])
 
   const itemCount = lines.reduce((sum, l) => sum + l.qty, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.product.price * l.qty, 0)
@@ -106,8 +149,9 @@ export default function Menu() {
   const checkout = async (summary) => {
     setPlacing(true)
     try {
-      await createOrder(summary)
-      window.alert('🧡 Thank you! Your order has been placed.')
+      // The DB returns the authoritative, server-computed totals.
+      const order = await createOrder(summary)
+      window.alert(`🧡 Thank you! Your order has been placed.\n\nTotal: ${peso(Number(order.total))}`)
       setCart({})
       setCartOpen(false)
     } catch (err) {
@@ -120,7 +164,7 @@ export default function Menu() {
   return (
     <div className="animate-page-in flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* left — full-height categories sidebar (with logo on top) */}
-      <CategorySidebar active={active} onChange={setActive} />
+      <CategorySidebar active={active} onChange={setActive} categories={categories} />
 
       {/* right — header + content */}
       <div className="flex min-w-0 flex-1 flex-col">
@@ -149,7 +193,9 @@ export default function Menu() {
               />
             </div>
           </div>
-          {visible.length === 0 ? (
+          {menuLoading ? (
+            <div className="py-16 text-center text-sm text-slate-500">Loading menu…</div>
+          ) : visible.length === 0 ? (
             <div className="py-16 text-center">
               <div className="text-5xl">🔍</div>
               <p className="mt-3 text-sm text-slate-500">
@@ -170,6 +216,7 @@ export default function Menu() {
           <div className="lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)]">
             <Cart
               lines={lines}
+              menu={menu}
               subtotal={subtotal}
               itemCount={itemCount}
               onInc={add}
@@ -216,6 +263,7 @@ export default function Menu() {
             </button>
             <Cart
               lines={lines}
+              menu={menu}
               subtotal={subtotal}
               itemCount={itemCount}
               onInc={add}
@@ -231,7 +279,7 @@ export default function Menu() {
   )
 }
 
-function CategorySidebar({ active, onChange }) {
+function CategorySidebar({ active, onChange, categories }) {
   return (
     <aside className="sticky top-0 z-30 bg-navy-900 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col">
       {/* logo — sits at the top of the sidebar */}
@@ -245,7 +293,7 @@ function CategorySidebar({ active, onChange }) {
 
       {/* categories — fill the remaining height */}
       <nav className="flex gap-3 overflow-x-auto p-3 lg:flex-1 lg:flex-col lg:justify-between lg:gap-2 lg:overflow-x-hidden lg:overflow-y-auto">
-        {CATEGORIES.map((c) => {
+        {categories.map((c) => {
           const isActive = active === c.name
           return (
             <button
@@ -258,8 +306,8 @@ function CategorySidebar({ active, onChange }) {
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl shadow ring-1 ring-black/5">
-                {c.emoji}
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
+                <img src={c.img} alt="" className="h-full w-full object-cover" />
               </span>
               {c.name}
             </button>
@@ -336,44 +384,50 @@ function MenuHeader({ itemCount }) {
   )
 }
 
+const STATUS_LABEL = {
+  new: 'New',
+  best_seller: 'Best Seller',
+  sold_out: 'Sold out',
+}
+
 function MenuCard({ product, qty, onAdd, onDec }) {
+  const soldOut = product.status === 'sold_out'
+  const onSale = product.originalPrice != null && product.originalPrice > product.price
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-xl">
-      <div className="overflow-hidden">
+      <div className="relative overflow-hidden">
         <img
           src={product.img}
           alt={product.name}
-          className="h-36 w-full object-cover transition duration-300 group-hover:scale-105"
+          className={`h-36 w-full object-cover transition duration-300 group-hover:scale-105 ${
+            soldOut ? 'opacity-60 grayscale' : ''
+          }`}
         />
+        {product.status && (
+          <span
+            className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${
+              soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'
+            }`}
+          >
+            {STATUS_LABEL[product.status] || product.status}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
         <p className="mt-1 line-clamp-2 text-xs text-slate-500">{product.desc}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {product.calories != null && (
-            <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
-              {product.calories} cal
-            </span>
-          )}
-          {product.allergens?.length ? (
-            product.allergens.map((a) => (
-              <span
-                key={a}
-                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
-                title={`Contains ${a}`}
-              >
-                {a}
-              </span>
-            ))
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-              No major allergens
-            </span>
-          )}
-        </div>
         <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
-          {qty === 0 ? (
+          <span className="flex items-baseline gap-1.5">
+            <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
+            {onSale && (
+              <span className="text-xs text-slate-400 line-through">{peso(product.originalPrice)}</span>
+            )}
+          </span>
+          {soldOut ? (
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400">
+              Sold out
+            </span>
+          ) : qty === 0 ? (
             <button
               type="button"
               onClick={() => onAdd(product.id)}
@@ -411,7 +465,7 @@ function QtyButton({ children, onClick, label }) {
   )
 }
 
-function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, placing }) {
+function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, placing }) {
   const { user } = useAuth()
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
@@ -446,6 +500,8 @@ function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, 
   const delivery = freeDelivery ? 0 : DELIVERY_FEE
   const vat = discounted * VAT_RATE
   const total = discounted + vat + delivery
+
+  const suggestions = useMemo(() => pairedSuggestions(lines, menu), [lines, menu])
 
   return (
     <div className="flex h-full flex-col border-t border-slate-200 lg:border-l lg:border-t-0">
@@ -491,9 +547,49 @@ function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, 
                     +
                   </QtyButton>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onRemove(product.id)}
+                  aria-label={`Remove ${product.name}`}
+                  title="Remove item"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
               </li>
             ))}
           </ul>
+
+          {suggestions.length > 0 && (
+            <div className="border-t border-slate-100 px-5 py-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Best paired with
+              </p>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {suggestions.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex w-28 shrink-0 flex-col rounded-xl border border-slate-100 p-2"
+                  >
+                    <img
+                      src={p.img}
+                      alt={p.name}
+                      className="h-16 w-full rounded-lg object-cover"
+                    />
+                    <p className="mt-1.5 truncate text-xs font-medium text-navy-800">{p.name}</p>
+                    <p className="text-xs font-semibold text-brand-600">{peso(p.price)}</p>
+                    <button
+                      type="button"
+                      onClick={() => onInc(p.id)}
+                      className="mt-1.5 rounded-full bg-navy-50 py-1 text-xs font-semibold text-navy-800 transition hover:bg-brand-500 hover:text-white"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="border-t border-slate-100 px-5 py-4">
             {/* voucher */}
@@ -573,15 +669,10 @@ function Cart({ lines, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, 
                 onClick={() =>
                   onCheckout({
                     items: lines.map(({ product, qty }) => ({
+                      product_id: product.id,
                       name: product.name,
                       qty,
-                      price: product.price,
                     })),
-                    subtotal,
-                    discount,
-                    delivery,
-                    vat,
-                    total,
                     voucher: voucher?.code || null,
                   })
                 }
@@ -633,6 +724,17 @@ function CloseIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function TrashIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
     </svg>
   )
 }
