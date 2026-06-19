@@ -261,7 +261,7 @@ function BestSellers({ products, buttons }) {
           <div className="mt-10 text-center">
             <Link
               to="/menu"
-              className="inline-block rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+              className="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900"
             >
               See full menu
             </Link>
@@ -287,6 +287,24 @@ function ProductCard({ product }) {
       </div>
       <div className="p-4">
         <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
+        {(product.calories != null || product.allergens?.length) && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {product.calories != null && (
+              <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+                {product.calories} cal
+              </span>
+            )}
+            {product.allergens?.map((a) => (
+              <span
+                key={a}
+                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                title={`Contains ${a}`}
+              >
+                {a}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between">
           <span className="text-lg font-bold text-brand-600">{product.price}</span>
           <button
@@ -309,13 +327,13 @@ function ProductCard({ product }) {
 function PromoBanner({ buttons }) {
   return (
     <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="relative rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
+      <div className="relative min-h-[300px] rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
         <img
-          src="/images/promo-cake.png"
-          alt="Custom tiered celebration cake"
-          className="pointer-events-none absolute bottom-0 right-6 hidden h-[135%] w-auto object-contain drop-shadow-2xl sm:block lg:right-16"
+          src="/images/custom-cakes.png"
+          alt="Custom tiered celebration cakes — wedding, themed, and princess designs"
+          className="pointer-events-none absolute bottom-0 right-0 hidden w-[58%] max-w-[680px] drop-shadow-2xl sm:block"
         />
-        <div className="relative max-w-xl">
+        <div className="relative z-10 max-w-md">
           <p className="font-script text-2xl text-white/90">Celebrate every moment</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
             Custom cakes for birthdays & special occasions
@@ -521,7 +539,7 @@ function Newsletter({ buttons }) {
             />
             <button
               type="submit"
-              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+              className="rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900"
             >
               Subscribe
             </button>

@@ -21,29 +21,29 @@ const CATEGORIES = [
 ]
 
 const MENU = [
-  { id: 1, name: 'Classic Mocha Cake', category: 'Cakes', price: 650, img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80', desc: 'Moist chocolate sponge layered with mocha cream.' },
-  { id: 2, name: 'Ube Chiffon Cake', category: 'Cakes', price: 720, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Soft purple yam chiffon with sweet glaze.' },
-  { id: 3, name: 'Red Velvet Slice', category: 'Cakes', price: 150, img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80', desc: 'Velvety cocoa cake with cream cheese frosting.' },
-  { id: 4, name: 'Soft Ensaymada', category: 'Pastries', price: 45, img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', desc: 'Buttery brioche topped with cheese and sugar.' },
-  { id: 5, name: 'Buttery Croissant', category: 'Pastries', price: 85, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', desc: 'Flaky, golden, freshly baked each morning.' },
-  { id: 6, name: 'Fresh Pandesal (12pcs)', category: 'Breads', price: 60, img: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=600&q=80', desc: 'The classic Filipino breakfast roll.' },
-  { id: 7, name: 'Wheat Loaf', category: 'Breads', price: 95, img: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=600&q=80', desc: 'Wholesome sliced wheat bread.' },
-  { id: 8, name: 'Chocolate Cupcakes', category: 'Cupcakes', price: 180, img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 rich chocolate cupcakes.' },
-  { id: 9, name: 'Vanilla Cupcakes', category: 'Cupcakes', price: 170, img: 'https://images.unsplash.com/photo-1599785209707-a456fc1337bb?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 classic vanilla cupcakes.' },
-  { id: 10, name: 'Assorted Cookies', category: 'Cookies', price: 220, img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80', desc: 'A dozen freshly baked cookies.' },
-  { id: 11, name: 'Chocolate Chip Cookies', category: 'Cookies', price: 240, img: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80', desc: 'Gooey chocolate chip, baked to order.' },
-  { id: 12, name: 'Leche Flan', category: 'Desserts', price: 130, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Silky caramel custard, a Filipino favorite.' },
-  { id: 13, name: 'Buko Pandan Cup', category: 'Desserts', price: 95, img: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80', desc: 'Young coconut and pandan jelly in cream.' },
-  { id: 14, name: 'Hopia (Box of 8)', category: 'Desserts', price: 120, img: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80', desc: 'Flaky mung bean filled pastry.' },
-  { id: 15, name: 'Iced Coffee', category: 'Beverages', price: 110, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80', desc: 'Chilled brewed coffee over ice.' },
-  { id: 16, name: 'Hot Chocolate', category: 'Beverages', price: 90, img: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?auto=format&fit=crop&w=600&q=80', desc: 'Rich, creamy hot cocoa.' },
-  { id: 17, name: 'Fresh Milk Tea', category: 'Beverages', price: 120, img: 'https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=600&q=80', desc: 'Classic milk tea with chewy pearls.' },
-  { id: 18, name: 'Glazed Donut', category: 'Donuts', price: 55, img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80', desc: 'Soft ring donut with sweet glaze.' },
-  { id: 19, name: 'Chocolate Donut', category: 'Donuts', price: 60, img: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=600&q=80', desc: 'Glazed donut dipped in chocolate.' },
-  { id: 20, name: 'Apple Pie', category: 'Pies', price: 240, img: 'https://images.unsplash.com/photo-1535920527002-b35e96722eb9?auto=format&fit=crop&w=600&q=80', desc: 'Buttery crust with cinnamon apples.' },
-  { id: 21, name: 'Buko Pie', category: 'Pies', price: 220, img: 'https://images.unsplash.com/photo-1621743478914-cc8a86d7e7b5?auto=format&fit=crop&w=600&q=80', desc: 'Creamy young coconut pie.' },
-  { id: 22, name: 'Ham & Cheese Sandwich', category: 'Sandwiches', price: 90, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80', desc: 'Toasted sandwich with ham and cheese.' },
-  { id: 23, name: 'Clubhouse Sandwich', category: 'Sandwiches', price: 130, img: 'https://images.unsplash.com/photo-1567234669003-dce7a7a88821?auto=format&fit=crop&w=600&q=80', desc: 'Triple-decker with chicken and egg.' },
+  { id: 1, name: 'Classic Mocha Cake', category: 'Cakes', price: 650, img: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80', desc: 'Moist chocolate sponge layered with mocha cream.', calories: 420, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 2, name: 'Ube Chiffon Cake', category: 'Cakes', price: 720, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Soft purple yam chiffon with sweet glaze.', calories: 380, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 3, name: 'Red Velvet Slice', category: 'Cakes', price: 150, img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80', desc: 'Velvety cocoa cake with cream cheese frosting.', calories: 410, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 4, name: 'Soft Ensaymada', category: 'Pastries', price: 45, img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', desc: 'Buttery brioche topped with cheese and sugar.', calories: 290, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 5, name: 'Buttery Croissant', category: 'Pastries', price: 85, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', desc: 'Flaky, golden, freshly baked each morning.', calories: 270, allergens: ['Gluten', 'Milk'] },
+  { id: 6, name: 'Fresh Pandesal (12pcs)', category: 'Breads', price: 60, img: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?auto=format&fit=crop&w=600&q=80', desc: 'The classic Filipino breakfast roll.', calories: 140, allergens: ['Gluten', 'Soy'] },
+  { id: 7, name: 'Wheat Loaf', category: 'Breads', price: 95, img: 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=600&q=80', desc: 'Wholesome sliced wheat bread.', calories: 120, allergens: ['Gluten', 'Soy'] },
+  { id: 8, name: 'Chocolate Cupcakes', category: 'Cupcakes', price: 180, img: 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 rich chocolate cupcakes.', calories: 300, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 9, name: 'Vanilla Cupcakes', category: 'Cupcakes', price: 170, img: 'https://images.unsplash.com/photo-1599785209707-a456fc1337bb?auto=format&fit=crop&w=600&q=80', desc: 'Box of 6 classic vanilla cupcakes.', calories: 290, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 10, name: 'Assorted Cookies', category: 'Cookies', price: 220, img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80', desc: 'A dozen freshly baked cookies.', calories: 150, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 11, name: 'Chocolate Chip Cookies', category: 'Cookies', price: 240, img: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80', desc: 'Gooey chocolate chip, baked to order.', calories: 160, allergens: ['Gluten', 'Eggs', 'Milk', 'Soy'] },
+  { id: 12, name: 'Leche Flan', category: 'Desserts', price: 130, img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80', desc: 'Silky caramel custard, a Filipino favorite.', calories: 310, allergens: ['Eggs', 'Milk'] },
+  { id: 13, name: 'Buko Pandan Cup', category: 'Desserts', price: 95, img: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80', desc: 'Young coconut and pandan jelly in cream.', calories: 220, allergens: ['Milk'] },
+  { id: 14, name: 'Hopia (Box of 8)', category: 'Desserts', price: 120, img: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80', desc: 'Flaky mung bean filled pastry.', calories: 180, allergens: ['Gluten', 'Soy'] },
+  { id: 15, name: 'Iced Coffee', category: 'Beverages', price: 110, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80', desc: 'Chilled brewed coffee over ice.', calories: 90, allergens: ['Milk'] },
+  { id: 16, name: 'Hot Chocolate', category: 'Beverages', price: 90, img: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?auto=format&fit=crop&w=600&q=80', desc: 'Rich, creamy hot cocoa.', calories: 190, allergens: ['Milk', 'Soy'] },
+  { id: 17, name: 'Fresh Milk Tea', category: 'Beverages', price: 120, img: 'https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=600&q=80', desc: 'Classic milk tea with chewy pearls.', calories: 230, allergens: ['Milk'] },
+  { id: 18, name: 'Glazed Donut', category: 'Donuts', price: 55, img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80', desc: 'Soft ring donut with sweet glaze.', calories: 260, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 19, name: 'Chocolate Donut', category: 'Donuts', price: 60, img: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=600&q=80', desc: 'Glazed donut dipped in chocolate.', calories: 280, allergens: ['Gluten', 'Eggs', 'Milk', 'Soy'] },
+  { id: 20, name: 'Apple Pie', category: 'Pies', price: 240, img: 'https://images.unsplash.com/photo-1535920527002-b35e96722eb9?auto=format&fit=crop&w=600&q=80', desc: 'Buttery crust with cinnamon apples.', calories: 320, allergens: ['Gluten', 'Milk'] },
+  { id: 21, name: 'Buko Pie', category: 'Pies', price: 220, img: 'https://images.unsplash.com/photo-1621743478914-cc8a86d7e7b5?auto=format&fit=crop&w=600&q=80', desc: 'Creamy young coconut pie.', calories: 300, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  { id: 22, name: 'Ham & Cheese Sandwich', category: 'Sandwiches', price: 90, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80', desc: 'Toasted sandwich with ham and cheese.', calories: 350, allergens: ['Gluten', 'Milk'] },
+  { id: 23, name: 'Clubhouse Sandwich', category: 'Sandwiches', price: 130, img: 'https://images.unsplash.com/photo-1567234669003-dce7a7a88821?auto=format&fit=crop&w=600&q=80', desc: 'Triple-decker with chicken and egg.', calories: 480, allergens: ['Gluten', 'Eggs', 'Milk'] },
 ]
 
 const peso = (n) =>
@@ -349,6 +349,28 @@ function MenuCard({ product, qty, onAdd, onDec }) {
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
         <p className="mt-1 line-clamp-2 text-xs text-slate-500">{product.desc}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {product.calories != null && (
+            <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+              {product.calories} cal
+            </span>
+          )}
+          {product.allergens?.length ? (
+            product.allergens.map((a) => (
+              <span
+                key={a}
+                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                title={`Contains ${a}`}
+              >
+                {a}
+              </span>
+            ))
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+              No major allergens
+            </span>
+          )}
+        </div>
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
           {qty === 0 ? (
