@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Landing from './Landing'
+import Franchise from './Franchise'
 import {
   DEFAULT_CONTENT,
   LANDING_BUTTONS,
@@ -749,7 +750,9 @@ function FullPreview({ content, active }) {
           pointerEvents: 'none',
         }}
       >
-        <Landing content={content} preview />
+        {active === 'franchise'
+          ? <Franchise content={content} preview />
+          : <Landing content={content} preview />}
       </div>
     </div>
   )

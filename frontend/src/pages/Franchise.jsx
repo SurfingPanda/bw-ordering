@@ -13,15 +13,16 @@ const inquireHref = (email) =>
     'Name:\nContact number:\nPreferred location / city:\nPackage of interest:\nMessage:\n',
   )
 
-export default function Franchise() {
-  useSeo('/franchise')
+export default function Franchise({ content: controlledContent, preview = false }) {
+  useSeo('/franchise', !preview)
   const [content, setContent] = useState(getCachedContent)
 
   useEffect(() => {
-    getSiteContent().then(setContent)
-  }, [])
+    if (!controlledContent) getSiteContent().then(setContent)
+  }, [controlledContent])
 
-  const fr = content.franchise || DEFAULT_CONTENT.franchise
+  const resolved = controlledContent || content
+  const fr = resolved.franchise || DEFAULT_CONTENT.franchise
   const href = inquireHref(fr.email)
 
   return (

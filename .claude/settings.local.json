@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(composer install:*)",
+      "Bash(ls:*)",
+      "Bash(npm run:*)",
+      "Bash(node -e ':*)"
+    ]
+  }
+}

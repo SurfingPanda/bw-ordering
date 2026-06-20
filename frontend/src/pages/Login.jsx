@@ -6,6 +6,19 @@ import BakeryBackdrop from '../components/BakeryBackdrop'
 import GoogleIcon from '../components/GoogleIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 
+const toList = (v) => (v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+const ADMIN_EMAILS = toList(import.meta.env.VITE_ADMIN_EMAILS)
+const EDITOR_EMAILS = toList(import.meta.env.VITE_EDITOR_EMAILS)
+const HR_EMAILS = toList(import.meta.env.VITE_HR_EMAILS)
+
+function landingRoute(email) {
+  const e = (email || '').toLowerCase()
+  if (ADMIN_EMAILS.includes(e)) return '/admin'
+  if (EDITOR_EMAILS.includes(e)) return '/admin/content'
+  if (HR_EMAILS.includes(e)) return '/admin/careers'
+  return '/dashboard'
+}
+
 export default function Login() {
   const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
@@ -27,7 +40,7 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate('/dashboard')
+      navigate(landingRoute(email))
     } catch (err) {
       setError(err.message || 'Unable to sign in. Please try again.')
     } finally {

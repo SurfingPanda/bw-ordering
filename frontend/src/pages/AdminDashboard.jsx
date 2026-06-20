@@ -200,6 +200,13 @@ function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
           <EditIcon className="h-5 w-5 shrink-0" />
           <span>Site Content</span>
         </Link>
+        <Link
+          to="/admin/careers"
+          className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
+        >
+          <CareersIcon className="h-5 w-5 shrink-0" />
+          <span>Careers / HR</span>
+        </Link>
 
         <p className="hidden px-3 pb-1 pt-4 text-[0.65rem] font-semibold uppercase tracking-wider text-navy-50/40 lg:block">
           Orders
@@ -522,6 +529,16 @@ function ChartIcon(p) {
       <line x1="12" y1="20" x2="12" y2="10" />
       <line x1="18" y1="20" x2="18" y2="4" />
       <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  )
+}
+function CareersIcon(p) {
+  return (
+    <svg {...base(p)}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   )
 }

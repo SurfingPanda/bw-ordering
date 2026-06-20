@@ -37,6 +37,14 @@ as $$
   ]);
 $$;
 
+-- HR check — keep in sync with VITE_HR_EMAILS.
+create or replace function public.is_hr()
+returns boolean language sql stable as $$
+  select (auth.jwt() ->> 'email') = any (array[
+    'hr@bwsuperbakeshop.com'
+  ]);
+$$;
+
 -- Customers may create their own orders.
 drop policy if exists "orders_insert_own" on public.orders;
 create policy "orders_insert_own"

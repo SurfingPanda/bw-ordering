@@ -13,6 +13,7 @@ const toList = (v) =>
     .filter(Boolean)
 const ADMIN_EMAILS = toList(import.meta.env.VITE_ADMIN_EMAILS)
 const EDITOR_EMAILS = toList(import.meta.env.VITE_EDITOR_EMAILS)
+const HR_EMAILS = toList(import.meta.env.VITE_HR_EMAILS)
 
 // Map a Supabase user onto the shape the rest of the app expects (it reads `name`).
 function normalize(supaUser) {
@@ -143,6 +144,7 @@ export function AuthProvider({ children }) {
   const email = (user?.email || '').toLowerCase()
   const isAdmin = !!user && ADMIN_EMAILS.includes(email)
   const isEditor = !!user && EDITOR_EMAILS.includes(email)
+  const isHr = !!user && HR_EMAILS.includes(email)
 
   return (
     <AuthContext.Provider
@@ -151,6 +153,7 @@ export function AuthProvider({ children }) {
         loading,
         isAdmin,
         isEditor,
+        isHr,
         login,
         loginWithGoogle,
         register,

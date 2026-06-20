@@ -8,7 +8,7 @@ const OG_IMAGE = `${SITE_URL}/images/promo-cake.png`
 // Per-route metadata. Keys are the routes we prerender + list in the sitemap.
 export const SEO = {
   '/': {
-    title: 'bw Superbakeshop — Freshly Baked Cakes, Breads & Pastries',
+    title: 'BW Superbakeshop',
     description:
       'Order freshly baked cakes, breads, and pastries from bw Superbakeshop. Nationwide branches, custom cakes, and delivery.',
   },
@@ -26,6 +26,11 @@ export const SEO = {
     title: 'Careers — Join Our Team | bw Superbakeshop',
     description:
       'Build your career with bw Superbakeshop. Explore open roles in baking, retail, logistics, and more.',
+  },
+  '/careers/openings': {
+    title: 'Open Positions — Careers | bw Superbakeshop',
+    description:
+      'Browse all open positions at bw Superbakeshop. Filter by department and apply online today.',
   },
   '/stores': {
     title: 'Store Locator — Find a Branch | bw Superbakeshop',

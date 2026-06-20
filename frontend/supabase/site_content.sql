@@ -31,6 +31,14 @@ returns boolean language sql stable as $$
   ]);
 $$;
 
+-- HR check — keep in sync with VITE_HR_EMAILS.
+create or replace function public.is_hr()
+returns boolean language sql stable as $$
+  select (auth.jwt() ->> 'email') = any (array[
+    'hr@bwsuperbakeshop.com'
+  ]);
+$$;
+
 -- Anyone (even logged-out visitors) can read the landing content.
 drop policy if exists "site_content_read" on public.site_content;
 create policy "site_content_read"
@@ -43,8 +51,8 @@ drop policy if exists "site_content_write" on public.site_content;
 create policy "site_content_write"
   on public.site_content for all
   to authenticated
-  using (public.is_admin() or public.is_editor())
-  with check (public.is_admin() or public.is_editor());
+  using (public.is_admin() or public.is_editor() or public.is_hr())
+  with check (public.is_admin() or public.is_editor() or public.is_hr());
 
 -- ----------------------------------------------------------------------------
 -- Storage bucket for uploaded images (banners, product photos, etc.)
@@ -65,5 +73,5 @@ drop policy if exists "site_images_write" on storage.objects;
 create policy "site_images_write"
   on storage.objects for all
   to authenticated
-  using (bucket_id = 'site-images' and (public.is_admin() or public.is_editor()))
-  with check (bucket_id = 'site-images' and (public.is_admin() or public.is_editor()));
+  using (bucket_id = 'site-images' and (public.is_admin() or public.is_editor() or public.is_hr()))
+  with check (bucket_id = 'site-images' and (public.is_admin() or public.is_editor() or public.is_hr()));

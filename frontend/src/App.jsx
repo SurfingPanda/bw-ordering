@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Menu from './pages/Menu'
 import Careers from './pages/Careers'
+import Openings from './pages/Openings'
 import Franchise from './pages/Franchise'
 import Stores from './pages/Stores'
 import NotFound from './pages/NotFound'
@@ -11,9 +12,11 @@ import CompleteProfile from './pages/CompleteProfile'
 import Dashboard from './pages/Dashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminContent from './pages/AdminContent'
+import AdminCareers from './pages/AdminCareers'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import EditorRoute from './components/EditorRoute'
+import HRRoute from './components/HRRoute'
 
 export default function App() {
   return (
@@ -21,6 +24,7 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/menu" element={<Menu />} />
       <Route path="/careers" element={<Careers />} />
+      <Route path="/careers/openings" element={<Openings />} />
       <Route path="/franchise" element={<Franchise />} />
       <Route path="/stores" element={<Stores />} />
       <Route path="/login" element={<Login />} />
@@ -48,6 +52,14 @@ export default function App() {
           <EditorRoute>
             <AdminContent />
           </EditorRoute>
+        }
+      />
+      <Route
+        path="/admin/careers"
+        element={
+          <HRRoute>
+            <AdminCareers />
+          </HRRoute>
         }
       />
       <Route path="*" element={<NotFound />} />

@@ -79,6 +79,73 @@ export const DEFAULT_CONTENT = {
       { name: 'Master Franchise', price: 'Let’s talk', blurb: 'Develop multiple branches across an entire region or province.', features: ['Territory rights', 'Multi-store rollout plan', 'Priority supply allocation', 'Executive business reviews'], featured: false },
     ],
   },
+  // Editable Careers page content (read by src/pages/Careers.jsx).
+  careers: {
+    hero: {
+      title: 'Bake your career with us',
+      subtitle:
+        'Join a passionate team that brings freshly baked happiness to families every day. Discover a place where your talent rises.',
+      image: '/images/bakery-team.jpg',
+    },
+    perks: [
+      { icon: '\u{1F9E1}', title: 'Caring Culture', text: 'Work with a warm, supportive team that feels like family.' },
+      { icon: '\u{1F4C8}', title: 'Grow With Us', text: 'Clear career paths, training, and room to rise as we expand.' },
+      { icon: '\u{1F370}', title: 'Tasty Perks', text: 'Free treats, staff discounts, and meals on every shift.' },
+      { icon: '\u{1F3E5}', title: 'Health Benefits', text: 'HMO coverage, paid leave, and government-mandated benefits.' },
+      { icon: '\u23F0', title: 'Flexible Shifts', text: 'Schedules that respect your time and life outside work.' },
+      { icon: '\u{1F389}', title: 'Fun Events', text: 'Team outings, celebrations, and performance bonuses.' },
+    ],
+    jobs: [
+      {
+        title: 'Head Baker', dept: 'Production', type: 'Full-time', location: 'Quezon City',
+        description: 'Lead the baking team in producing high-quality breads, cakes, and pastries. Oversee daily production schedules, maintain quality standards, and mentor junior bakers.',
+        requirements: ['5+ years of professional baking experience', 'Knowledge of bread, cake, and pastry techniques', 'Food safety certification (HACCP preferred)', 'Leadership and team management skills', 'Ability to work early morning shifts'],
+      },
+      {
+        title: 'Pastry Chef', dept: 'Production', type: 'Full-time', location: 'Makati',
+        description: 'Create and execute a wide range of pastries, desserts, and specialty cakes. Develop new recipes and seasonal offerings while maintaining consistent quality.',
+        requirements: ['3+ years of pastry/baking experience', 'Culinary degree or equivalent training', 'Creativity in cake design and decoration', 'Strong attention to detail', 'Flexible schedule availability'],
+      },
+      {
+        title: 'Store Crew', dept: 'Retail', type: 'Full-time', location: 'Multiple branches',
+        description: 'Assist customers with product selection, handle transactions, and maintain store cleanliness. Ensure excellent customer experience at all times.',
+        requirements: ['High school diploma or equivalent', 'Customer-oriented attitude', 'Basic math and cash handling skills', 'Willingness to learn about bakery products', 'Able to stand for extended periods'],
+      },
+      {
+        title: 'Cashier', dept: 'Retail', type: 'Part-time', location: 'Pasig',
+        description: 'Handle point-of-sale transactions efficiently and accurately. Process cash, card, and e-wallet payments while providing friendly service.',
+        requirements: ['High school diploma or equivalent', 'Experience with POS systems preferred', 'Accuracy in handling cash', 'Friendly and approachable demeanor', 'Available for weekend shifts'],
+      },
+      {
+        title: 'Delivery Rider', dept: 'Logistics', type: 'Full-time', location: 'Metro Manila',
+        description: 'Deliver orders to customers safely and on time. Handle product with care to ensure quality upon arrival. Route optimization and customer communication.',
+        requirements: ['Valid driver\u2019s license (motorcycle)', 'Own motorcycle with OR/CR', 'Familiarity with Metro Manila routes', 'Smartphone with data plan', 'Good communication skills'],
+      },
+      {
+        title: 'Marketing Associate', dept: 'Corporate', type: 'Full-time', location: 'Quezon City (Hybrid)',
+        description: 'Support the marketing team in planning and executing campaigns across digital and traditional channels. Manage social media content, coordinate with designers, and track campaign performance.',
+        requirements: ['Bachelor\u2019s degree in Marketing, Communications, or related field', '1\u20132 years of marketing experience', 'Proficiency in social media platforms', 'Basic graphic design skills (Canva, Adobe)', 'Strong written and verbal communication'],
+      },
+    ],
+    culture: {
+      eyebrow: 'Our culture',
+      title: 'Where passion meets pastry',
+      text: 'At bw Superbakeshop, every team member plays a part in creating moments of joy. We believe in mentorship, fairness, and celebrating wins together \u2014 big or small.',
+      image: 'https://images.unsplash.com/photo-1556217477-d325251ece38?auto=format&fit=crop&w=800&q=80',
+      stat: '500+',
+      statLabel: 'team members',
+      highlights: [
+        'Hands-on training from day one',
+        'Promote-from-within philosophy',
+        'Safe, inclusive workplace',
+        'Recognition for great work',
+      ],
+    },
+    departments: ['Production', 'Retail', 'Logistics', 'Corporate'],
+    locations: ['Quezon City', 'Makati', 'Pasig', 'Metro Manila', 'Multiple branches', 'Quezon City (Hybrid)'],
+    jobTypes: ['Full-time', 'Part-time'],
+    email: 'careers@bwsuperbakeshop.com',
+  },
 }
 
 // Local cache of the last-loaded content, so the first paint on refresh already

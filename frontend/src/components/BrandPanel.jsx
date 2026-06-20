@@ -17,7 +17,7 @@ export default function BrandPanel() {
       <div className="relative z-10 flex flex-col items-center px-10 pt-12 text-center text-white">
         <img
           src="/images/logo (1).png"
-          alt="bw Superbakeshop"
+          alt="BW Superbakeshop"
           className="h-36 w-auto drop-shadow-lg"
         />
         <p className="mt-6 text-sm font-medium text-navy-50/90">
