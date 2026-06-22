@@ -16,7 +16,8 @@
       "Bash(node *)",
       "PowerShell(npx eslint src/pages/Menu.jsx src/lib/content.js)",
       "PowerShell(npx eslint src/pages/AdminContent.jsx src/lib/content.js src/pages/Menu.jsx)",
-      "PowerShell(npx eslint src/pages/Menu.jsx src/pages/MyOrders.jsx src/App.jsx src/lib/orders.js)"
+      "PowerShell(npx eslint src/pages/Menu.jsx src/pages/MyOrders.jsx src/App.jsx src/lib/orders.js)",
+      "PowerShell(npx eslint src/lib/content.js)"
     ]
   }
 }

@@ -36,8 +36,6 @@ export default function Landing({ content: controlledContent, preview = false })
       <BestSellers products={content.bestSellers} buttons={buttons} />
       <Categories items={content.categories} />
       <PromoBanner buttons={buttons} />
-      <Features />
-      <Story buttons={buttons} />
       <StoreLocator buttons={buttons} />
       <Newsletter buttons={buttons} />
       <Footer />
@@ -547,125 +545,6 @@ function WhatsNew() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Features                                                            */
-/* ------------------------------------------------------------------ */
-
-const FEATURES = [
-  {
-    icon: BreadIcon,
-    title: 'Freshly Baked Daily',
-    text: 'Every treat is baked fresh each morning using quality ingredients.',
-  },
-  {
-    icon: TruckIcon,
-    title: 'Fast Delivery',
-    text: 'Get your orders delivered hot and fresh, right to your doorstep.',
-  },
-  {
-    icon: HeartIcon,
-    title: 'Made With Love',
-    text: 'Our bakers pour care into every single piece we make.',
-  },
-  {
-    icon: StoreIcon,
-    title: 'Nationwide Stores',
-    text: 'Over 120 branches across the country, always close to you.',
-  },
-]
-
-function Features() {
-  return (
-    <section className="bg-navy-50/60 py-16">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <Reveal>
-          <SectionHeading
-            eyebrow="Why choose us"
-            title="Baked better, served with care"
-          />
-        </Reveal>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f, i) => (
-            <Reveal key={f.title} delay={i * 100}>
-              <div className="rounded-2xl bg-white p-6 text-center shadow-sm transition hover:shadow-lg">
-                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white">
-                  <f.icon className="h-7 w-7" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-navy-800">
-                  {f.title}
-                </h3>
-                <p className="mt-2 text-sm text-slate-500">{f.text}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Story / About                                                       */
-/* ------------------------------------------------------------------ */
-
-function Story({ buttons }) {
-  return (
-    <section id="about" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="grid items-center gap-10 lg:grid-cols-2">
-        <Reveal direction="left" className="relative">
-          <img
-            src="/images/476076311_1024913309666031_7008467077346838017_n.jpg"
-            alt="An assortment of freshly baked breads"
-            className="h-80 w-full rounded-3xl bg-white object-contain shadow-xl"
-          />
-          <div className="absolute -bottom-5 -right-3 hidden rounded-2xl bg-navy-800 px-5 py-4 text-white shadow-xl sm:block">
-            <p className="font-script text-2xl text-brand-400">Since 1966</p>
-            <p className="text-xs text-navy-50/80">Baking happiness</p>
-          </div>
-        </Reveal>
-        <Reveal direction="right" delay={120}>
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
-            Our story
-          </span>
-          <h2 className="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">
-            A bakeshop tradition you can taste
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-600">
-            For decades, we've been bringing families together over freshly baked
-            cakes, breads, and delicacies. What started as a small neighborhood
-            bakeshop has grown into a beloved name — but our promise has never
-            changed: quality treats, made with love.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Now, with our online ordering system, your favorites are just a few
-            clicks away.
-          </p>
-          {(buttons?.storyStart !== false || buttons?.storyFindStore !== false) && (
-            <div className="mt-6 flex flex-wrap gap-3">
-              {buttons?.storyStart !== false && (
-                <a
-                  href="#best-sellers"
-                  className="rounded-full bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-900"
-                >
-                  Start ordering
-                </a>
-              )}
-              {buttons?.storyFindStore !== false && (
-                <Link
-                  to="/stores"
-                  className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
-                >
-                  Find a store
-                </Link>
-              )}
-            </div>
-          )}
-        </Reveal>
-      </div>
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* Store locator                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -881,33 +760,6 @@ function CloseIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="6" y1="6" x2="18" y2="18" />
       <line x1="6" y1="18" x2="18" y2="6" />
-    </svg>
-  )
-}
-
-function BreadIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 5h12a4 4 0 0 1 0 8h-1v6a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-6H6a4 4 0 0 1 0-8Z" />
-    </svg>
-  )
-}
-
-function TruckIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 4h13v12H1z" />
-      <path d="M14 8h4l3 3v5h-7" />
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="18" r="2" />
-    </svg>
-  )
-}
-
-function HeartIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
     </svg>
   )
 }

@@ -8,8 +8,6 @@ export const LANDING_BUTTONS = [
   { key: 'navOrder', label: 'Order Now', group: 'Navigation bar' },
   { key: 'bestSellersMenu', label: 'See full menu', group: 'Best Sellers' },
   { key: 'promoOrder', label: 'Order a custom cake', group: 'Promo banner' },
-  { key: 'storyStart', label: 'Start ordering', group: 'Our Story' },
-  { key: 'storyFindStore', label: 'Find a store', group: 'Our Story' },
   { key: 'storeLocatorFind', label: 'Find a store (+ search box)', group: 'Store locator' },
   { key: 'newsletterSubscribe', label: 'Subscribe form', group: 'Newsletter' },
 ]
