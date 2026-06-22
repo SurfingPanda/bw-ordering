@@ -37,6 +37,24 @@ export async function createOrder(summary) {
   return data
 }
 
+// Customer: fetch the signed-in user's own orders, newest first. RLS already
+// restricts rows to the owner; the explicit user_id filter is belt-and-braces.
+export async function fetchMyOrders() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('You must be signed in to view your orders.')
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
 // Admin: fetch every order, newest first.
 export async function fetchAllOrders() {
   const { data, error } = await supabase

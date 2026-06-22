@@ -101,7 +101,14 @@ export default function Menu() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return menu.filter((p) => {
-      const inCategory = active === 'All' || p.category === active
+      const inCategory =
+        active === 'All'
+          ? true
+          : active === "What's New"
+            ? p.status === 'new'
+            : active === 'Best Sellers'
+              ? p.status === 'best_seller'
+              : p.category === active
       const matches =
         !q || p.name.toLowerCase().includes(q) || (p.desc || '').toLowerCase().includes(q)
       return inCategory && matches
@@ -123,8 +130,15 @@ export default function Menu() {
     for (const p of menu) {
       if (p.category && !seen.has(p.category)) seen.set(p.category, p.img)
     }
+    // Status-based "smart" tabs — only shown when matching products exist.
+    // These aren't food categories, so they render an icon on a colored badge
+    // instead of a product photo.
+    const hasNew = menu.some((p) => p.status === 'new')
+    const hasBest = menu.some((p) => p.status === 'best_seller')
     return [
       { name: 'All', img: '/images/bakery-interior.jpg' },
+      ...(hasNew ? [{ name: "What's New", icon: 'new' }] : []),
+      ...(hasBest ? [{ name: 'Best Sellers', icon: 'best' }] : []),
       ...[...seen].map(([name, img]) => ({ name, img })),
     ]
   }, [menu])
@@ -287,10 +301,9 @@ function CategorySidebar({ active, onChange, categories }) {
       {/* logo — sits at the top of the sidebar */}
       <Link
         to="/"
-        className="hidden h-16 shrink-0 items-center gap-2 px-4 lg:flex"
+        className="hidden h-16 shrink-0 items-center justify-center px-4 lg:flex"
       >
         <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-11 w-auto" />
-        <span className="font-brand text-lg font-bold text-white">Superbakeshop</span>
       </Link>
 
       {/* categories — fill the remaining height */}
@@ -308,9 +321,25 @@ function CategorySidebar({ active, onChange, categories }) {
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
-                <img src={c.img} alt="" className="h-full w-full object-cover" />
-              </span>
+              {c.icon ? (
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow ring-1 ring-black/5 ${
+                    c.icon === 'new'
+                      ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                      : 'bg-gradient-to-br from-amber-400 to-orange-500'
+                  }`}
+                >
+                  {c.icon === 'new' ? (
+                    <SparkleIcon className="h-5 w-5" />
+                  ) : (
+                    <TrophyIcon className="h-5 w-5" />
+                  )}
+                </span>
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
+                  <img src={c.img} alt="" className="h-full w-full object-cover" />
+                </span>
+              )}
               {c.name}
             </button>
           )
@@ -352,6 +381,12 @@ function MenuHeader({ itemCount }) {
                   Edit Site
                 </Link>
               )}
+              <Link
+                to="/my-orders"
+                className="text-sm font-medium text-navy-700 transition hover:text-brand-600"
+              >
+                My Orders
+              </Link>
               <span className="hidden text-sm text-navy-700 sm:block">
                 Hi, <span className="font-semibold">{user.name}</span>
               </span>
@@ -401,7 +436,7 @@ function MenuCard({ product, qty, onAdd, onDec }) {
         <img
           src={product.img}
           alt={product.name}
-          className={`h-36 w-full object-cover transition duration-300 group-hover:scale-105 ${
+          className={`h-56 w-full object-cover transition duration-300 group-hover:scale-105 ${
             soldOut ? 'opacity-60 grayscale' : ''
           }`}
         />
@@ -418,6 +453,24 @@ function MenuCard({ product, qty, onAdd, onDec }) {
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
         <p className="mt-1 line-clamp-2 text-xs text-slate-500">{product.desc}</p>
+        {(product.calories != null || product.features?.length > 0) && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {product.calories != null && (
+              <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+                {product.calories} cal
+              </span>
+            )}
+            {product.features?.map((a) => (
+              <span
+                key={a}
+                title={`Contains ${a}`}
+                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+              >
+                {a}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="flex items-baseline gap-1.5">
             <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
@@ -708,6 +761,27 @@ function CartIcon({ className }) {
       <circle cx="9" cy="21" r="1" />
       <circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  )
+}
+
+function SparkleIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l1.9 5.6a3 3 0 0 0 1.9 1.9L21.4 11.4l-5.6 1.9a3 3 0 0 0-1.9 1.9L12 20.8l-1.9-5.6a3 3 0 0 0-1.9-1.9L2.6 11.4l5.6-1.9a3 3 0 0 0 1.9-1.9L12 2z" />
+    </svg>
+  )
+}
+
+function TrophyIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 4h12v4a6 6 0 0 1-12 0V4z" />
+      <path d="M6 6H3v1a3 3 0 0 0 3 3" />
+      <path d="M18 6h3v1a3 3 0 0 1-3 3" />
+      <line x1="12" y1="14" x2="12" y2="18" />
+      <path d="M8 21h8" />
+      <path d="M10 18h4v3h-4z" />
     </svg>
   )
 }

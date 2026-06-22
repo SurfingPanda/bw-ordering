@@ -54,7 +54,7 @@ export const DEFAULT_CONTENT = {
   franchise: {
     hero: {
       eyebrow: 'Own a bakeshop',
-      title: 'Bring bw Superbakeshop to your city',
+      title: 'Partner with us',
       subtitle:
         'Partner with a trusted, decades-old brand and turn your community’s love for fresh bread and cakes into a thriving business.',
     },
@@ -232,6 +232,7 @@ function normalizeProduct(p) {
     img: p.image_path || '',
     desc: p.description || '',
     features: Array.isArray(p.features) ? p.features : [],
+    calories: p.calories == null ? null : Number(p.calories),
     status: p.status || null,
     isFeatured: !!p.is_featured,
   }
@@ -265,6 +266,7 @@ function toProductRow(p) {
     description: p.desc || null,
     image_path: p.img || null,
     features: Array.isArray(p.features) ? p.features : [],
+    calories: p.calories === '' || p.calories == null ? null : Number(p.calories),
     is_featured: !!p.isFeatured,
     status: p.status || null,
   }

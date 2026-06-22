@@ -15,6 +15,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const MyOrders = lazy(() => import('./pages/MyOrders'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminContent = lazy(() => import('./pages/AdminContent'))
 const AdminCareers = lazy(() => import('./pages/AdminCareers'))
@@ -50,6 +51,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Suspense fallback={<Loading />}><Dashboard /></Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-orders"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}><MyOrders /></Suspense>
           </ProtectedRoute>
         }
       />

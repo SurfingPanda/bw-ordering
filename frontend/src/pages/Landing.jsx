@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
-import { getCachedContent, getSiteContent } from '../lib/content'
+import { fetchMenuProducts, getCachedContent, getSiteContent } from '../lib/content'
 import { useSeo } from '../lib/seo'
 
 // Goldilocks-style marketing landing page. Editable sections (announcement,
@@ -31,8 +32,9 @@ export default function Landing({ content: controlledContent, preview = false })
       <AnnouncementBar text={content.announcement} />
       <NavBar buttons={buttons} />
       <Hero banners={content.banners} />
-      <Categories items={content.categories} />
+      <WhatsNew />
       <BestSellers products={content.bestSellers} buttons={buttons} />
+      <Categories items={content.categories} />
       <PromoBanner buttons={buttons} />
       <Features />
       <Story buttons={buttons} />
@@ -66,10 +68,8 @@ function NavBar({ buttons }) {
   const showOrder = buttons?.navOrder !== false
   const links = [
     { label: 'Home', href: '#home' },
-    { label: 'Products', href: '#categories' },
-    { label: 'Best Sellers', href: '#best-sellers' },
-    { label: 'Careers', to: '/careers' },
-    { label: 'Franchise', to: '/franchise' },
+    { label: 'Menu', to: '/menu' },
+    { label: 'Partner with us', to: '/franchise' },
   ]
 
   return (
@@ -291,50 +291,153 @@ function BestSellers({ products, buttons }) {
 }
 
 function ProductCard({ product }) {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="group overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-xl">
-      <div className="relative overflow-hidden">
-        <img
-          src={product.img}
-          alt={product.name}
-          className="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
-        />
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-600">
-          {product.tag}
-        </span>
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
+        aria-label={`View ${product.name}`}
+        className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
+        <div className="relative overflow-hidden">
+          <img
+            src={product.img}
+            alt={product.name}
+            className="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-600">
+            {product.tag}
+          </span>
+        </div>
+        <div className="p-4">
+          <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
+          {(product.calories != null || product.allergens?.length) && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {product.calories != null && (
+                <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+                  {product.calories} cal
+                </span>
+              )}
+              {product.allergens?.map((a) => (
+                <span
+                  key={a}
+                  className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                  title={`Contains ${a}`}
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-lg font-bold text-brand-600">{product.price}</span>
+            <Link
+              to={`/menu?add=${encodeURIComponent(product.name)}`}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Add ${product.name} to cart`}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
       </div>
-      <div className="p-4">
-        <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
-        {(product.calories != null || product.allergens?.length) && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {open && <ProductModal product={product} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+// Product detail modal opened by clicking a ProductCard. Shows the image,
+// description, allergens, price and an "Order now" deep-link into the menu.
+function ProductModal({ product, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={product.name}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+        <div className="grid md:grid-cols-2">
+          <img
+            src={product.img}
+            alt={product.name}
+            className="h-64 w-full object-cover md:h-full md:min-h-[28rem]"
+          />
+          <div className="flex flex-col p-8 sm:p-10">
+            {product.tag && (
+              <span className="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">
+                {product.tag}
+              </span>
+            )}
+            <h3 className="mt-4 text-3xl font-bold text-navy-800">{product.name}</h3>
+            {product.desc && (
+              <p className="mt-4 text-base leading-relaxed text-slate-600">{product.desc}</p>
+            )}
             {product.calories != null && (
-              <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+              <span className="mt-4 w-fit rounded-full bg-navy-50 px-3 py-1 text-sm font-semibold text-navy-700">
                 {product.calories} cal
               </span>
             )}
-            {product.allergens?.map((a) => (
-              <span
-                key={a}
-                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
-                title={`Contains ${a}`}
+            {product.allergens?.length > 0 && (
+              <div className="mt-6">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-700">
+                  Allergens
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {product.allergens.map((a) => (
+                    <span
+                      key={a}
+                      className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700"
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
+              <span className="text-3xl font-bold text-brand-600">{product.price}</span>
+              <Link
+                to={`/menu?add=${encodeURIComponent(product.name)}`}
+                className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
               >
-                {a}
-              </span>
-            ))}
+                Order now
+              </Link>
+            </div>
           </div>
-        )}
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-lg font-bold text-brand-600">{product.price}</span>
-          <Link
-            to={`/menu?add=${encodeURIComponent(product.name)}`}
-            aria-label={`Add ${product.name} to cart`}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600"
-          >
-            <PlusIcon className="h-5 w-5" />
-          </Link>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -343,9 +446,22 @@ function ProductCard({ product }) {
 /* ------------------------------------------------------------------ */
 
 function PromoBanner({ buttons }) {
+  const navigate = useNavigate()
   return (
     <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <div className="relative min-h-[300px] rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate('/menu')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            navigate('/menu')
+          }
+        }}
+        aria-label="Order custom cakes"
+        className="relative min-h-[300px] cursor-pointer rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl outline-none transition hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-white/70 sm:px-12"
+      >
         <img
           src="/images/custom-cakes.png"
           alt="Custom tiered celebration cakes — wedding, themed, and princess designs"
@@ -363,6 +479,7 @@ function PromoBanner({ buttons }) {
           {buttons?.promoOrder !== false && (
             <Link
               to="/register"
+              onClick={(e) => e.stopPropagation()}
               className="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50"
             >
               Order a custom cake
@@ -371,6 +488,61 @@ function PromoBanner({ buttons }) {
         </div>
       </div>
     </Reveal>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* What's new                                                          */
+/* ------------------------------------------------------------------ */
+
+// Pulls live products flagged `status === 'new'` from the shared products
+// table. The fetch runs in an effect (Supabase is a throwing stub during
+// prerender), so this section is empty in the prerendered HTML and fills in
+// client-side. Renders nothing when there are no new products.
+function WhatsNew() {
+  const [products, setProducts] = useState([])
+
+  useEffect(() => {
+    let alive = true
+    fetchMenuProducts()
+      .then((all) => {
+        if (alive) setProducts(all.filter((p) => p.status === 'new'))
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (!products.length) return null
+
+  return (
+    <section id="whats-new" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+      <Reveal>
+        <SectionHeading
+          eyebrow="Fresh off the oven"
+          title="What's New?"
+          subtitle="The latest additions to our bakeshop — try them while they're still warm."
+        />
+      </Reveal>
+      <div className="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
+        {products.map((p, i) => (
+          <Reveal key={p.id} delay={(i % 4) * 80}>
+            <ProductCard
+              product={{
+                name: p.name,
+                img: p.img,
+                tag: 'New',
+                price: `₱${Number(p.price).toLocaleString()}`,
+                desc: p.desc,
+                allergens: p.features,
+                calories: p.calories,
+              }}
+            />
+          </Reveal>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -700,6 +872,15 @@ function PlusIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
+function CloseIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="6" y1="18" x2="18" y2="6" />
     </svg>
   )
 }

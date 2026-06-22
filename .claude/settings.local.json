@@ -9,7 +9,14 @@
       "Bash(composer install:*)",
       "Bash(ls:*)",
       "Bash(npm run:*)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "PowerShell(npx eslint src/pages/Landing.jsx)",
+      "PowerShell(node scripts/_tmp_update_banana.mjs)",
+      "PowerShell(npx eslint src/pages/Menu.jsx)",
+      "Bash(node *)",
+      "PowerShell(npx eslint src/pages/Menu.jsx src/lib/content.js)",
+      "PowerShell(npx eslint src/pages/AdminContent.jsx src/lib/content.js src/pages/Menu.jsx)",
+      "PowerShell(npx eslint src/pages/Menu.jsx src/pages/MyOrders.jsx src/App.jsx src/lib/orders.js)"
     ]
   }
 }

@@ -40,6 +40,13 @@ on conflict (code) do update
       label = excluded.label, active = true;
 
 -- ----------------------------------------------------------------------------
+-- Optional per-product calories, shown on the Menu cards + product modal.
+-- Additive column only (nullable) so the other app sharing this catalogue is
+-- unaffected. Idempotent — safe to re-run.
+-- ----------------------------------------------------------------------------
+alter table public.products add column if not exists calories integer;
+
+-- ----------------------------------------------------------------------------
 -- Let admins and content editors manage products from the Site Editor.
 -- Additive policy only — RLS enable/disable is left untouched so the other app
 -- that shares this catalogue is unaffected. (Removals archive, not hard-delete.)

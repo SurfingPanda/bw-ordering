@@ -18,7 +18,7 @@ export const SEO = {
       'Browse the full bw Superbakeshop menu — cakes, breads, pastries, drinks and more — and order online for pickup or delivery.',
   },
   '/franchise': {
-    title: 'Franchise Opportunities | bw Superbakeshop',
+    title: 'Partner with us | bw Superbakeshop',
     description:
       'Own a bw Superbakeshop. Partner with a trusted bakeshop brand — training, supply chain, and marketing support included.',
   },
@@ -60,7 +60,7 @@ const LOGO = `${SITE_URL}/images/logo%20(1).png`
 const SAME_AS = ['https://www.facebook.com/bwsuperbakeshop']
 const BREADCRUMB_LABEL = {
   '/menu': 'Menu',
-  '/franchise': 'Franchise',
+  '/franchise': 'Partner with us',
   '/careers': 'Careers',
   '/stores': 'Stores',
 }

@@ -114,6 +114,7 @@ export default function AdminContent() {
         img: '',
         desc: '',
         features: [],
+        calories: null,
         isFeatured: false,
         status: null,
       },
@@ -445,13 +446,18 @@ export default function AdminContent() {
                         onChange={(originalPrice) => updateProduct(i, { originalPrice })}
                       />
                     </div>
+                    <NumberRow
+                      label="Calories (optional)"
+                      value={p.calories ?? ''}
+                      onChange={(calories) => updateProduct(i, { calories })}
+                    />
                     <TextAreaRow
                       label="Description"
                       value={p.desc}
                       onChange={(desc) => updateProduct(i, { desc })}
                     />
                     <TextAreaRow
-                      label="Tags (one per line)"
+                      label="Allergens (one per line)"
                       value={(p.features || []).join('\n')}
                       onChange={(v) =>
                         updateProduct(i, {
