@@ -1,4 +1,7 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
+
+// Eager imports — prerendered public pages (must be available during SSR)
 import Landing from './pages/Landing'
 import Menu from './pages/Menu'
 import Careers from './pages/Careers'
@@ -6,17 +9,29 @@ import Openings from './pages/Openings'
 import Franchise from './pages/Franchise'
 import Stores from './pages/Stores'
 import NotFound from './pages/NotFound'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import CompleteProfile from './pages/CompleteProfile'
-import Dashboard from './pages/Dashboard'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminContent from './pages/AdminContent'
-import AdminCareers from './pages/AdminCareers'
+
+// Lazy imports — auth, dashboard, and admin pages (never prerendered)
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const CompleteProfile = lazy(() => import('./pages/CompleteProfile'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminContent = lazy(() => import('./pages/AdminContent'))
+const AdminCareers = lazy(() => import('./pages/AdminCareers'))
+
+// Route guards (tiny, keep eager)
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import EditorRoute from './components/EditorRoute'
 import HRRoute from './components/HRRoute'
+
+function Loading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-navy-50/40">
+      <div className="h-8 w-8 animate-spin rounded-full border-3 border-brand-500 border-t-transparent" />
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -27,14 +42,14 @@ export default function App() {
       <Route path="/careers/openings" element={<Openings />} />
       <Route path="/franchise" element={<Franchise />} />
       <Route path="/stores" element={<Stores />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/complete-profile" element={<CompleteProfile />} />
+      <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
+      <Route path="/register" element={<Suspense fallback={<Loading />}><Register /></Suspense>} />
+      <Route path="/complete-profile" element={<Suspense fallback={<Loading />}><CompleteProfile /></Suspense>} />
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Suspense fallback={<Loading />}><Dashboard /></Suspense>
           </ProtectedRoute>
         }
       />
@@ -42,7 +57,7 @@ export default function App() {
         path="/admin"
         element={
           <AdminRoute>
-            <AdminDashboard />
+            <Suspense fallback={<Loading />}><AdminDashboard /></Suspense>
           </AdminRoute>
         }
       />
@@ -50,7 +65,7 @@ export default function App() {
         path="/admin/content"
         element={
           <EditorRoute>
-            <AdminContent />
+            <Suspense fallback={<Loading />}><AdminContent /></Suspense>
           </EditorRoute>
         }
       />
@@ -58,7 +73,7 @@ export default function App() {
         path="/admin/careers"
         element={
           <HRRoute>
-            <AdminCareers />
+            <Suspense fallback={<Loading />}><AdminCareers /></Suspense>
           </HRRoute>
         }
       />

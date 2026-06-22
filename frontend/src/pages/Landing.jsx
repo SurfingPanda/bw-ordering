@@ -68,7 +68,7 @@ function NavBar({ buttons }) {
     { label: 'Home', href: '#home' },
     { label: 'Products', href: '#categories' },
     { label: 'Best Sellers', href: '#best-sellers' },
-    { label: 'Stores', href: '#stores' },
+    { label: 'Careers', to: '/careers' },
     { label: 'Franchise', to: '/franchise' },
   ]
 
