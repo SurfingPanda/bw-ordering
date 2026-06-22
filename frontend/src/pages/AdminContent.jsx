@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Landing from './Landing'
 import Franchise from './Franchise'
+import Login from './Login'
 import {
   DEFAULT_CONTENT,
   LANDING_BUTTONS,
@@ -24,6 +25,7 @@ const SECTIONS = [
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
   { key: 'products', label: 'Products', Icon: TagIcon },
   { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
+  { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
   { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
 ]
 
@@ -43,6 +45,7 @@ export default function AdminContent() {
   const [originalIds, setOriginalIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('announcement')
 
@@ -71,11 +74,12 @@ export default function AdminContent() {
     }
   }
 
-  const resetDefaults = () => {
-    if (window.confirm('Reset all landing content back to the defaults?')) {
-      setContent(structuredClone(DEFAULT_CONTENT))
-      setMessage('')
-    }
+  const resetDefaults = () => setConfirmReset(true)
+
+  const doReset = () => {
+    setContent(structuredClone(DEFAULT_CONTENT))
+    setMessage('')
+    setConfirmReset(false)
   }
 
   const setField = (key, value) => setContent((c) => ({ ...c, [key]: value }))
@@ -127,6 +131,10 @@ export default function AdminContent() {
   const wn = content?.whatsNew || DEFAULT_CONTENT.whatsNew
   const setWhatsNew = (patch) =>
     setContent((c) => ({ ...c, whatsNew: { ...(c.whatsNew || DEFAULT_CONTENT.whatsNew), ...patch } }))
+
+  const ap = content?.authPanel || DEFAULT_CONTENT.authPanel
+  const setAuthPanel = (patch) =>
+    setContent((c) => ({ ...c, authPanel: { ...(c.authPanel || DEFAULT_CONTENT.authPanel), ...patch } }))
 
   const setFranchise = (patch) =>
     setContent((c) => ({ ...c, franchise: { ...(c.franchise || DEFAULT_CONTENT.franchise), ...patch } }))
@@ -723,6 +731,35 @@ export default function AdminContent() {
             </div>
           )}
 
+          {active === 'authPanel' && (
+            <Panel
+              title="Login Page"
+              subtitle="The branded left panel shown on the Login and Register pages."
+            >
+              <ImageField
+                label="Logo"
+                value={ap.logo}
+                onChange={(logo) => setAuthPanel({ logo })}
+              />
+              <TextRow
+                label="Tagline"
+                value={ap.tagline}
+                onChange={(tagline) => setAuthPanel({ tagline })}
+              />
+              <TextRow
+                label="Script line"
+                value={ap.script}
+                onChange={(script) => setAuthPanel({ script })}
+              />
+              <ImageField
+                label="Image"
+                value={ap.image}
+                onChange={(image) => setAuthPanel({ image })}
+                wide
+              />
+            </Panel>
+          )}
+
           {active === 'buttons' && (
             <Panel
               title="Buttons & Calls-to-Action"
@@ -770,6 +807,59 @@ export default function AdminContent() {
             <FullPreview content={content} active={active} />
           </div>
         </aside>
+        </div>
+      </div>
+
+      {confirmReset && (
+        <ConfirmModal
+          title="Reset landing content?"
+          message="This restores all landing page content back to the defaults. Your unsaved edits will be lost — nothing is saved until you click “Save changes”."
+          confirmLabel="Reset to defaults"
+          onConfirm={doReset}
+          onCancel={() => setConfirmReset(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// Confirmation modal (replaces the native window.confirm).
+function ConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm, onCancel }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onCancel()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm"
+      onClick={onCancel}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold text-navy-800">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">{message}</p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+          >
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>
@@ -852,9 +942,13 @@ function FullPreview({ content, active }) {
           pointerEvents: 'none',
         }}
       >
-        {active === 'franchise'
-          ? <Franchise content={content} preview />
-          : <Landing content={content} preview />}
+        {active === 'franchise' ? (
+          <Franchise content={content} preview />
+        ) : active === 'authPanel' ? (
+          <Login content={content} preview />
+        ) : (
+          <Landing content={content} preview />
+        )}
       </div>
     </div>
   )
@@ -1112,6 +1206,15 @@ function StarIcon(p) {
   return (
     <svg {...iconBase({ ...p, fill: 'none' })}>
       <path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9Z" />
+    </svg>
+  )
+}
+function LoginIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" y1="12" x2="3" y2="12" />
     </svg>
   )
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
 import BakeryBackdrop from '../components/BakeryBackdrop'
 import GoogleIcon from '../components/GoogleIcon'
+import FacebookIcon from '../components/FacebookIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 
 const toList = (v) => (v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
@@ -19,8 +20,8 @@ function landingRoute(email) {
   return '/dashboard'
 }
 
-export default function Login() {
-  const { login, loginWithGoogle } = useAuth()
+export default function Login({ content }) {
+  const { login, loginWithGoogle, loginWithFacebook } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -58,11 +59,21 @@ export default function Login() {
     }
   }
 
+  const handleFacebook = async () => {
+    setError('')
+    try {
+      // Redirects to Facebook; on success the browser returns to /dashboard.
+      await loginWithFacebook()
+    } catch (err) {
+      setError(err.message || 'Unable to sign in with Facebook.')
+    }
+  }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 p-4 sm:p-6">
       <BakeryBackdrop />
       <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_1.1fr]">
-        <BrandPanel />
+        <BrandPanel content={content} />
 
         {/* form panel */}
         <div className="flex flex-col justify-center px-7 py-10 sm:px-12">
@@ -163,6 +174,16 @@ export default function Login() {
               Continue with Google
             </button>
 
+            <button
+              type="button"
+              onClick={handleFacebook}
+              disabled={submitting}
+              className="mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FacebookIcon className="h-5 w-5" />
+              Continue with Facebook
+            </button>
+
 
             <p className="mt-6 text-center text-xs text-slate-400">
               Don&apos;t have an account?{' '}
@@ -189,14 +210,6 @@ function Field({ label, children }) {
   )
 }
 
-function BakeryBadge() {
-  return (
-    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-navy-700 to-navy-900 text-3xl shadow-lg ring-4 ring-brand-500/20">
-      🏪
-    </div>
-  )
-}
-
 function UserIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -211,16 +224,6 @@ function LockIcon({ className }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
-
-function HelpIcon({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   )
 }

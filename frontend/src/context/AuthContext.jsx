@@ -64,6 +64,15 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
+  // Facebook OAuth — redirects the browser to Facebook, then back to /dashboard.
+  const loginWithFacebook = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    })
+    if (error) throw error
+  }
+
   // Email + password sign up. `payload` comes from the register form.
   const register = async ({ name, email, contact_number, password, password_confirmation }) => {
     if (password_confirmation !== undefined && password !== password_confirmation) {
@@ -156,6 +165,7 @@ export function AuthProvider({ children }) {
         isHr,
         login,
         loginWithGoogle,
+        loginWithFacebook,
         register,
         updateContactNumber,
         logout,

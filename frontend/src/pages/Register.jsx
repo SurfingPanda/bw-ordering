@@ -4,11 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
 import BakeryBackdrop from '../components/BakeryBackdrop'
 import GoogleIcon from '../components/GoogleIcon'
+import FacebookIcon from '../components/FacebookIcon'
 import { EyeIcon, EyeOffIcon } from '../components/EyeIcons'
 import { sanitizePhone, isValidPhone } from '../lib/phone'
 
 export default function Register() {
-  const { register, loginWithGoogle } = useAuth()
+  const { register, loginWithGoogle, loginWithFacebook } = useAuth()
   const navigate = useNavigate()
 
   const [form, setForm] = useState({
@@ -64,6 +65,15 @@ export default function Register() {
     } catch (err) {
       setFormError(err.message || 'Unable to register. Please try again.')
       setSubmitting(false)
+    }
+  }
+
+  const handleFacebook = async () => {
+    setFormError('')
+    try {
+      await loginWithFacebook()
+    } catch (err) {
+      setFormError(err.message || 'Unable to sign in with Facebook.')
     }
   }
 
@@ -210,6 +220,16 @@ export default function Register() {
             >
               <GoogleIcon className="h-5 w-5" />
               Continue with Google
+            </button>
+
+            <button
+              type="button"
+              onClick={handleFacebook}
+              disabled={submitting}
+              className="mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FacebookIcon className="h-5 w-5" />
+              Continue with Facebook
             </button>
 
             <p className="mt-6 text-center text-xs text-slate-400">

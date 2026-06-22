@@ -1,6 +1,19 @@
+import { useEffect, useState } from 'react'
+import { DEFAULT_CONTENT, getCachedContent, getSiteContent } from '../lib/content'
+
 // The navy/orange bw Superbakeshop showcase panel shown on the left
-// of the auth screens on large viewports.
-export default function BrandPanel() {
+// of the auth screens on large viewports. Logo / text / image are editable
+// from the Site Editor (Login Page tab → content.authPanel).
+export default function BrandPanel({ content: controlled }) {
+  const [fetched, setFetched] = useState(getCachedContent)
+
+  useEffect(() => {
+    if (!controlled) getSiteContent().then(setFetched)
+  }, [controlled])
+
+  const content = controlled || fetched
+  const ap = content.authPanel || DEFAULT_CONTENT.authPanel
+
   return (
     <div className="relative hidden flex-col overflow-hidden bg-gradient-to-b from-navy-700 via-navy-800 to-navy-900 lg:flex">
       {/* faint baking-icon pattern */}
@@ -16,22 +29,24 @@ export default function BrandPanel() {
       {/* brand lock-up */}
       <div className="relative z-10 flex flex-col items-center px-10 pt-12 text-center text-white">
         <img
-          src="/images/logo (1).png"
+          src={ap.logo}
           alt="BW Superbakeshop"
           className="h-36 w-auto drop-shadow-lg"
         />
-        <p className="mt-6 text-sm font-medium text-navy-50/90">
-          Freshly baked. Made with love.
-        </p>
-        <p className="font-script text-xl text-brand-400">Ordered with ease.</p>
+        {ap.tagline && (
+          <p className="mt-6 text-sm font-medium text-navy-50/90">{ap.tagline}</p>
+        )}
+        {ap.script && <p className="font-script text-xl text-brand-400">{ap.script}</p>}
       </div>
 
-      {/* cake — transparent PNG so it blends into the navy panel */}
-      <img
-        src="/images/cake.png"
-        alt="Chocolate cake"
-        className="relative z-10 mt-auto w-full max-w-xs self-center px-8 pb-8 drop-shadow-2xl"
-      />
+      {/* showcase image — transparent PNG so it blends into the navy panel */}
+      {ap.image && (
+        <img
+          src={ap.image}
+          alt=""
+          className="relative z-10 mt-auto w-full max-w-xs self-center px-8 pb-8 drop-shadow-2xl"
+        />
+      )}
 
       {/* gentle wave divider toward the form panel — flush at top & bottom
           corners, bulging left only through the middle */}
