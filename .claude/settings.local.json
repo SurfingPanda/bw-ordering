@@ -17,7 +17,20 @@
       "PowerShell(npx eslint src/pages/Menu.jsx src/lib/content.js)",
       "PowerShell(npx eslint src/pages/AdminContent.jsx src/lib/content.js src/pages/Menu.jsx)",
       "PowerShell(npx eslint src/pages/Menu.jsx src/pages/MyOrders.jsx src/App.jsx src/lib/orders.js)",
-      "PowerShell(npx eslint src/lib/content.js)"
+      "PowerShell(npx eslint src/lib/content.js)",
+      "Bash(cat app/Models/Store.php)",
+      "Bash(cat app/Http/Controllers/StoreController.php)",
+      "PowerShell(npx eslint src/lib/api.js src/lib/orders.js src/lib/content.js)",
+      "PowerShell(npm run *)",
+      "Bash(php artisan *)",
+      "Bash(curl -s http://localhost:8000/api/products)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/orders)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X POST http://localhost:8000/api/orders -H \"Content-Type: application/json\" -d '{\"items\":[]}')",
+      "Bash(php -r ' *)",
+      "Bash(pkill -f \"artisan serve\")",
+      "Bash(npx eslint *)",
+      "Bash(awk '{print length}')",
+      "Bash(php -l app/Http/Middleware/SupabaseAuth.php)"
     ]
   }
 }

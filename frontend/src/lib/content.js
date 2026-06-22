@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import api from './api'
 
 // Toggleable call-to-action buttons on the landing page. The admin "Buttons"
 // editor renders a switch per entry; Landing hides a button when its key is set
@@ -46,6 +46,18 @@ export const DEFAULT_CONTENT = {
     { name: 'Buttery Croissant', price: '₱85', tag: 'Popular', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', calories: 270, allergens: ['Gluten', 'Milk'] },
     { name: 'Red Velvet Slice', price: '₱150', tag: 'New', img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80', calories: 410, allergens: ['Gluten', 'Eggs', 'Milk'] },
     { name: 'Assorted Cookies', price: '₱220', tag: 'Popular', img: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=600&q=80', calories: 150, allergens: ['Gluten', 'Eggs', 'Milk'] },
+  ],
+  // "What's New" section: heading + a curated list of product cards (managed in
+  // the Site Editor, same card shape as bestSellers). The card "+" deep-links to
+  // /menu?add=<name>, so a card's name should match a real menu product.
+  whatsNew: {
+    eyebrow: 'Fresh off the oven',
+    title: "What's New?",
+    subtitle: "The latest additions to our bakeshop — try them while they're still warm.",
+  },
+  whatsNewProducts: [
+    { name: 'Ube Chiffon Cake', price: '₱720', tag: 'New', img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80' },
+    { name: 'Red Velvet Slice', price: '₱150', tag: 'New', img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80' },
   ],
   buttons: ALL_BUTTONS_VISIBLE,
   // Editable Franchise page content (read by src/pages/Franchise.jsx).
@@ -165,17 +177,16 @@ export function getCachedContent() {
 
 // Read the saved landing content (merged over defaults). Returns defaults on any
 // error or when nothing has been saved yet. Successful reads update the cache.
+// The CMS blob lives in the Laravel API (MySQL) now — Supabase is auth-only.
 export async function getSiteContent() {
   try {
-    const { data, error } = await supabase
-      .from('site_content')
-      .select('data')
-      .eq('id', 1)
-      .maybeSingle()
-    if (error || !data?.data) return DEFAULT_CONTENT
-    const merged = { ...DEFAULT_CONTENT, ...data.data }
+    const { data } = await api.get('/site-content')
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+      return DEFAULT_CONTENT
+    }
+    const merged = { ...DEFAULT_CONTENT, ...data }
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data.data))
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
     } catch {
       // storage full / unavailable — caching is best-effort
     }
@@ -185,12 +196,9 @@ export async function getSiteContent() {
   }
 }
 
-// Admin: persist the landing content (single row, id = 1).
+// Admin/editor: persist the landing content (single row, id = 1).
 export async function saveSiteContent(content) {
-  const { error } = await supabase
-    .from('site_content')
-    .upsert({ id: 1, data: content, updated_at: new Date().toISOString() })
-  if (error) throw error
+  await api.put('/site-content', content)
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(content))
   } catch {
@@ -198,16 +206,12 @@ export async function saveSiteContent(content) {
   }
 }
 
-// Admin: upload an image to the public "site-images" bucket, return its URL.
+// Admin/editor: upload an image to the Laravel public disk, return its URL.
 export async function uploadImage(file) {
-  const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-  const path = `${Date.now()}-${safe}`
-  const { error } = await supabase.storage.from('site-images').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
-  })
-  if (error) throw error
-  return supabase.storage.from('site-images').getPublicUrl(path).data.publicUrl
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/uploads', form)
+  return data.url
 }
 
 /* ------------------------------------------------------------------------- */
@@ -236,15 +240,11 @@ function normalizeProduct(p) {
   }
 }
 
-// Menu page: every non-archived product.
+// Menu page: every non-archived product. Products live in the Laravel API
+// (MySQL) now — Supabase is only used for auth. The API returns rows in the
+// same snake_case shape normalizeProduct expects.
 export async function fetchMenuProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .is('archived_at', null)
-    .order('category', { ascending: true })
-    .order('name', { ascending: true })
-  if (error) throw error
+  const { data } = await api.get('/products')
   return (data || []).map(normalizeProduct)
 }
 
@@ -270,29 +270,14 @@ function toProductRow(p) {
   }
 }
 
-// Editor save: update existing products, insert new ones (DB assigns the UUID),
-// and soft-delete (archive) any that were removed — never hard-delete from the
-// shared catalogue. `originalIds` is the id list loaded into the editor.
+// Editor save: the Laravel API updates rows that carry an id, inserts new ones
+// (DB assigns the UUID), and archives any removed product — never hard-deletes.
+// `originalIds` is the id list loaded into the editor. Returns the fresh list.
 export async function syncProducts(products, originalIds = []) {
-  const updates = products.filter((p) => p.id).map((p) => ({ id: p.id, ...toProductRow(p) }))
-  const inserts = products.filter((p) => !p.id).map(toProductRow)
-
-  if (updates.length) {
-    const { error } = await supabase.from('products').upsert(updates, { onConflict: 'id' })
-    if (error) throw error
+  const payload = {
+    products: products.map((p) => ({ id: p.id || null, ...toProductRow(p) })),
+    originalIds,
   }
-  if (inserts.length) {
-    const { error } = await supabase.from('products').insert(inserts)
-    if (error) throw error
-  }
-
-  const kept = new Set(products.filter((p) => p.id).map((p) => p.id))
-  const removed = originalIds.filter((id) => !kept.has(id))
-  if (removed.length) {
-    const { error } = await supabase
-      .from('products')
-      .update({ archived_at: new Date().toISOString() })
-      .in('id', removed)
-    if (error) throw error
-  }
+  const { data } = await api.post('/products/sync', payload)
+  return (data || []).map(normalizeProduct)
 }

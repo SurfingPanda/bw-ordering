@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
-import { fetchMenuProducts, getCachedContent, getSiteContent } from '../lib/content'
+import { DEFAULT_CONTENT, getCachedContent, getSiteContent } from '../lib/content'
 import { useSeo } from '../lib/seo'
 
 // Goldilocks-style marketing landing page. Editable sections (announcement,
@@ -32,7 +32,7 @@ export default function Landing({ content: controlledContent, preview = false })
       <AnnouncementBar text={content.announcement} />
       <NavBar buttons={buttons} />
       <Hero banners={content.banners} />
-      <WhatsNew />
+      <WhatsNew heading={content.whatsNew} products={content.whatsNewProducts} />
       <BestSellers products={content.bestSellers} buttons={buttons} />
       <Categories items={content.categories} />
       <PromoBanner buttons={buttons} />
@@ -493,50 +493,22 @@ function PromoBanner({ buttons }) {
 /* What's new                                                          */
 /* ------------------------------------------------------------------ */
 
-// Pulls live products flagged `status === 'new'` from the shared products
-// table. The fetch runs in an effect (Supabase is a throwing stub during
-// prerender), so this section is empty in the prerendered HTML and fills in
-// client-side. Renders nothing when there are no new products.
-function WhatsNew() {
-  const [products, setProducts] = useState([])
-
-  useEffect(() => {
-    let alive = true
-    fetchMenuProducts()
-      .then((all) => {
-        if (alive) setProducts(all.filter((p) => p.status === 'new'))
-      })
-      .catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [])
+// Curated "What's New" cards, managed in the Site Editor (heading +
+// whatsNewProducts list). Renders nothing when no cards are configured.
+function WhatsNew({ heading, products = [] }) {
+  const h = heading || DEFAULT_CONTENT.whatsNew
 
   if (!products.length) return null
 
   return (
     <section id="whats-new" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <Reveal>
-        <SectionHeading
-          eyebrow="Fresh off the oven"
-          title="What's New?"
-          subtitle="The latest additions to our bakeshop — try them while they're still warm."
-        />
+        <SectionHeading eyebrow={h.eyebrow} title={h.title} subtitle={h.subtitle} />
       </Reveal>
       <div className="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
         {products.map((p, i) => (
-          <Reveal key={p.id} delay={(i % 4) * 80}>
-            <ProductCard
-              product={{
-                name: p.name,
-                img: p.img,
-                tag: 'New',
-                price: `₱${Number(p.price).toLocaleString()}`,
-                desc: p.desc,
-                allergens: p.features,
-                calories: p.calories,
-              }}
-            />
+          <Reveal key={p.name + i} delay={(i % 4) * 80}>
+            <ProductCard product={p} />
           </Reveal>
         ))}
       </div>

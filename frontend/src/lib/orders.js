@@ -1,73 +1,39 @@
-import { supabase } from './supabase'
+import api from './api'
 
-// Insert a new order for the signed-in user. We only send the line items
-// (product_id + qty) and an optional voucher code — all money fields are
-// recomputed server-side from trusted prices by the `orders_compute_totals`
-// trigger (see frontend/supabase/orders_integrity.sql), so a tampered client
-// can't dictate prices, discounts, or totals. The returned row carries the
-// authoritative, server-computed totals. Throws on error so the UI can react.
+// Orders live in the Laravel API (MySQL) now — Supabase is only used for auth.
+// The Supabase access token is attached by the axios interceptor in api.js, so
+// the server knows who the user is. All money fields are recomputed server-side
+// from the trusted products + vouchers tables (see backend OrderController), so
+// a tampered client can only choose products + quantities, never prices.
+
+// Insert a new order for the signed-in user. Sends only line items
+// (product_id + qty + name) and an optional voucher code. Returns the row with
+// the authoritative, server-computed totals. Throws on error so the UI reacts.
 export async function createOrder(summary) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('You must be signed in to place an order.')
-
-  const meta = user.user_metadata || {}
-  const items = (summary.items || []).map((i) => ({
-    product_id: i.product_id,
-    name: i.name,
-    qty: i.qty,
-  }))
-
-  const { data, error } = await supabase
-    .from('orders')
-    .insert({
-      user_id: user.id,
-      customer_name: meta.full_name || meta.name || user.email?.split('@')[0] || 'Customer',
-      customer_email: user.email,
-      items,
-      voucher: summary.voucher || null,
-      // subtotal / discount / delivery / vat / total / status are set by the
-      // DB trigger from the trusted catalogue — intentionally not sent here.
-    })
-    .select()
-    .single()
-
-  if (error) throw error
+  const { data } = await api.post('/orders', {
+    items: (summary.items || []).map((i) => ({
+      product_id: i.product_id,
+      name: i.name,
+      qty: i.qty,
+    })),
+    voucher: summary.voucher || null,
+  })
   return data
 }
 
-// Customer: fetch the signed-in user's own orders, newest first. RLS already
-// restricts rows to the owner; the explicit user_id filter is belt-and-braces.
+// Customer: the signed-in user's own orders, newest first.
 export async function fetchMyOrders() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('You must be signed in to view your orders.')
-
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
+  const { data } = await api.get('/orders/mine')
   return data || []
 }
 
 // Admin: fetch every order, newest first.
 export async function fetchAllOrders() {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
+  const { data } = await api.get('/orders')
   return data || []
 }
 
 // Admin: update an order's status (pending → preparing → completed / cancelled).
 export async function updateOrderStatus(id, status) {
-  const { error } = await supabase.from('orders').update({ status }).eq('id', id)
-  if (error) throw error
+  await api.patch(`/orders/${id}/status`, { status })
 }

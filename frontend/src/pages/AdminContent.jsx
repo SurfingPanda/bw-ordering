@@ -19,6 +19,7 @@ import {
 const SECTIONS = [
   { key: 'announcement', label: 'Announcement', Icon: MegaphoneIcon },
   { key: 'banners', label: 'Promo Banners', Icon: ImageIcon },
+  { key: 'whatsNew', label: "What's New", Icon: SparkleIcon },
   { key: 'categories', label: 'Categories', Icon: GridIcon },
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
   { key: 'products', label: 'Products', Icon: TagIcon },
@@ -123,6 +124,10 @@ export default function AdminContent() {
 
   // Franchise content (nested under content.franchise).
   const fr = content?.franchise || DEFAULT_CONTENT.franchise
+  const wn = content?.whatsNew || DEFAULT_CONTENT.whatsNew
+  const setWhatsNew = (patch) =>
+    setContent((c) => ({ ...c, whatsNew: { ...(c.whatsNew || DEFAULT_CONTENT.whatsNew), ...patch } }))
+
   const setFranchise = (patch) =>
     setContent((c) => ({ ...c, franchise: { ...(c.franchise || DEFAULT_CONTENT.franchise), ...patch } }))
   const setFranchiseHero = (patch) => setFranchise({ hero: { ...fr.hero, ...patch } })
@@ -312,6 +317,97 @@ export default function AdminContent() {
               </div>
               <AddButton onClick={() => addItem('banners', { img: '', alt: '' })}>
                 + Add banner
+              </AddButton>
+            </Panel>
+          )}
+
+          {active === 'whatsNew' && (
+            <Panel
+              title="What's New"
+              subtitle="Heading + the product cards shown in the “What’s New?” section. A card’s “+” adds it to the cart by name, so match a real menu product name."
+            >
+              <TextRow
+                label="Eyebrow"
+                value={wn.eyebrow}
+                onChange={(eyebrow) => setWhatsNew({ eyebrow })}
+              />
+              <TextRow
+                label="Title"
+                value={wn.title}
+                onChange={(title) => setWhatsNew({ title })}
+              />
+              <TextAreaRow
+                label="Subtitle"
+                value={wn.subtitle}
+                onChange={(subtitle) => setWhatsNew({ subtitle })}
+              />
+
+              <p className="mb-3 mt-6 text-sm font-semibold text-navy-800">Products</p>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {(content.whatsNewProducts || []).map((p, i) => (
+                  <ItemCard
+                    key={i}
+                    index={i}
+                    total={(content.whatsNewProducts || []).length}
+                    onMove={(d) => move('whatsNewProducts', i, d)}
+                    onRemove={() => removeItem('whatsNewProducts', i)}
+                  >
+                    <ImageField
+                      label="Image"
+                      value={p.img}
+                      onChange={(img) => updateItem('whatsNewProducts', i, { img })}
+                    />
+                    <TextRow
+                      label="Name"
+                      value={p.name}
+                      onChange={(name) => updateItem('whatsNewProducts', i, { name })}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <TextRow
+                        label="Price"
+                        value={p.price}
+                        onChange={(price) => updateItem('whatsNewProducts', i, { price })}
+                      />
+                      <TextRow
+                        label="Tag"
+                        value={p.tag}
+                        onChange={(tag) => updateItem('whatsNewProducts', i, { tag })}
+                      />
+                    </div>
+                    <NumberRow
+                      label="Calories (optional)"
+                      value={p.calories ?? ''}
+                      onChange={(calories) =>
+                        updateItem('whatsNewProducts', i, {
+                          calories: calories === '' ? null : calories,
+                        })
+                      }
+                    />
+                    <TextAreaRow
+                      label="Allergens (one per line)"
+                      value={(p.allergens || []).join('\n')}
+                      onChange={(v) =>
+                        updateItem('whatsNewProducts', i, {
+                          allergens: v.split('\n').map((s) => s.trim()).filter(Boolean),
+                        })
+                      }
+                    />
+                  </ItemCard>
+                ))}
+              </div>
+              <AddButton
+                onClick={() =>
+                  addItem('whatsNewProducts', {
+                    name: 'New item',
+                    price: '₱0',
+                    tag: 'New',
+                    img: '',
+                    calories: null,
+                    allergens: [],
+                  })
+                }
+              >
+                + Add product
               </AddButton>
             </Panel>
           )}
@@ -1016,6 +1112,13 @@ function StarIcon(p) {
   return (
     <svg {...iconBase({ ...p, fill: 'none' })}>
       <path d="m12 2 3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.8 5.9 20.8 7.1 14l-5-4.8 6.9-.9Z" />
+    </svg>
+  )
+}
+function SparkleIcon(p) {
+  return (
+    <svg {...iconBase({ ...p, fill: 'currentColor' })}>
+      <path d="M12 2l1.9 5.6a3 3 0 0 0 1.9 1.9L21.4 11.4l-5.6 1.9a3 3 0 0 0-1.9 1.9L12 20.8l-1.9-5.6a3 3 0 0 0-1.9-1.9L2.6 11.4l5.6-1.9a3 3 0 0 0 1.9-1.9L12 2z" />
     </svg>
   )
 }

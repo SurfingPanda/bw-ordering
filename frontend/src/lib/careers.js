@@ -1,41 +1,31 @@
-import { supabase } from './supabase'
+import api from './api'
 
-// Upload a resume/CV to the private "resumes" storage bucket.
-// Returns the storage path (not a public URL — the bucket is private).
+// Careers (job applications + resumes) live in the Laravel API (MySQL) now —
+// Supabase is only used for auth. Applicants are anonymous, so resume upload
+// and application submit are public; listing + resume download require HR/admin.
+
+// Upload a resume/CV to the private local disk. Returns the stored filename
+// (not a public URL — downloads go through a signed, HR-only route).
 export async function uploadResume(file) {
-  const safe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-  const path = `${Date.now()}-${safe}`
-  const { error } = await supabase.storage.from('resumes').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
-  })
-  if (error) throw error
-  return path
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/resumes', form)
+  return data.path
 }
 
 // Submit a job application (public — no auth required).
 export async function submitApplication({ name, email, phone, position, cvPath }) {
-  const { error } = await supabase
-    .from('applications')
-    .insert({ name, email, phone, position, cv_url: cvPath })
-  if (error) throw error
+  await api.post('/applications', { name, email, phone, position, cv_url: cvPath })
 }
 
 // HR/Admin: fetch all applications, newest first.
 export async function fetchApplications() {
-  const { data, error } = await supabase
-    .from('applications')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
+  const { data } = await api.get('/applications')
   return data || []
 }
 
-// HR/Admin: generate a time-limited download URL for a private resume.
+// HR/Admin: get a time-limited signed URL to download a private resume.
 export async function getResumeUrl(cvPath) {
-  const { data, error } = await supabase.storage
-    .from('resumes')
-    .createSignedUrl(cvPath, 3600)
-  if (error) throw error
-  return data.signedUrl
+  const { data } = await api.get('/resumes/url', { params: { path: cvPath } })
+  return data.url
 }
