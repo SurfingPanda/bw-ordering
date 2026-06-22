@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { createOrder } from '../lib/orders'
 import { fetchMenuProducts } from '../lib/content'
 import { useSeo } from '../lib/seo'
 
@@ -67,7 +66,16 @@ export default function Menu() {
   const [menuLoading, setMenuLoading] = useState(true)
   const [active, setActive] = useState('All')
   const [query, setQuery] = useState('')
-  const [cart, setCart] = useState({}) // { [id]: qty }
+  // Lazy-init from the persisted cart so it survives /checkout → "Add more
+  // items" → /menu. try/catch returns {} on the server (no localStorage),
+  // matching the repo's SSR-safe cache pattern.
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('bw_cart') || '{}') || {}
+    } catch {
+      return {}
+    }
+  }) // { [id]: qty }
   const [cartOpen, setCartOpen] = useState(false) // mobile cart drawer
 
   // Load the menu from the products table (the same source the order-pricing
@@ -97,6 +105,22 @@ export default function Menu() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Persist the cart on every change so it survives navigating to /checkout
+  // and back ("Add more items", "Back to Cart"). Skips the first run so the
+  // initial value isn't needlessly rewritten.
+  const firstSave = useRef(true)
+  useEffect(() => {
+    if (firstSave.current) {
+      firstSave.current = false
+      return
+    }
+    try {
+      localStorage.setItem('bw_cart', JSON.stringify(cart))
+    } catch {
+      // best-effort
+    }
+  }, [cart])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -161,20 +185,16 @@ export default function Menu() {
       return next
     })
 
-  const [placing, setPlacing] = useState(false)
-  const checkout = async (summary) => {
-    setPlacing(true)
+  const navigate = useNavigate()
+  // Hand the cart off to the /checkout page via localStorage (survives refresh)
+  // and navigate there — the order is actually placed from the checkout page.
+  const checkout = (summary) => {
     try {
-      // The DB returns the authoritative, server-computed totals.
-      const order = await createOrder(summary)
-      window.alert(`🧡 Thank you! Your order has been placed.\n\nTotal: ${peso(Number(order.total))}`)
-      setCart({})
-      setCartOpen(false)
-    } catch (err) {
-      window.alert(`Sorry, we couldn't place your order: ${err.message}`)
-    } finally {
-      setPlacing(false)
+      localStorage.setItem('bw_checkout', JSON.stringify(summary))
+    } catch {
+      // best-effort
     }
+    navigate('/checkout')
   }
 
   return (
@@ -239,7 +259,6 @@ export default function Menu() {
               onDec={dec}
               onRemove={remove}
               onCheckout={checkout}
-              placing={placing}
             />
           </div>
         </div>
@@ -286,7 +305,6 @@ export default function Menu() {
               onDec={dec}
               onRemove={remove}
               onCheckout={checkout}
-              placing={placing}
             />
           </div>
         </div>
@@ -520,7 +538,7 @@ function QtyButton({ children, onClick, label }) {
   )
 }
 
-function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onCheckout, placing }) {
+function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onCheckout }) {
   const { user } = useAuth()
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
@@ -720,20 +738,21 @@ function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onChec
             {user ? (
               <button
                 type="button"
-                disabled={placing}
                 onClick={() =>
                   onCheckout({
                     items: lines.map(({ product, qty }) => ({
                       product_id: product.id,
                       name: product.name,
                       qty,
+                      img: product.img,
+                      price: product.price,
                     })),
                     voucher: voucher?.code || null,
                   })
                 }
-                className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
               >
-                {placing ? 'Placing order…' : 'Place Order'}
+                Proceed to Checkout
               </button>
             ) : (
               <>

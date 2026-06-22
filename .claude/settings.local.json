@@ -30,7 +30,8 @@
       "Bash(pkill -f \"artisan serve\")",
       "Bash(npx eslint *)",
       "Bash(awk '{print length}')",
-      "Bash(php -l app/Http/Middleware/SupabaseAuth.php)"
+      "Bash(php -l app/Http/Middleware/SupabaseAuth.php)",
+      "Bash(php -l database/seeders/ProductSeeder.php)"
     ]
   }
 }
