@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { useAuth } from '../context/AuthContext'
 import { createOrder } from '../lib/orders'
 
@@ -44,6 +45,7 @@ export default function Checkout() {
   const [name, setName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.contact_number || '')
   const [email, setEmail] = useState(user?.email || '')
+  const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
 
   const [code, setCode] = useState('')
@@ -55,7 +57,8 @@ export default function Checkout() {
 
   // Wizard step: 'form' (Delivery + Details) → 'payment' → 'done' (Confirmation).
   const [step, setStep] = useState('form')
-  const [payMethod, setPayMethod] = useState('cod') // cod | gcash | card
+  const [payMethod, setPayMethod] = useState('qrph') // qrph | cash (cash = pickup only)
+  const [qrUrl, setQrUrl] = useState('')
   const [placedOrder, setPlacedOrder] = useState(null)
   const stepIndex = step === 'payment' ? 3 : step === 'done' ? 4 : 1
 
@@ -80,6 +83,15 @@ export default function Checkout() {
   const points = Math.floor(discounted / 10)
   const awayFromFree = Math.max(0, FREE_DELIVERY_MIN - subtotal)
 
+  // Render a QRPH code for the amount due (demo merchant QR).
+  useEffect(() => {
+    if (step !== 'payment' || payMethod !== 'qrph') return
+    const payload = `QRPH|BW Superbakeshop|PHP ${total.toFixed(2)}`
+    QRCode.toDataURL(payload, { width: 220, margin: 1 })
+      .then(setQrUrl)
+      .catch(() => setQrUrl(''))
+  }, [step, payMethod, total])
+
   const applyVoucher = () => {
     const key = code.trim().toUpperCase()
     if (!key) return
@@ -98,6 +110,10 @@ export default function Checkout() {
       setError('Please fill in your name, mobile number, and email.')
       return
     }
+    if (mode === 'delivery' && !address.trim()) {
+      setError('Please enter a delivery address.')
+      return
+    }
     setError('')
     setStep('payment')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
@@ -110,6 +126,12 @@ export default function Checkout() {
       const order = await createOrder({
         items: items.map((i) => ({ product_id: i.product_id, name: i.name, qty: i.qty })),
         voucher: voucher?.code || null,
+        payment_method: payMethod,
+        delivery_type: mode,
+        delivery_speed: mode === 'delivery' ? speed : null,
+        address: mode === 'delivery' ? address : null,
+        phone,
+        notes,
       })
       try {
         localStorage.removeItem('bw_checkout')
@@ -180,7 +202,10 @@ export default function Checkout() {
             <div className="grid grid-cols-2 gap-3">
               <ModeCard
                 active={mode === 'delivery'}
-                onClick={() => setMode('delivery')}
+                onClick={() => {
+                  setMode('delivery')
+                  setPayMethod((m) => (m === 'cash' ? 'qrph' : m))
+                }}
                 icon="🚚"
                 title="Delivery"
                 subtitle="We'll deliver to your door"
@@ -196,23 +221,17 @@ export default function Checkout() {
 
             {mode === 'delivery' ? (
               <>
-                <div className="mt-5 rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 text-brand-500">
-                        <PinIcon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-navy-800">Delivery address</p>
-                        <p className="text-xs text-slate-500">
-                          Add the address where we should deliver your order.
-                        </p>
-                      </div>
-                    </div>
-                    <button className="text-xs font-semibold text-brand-600 hover:underline">
-                      Change
-                    </button>
-                  </div>
+                <div className="mt-5">
+                  <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-navy-800">
+                    <PinIcon className="h-4 w-4 text-brand-500" /> Delivery address
+                  </label>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={2}
+                    placeholder="House / unit no., street, barangay, city"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  />
                 </div>
 
                 <p className="mt-5 mb-2 text-sm font-semibold text-navy-800">Delivery option</p>
@@ -325,44 +344,45 @@ export default function Checkout() {
           <Section step="4" title="Payment Method">
             <div className="space-y-3">
               <PayCard
-                active={payMethod === 'cod'}
-                onClick={() => setPayMethod('cod')}
-                icon="💵"
-                title={mode === 'pickup' ? 'Pay at Store' : 'Cash on Delivery'}
-                subtitle={mode === 'pickup' ? 'Pay when you pick up your order' : 'Pay the rider when your order arrives'}
-              />
-              <PayCard
-                active={payMethod === 'gcash'}
-                onClick={() => setPayMethod('gcash')}
-                icon="📱"
-                title="GCash"
-                subtitle="Pay via GCash e-wallet"
-              />
-              <PayCard
                 active={payMethod === 'qrph'}
                 onClick={() => setPayMethod('qrph')}
                 icon="🔳"
                 title="QRPH"
                 subtitle="Scan with any bank or e-wallet app"
               />
+              {mode === 'pickup' && (
+                <PayCard
+                  active={payMethod === 'cash'}
+                  onClick={() => setPayMethod('cash')}
+                  icon="💵"
+                  title="Cash on Pickup"
+                  subtitle="Pay with cash when you pick up your order"
+                />
+              )}
             </div>
 
             {payMethod === 'qrph' && (
               <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
-                <div className="flex h-40 w-40 items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white text-6xl text-navy-800">
-                  🔳
-                </div>
+                {qrUrl ? (
+                  <img src={qrUrl} alt="QRPH payment code" className="h-48 w-48 rounded-lg" />
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-300">
+                    Generating…
+                  </div>
+                )}
                 <p className="text-sm font-semibold text-navy-800">Scan to pay {peso(total)}</p>
                 <p className="text-xs text-slate-500">
-                  Open your bank or e-wallet app, scan this QRPH code, then place your order.
-                  (Demo — no real charge is made.)
+                  Open your bank or e-wallet app, scan this QRPH code to pay, then place your order.
+                  <br />
+                  <span className="text-slate-400">(Demo QR — no real charge is made.)</span>
                 </p>
               </div>
             )}
 
-            {payMethod === 'gcash' && (
+            {payMethod === 'cash' && (
               <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
-                You&apos;ll be prompted to confirm the payment in your GCash app. (Demo — no real charge.)
+                💵 Pay with cash when you pick up your order at the store. Please bring the exact
+                amount if possible.
               </p>
             )}
           </Section>
@@ -379,7 +399,11 @@ export default function Checkout() {
             disabled={placing}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {placing ? 'Placing order…' : `Place Order · ${peso(total)}`}
+            {placing
+              ? 'Placing order…'
+              : payMethod === 'qrph'
+                ? `I've Paid · ${peso(total)}`
+                : `Place Order · ${peso(total)}`}
             {!placing && <ArrowIcon className="h-4 w-4" />}
           </button>
           <button
@@ -553,7 +577,7 @@ function PayCard({ active, onClick, icon, title, subtitle }) {
   )
 }
 
-const PAY_LABEL = { cod: 'Cash on Delivery', gcash: 'GCash', qrph: 'QRPH' }
+const PAY_LABEL = { qrph: 'QRPH', cash: 'Cash on Pickup', cod: 'Cash on Delivery', gcash: 'GCash' }
 
 function Confirmation({ order, payMethod }) {
   const ref = order ? String(order.id).slice(0, 8).toUpperCase() : '—'
@@ -579,7 +603,13 @@ function Confirmation({ order, payMethod }) {
           </div>
           <div className="flex justify-between">
             <dt className="text-slate-500">Payment</dt>
-            <dd className="font-semibold text-navy-800">{PAY_LABEL[payMethod] || 'Cash'}</dd>
+            <dd className="font-semibold text-navy-800">
+              {PAY_LABEL[payMethod] || 'Cash'}
+              <span className={order?.payment_status === 'paid' ? 'text-green-600' : 'text-amber-600'}>
+                {' · '}
+                {order?.payment_status === 'paid' ? 'Paid' : 'Pay on pickup'}
+              </span>
+            </dd>
           </div>
           <div className="flex justify-between border-t border-slate-200 pt-2 text-base">
             <dt className="font-bold text-navy-800">Total</dt>

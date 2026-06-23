@@ -17,6 +17,12 @@ export async function createOrder(summary) {
       qty: i.qty,
     })),
     voucher: summary.voucher || null,
+    payment_method: summary.payment_method || null,
+    delivery_type: summary.delivery_type || null,
+    delivery_speed: summary.delivery_speed || null,
+    address: summary.address || null,
+    phone: summary.phone || null,
+    notes: summary.notes || null,
   })
   return data
 }

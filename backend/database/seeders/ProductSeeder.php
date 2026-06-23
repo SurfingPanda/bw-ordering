@@ -34,19 +34,19 @@ class ProductSeeder extends Seeder
         return [
             // --- Cakes ---
             [
-                'name' => 'Classic Mocha Cake', 'category' => 'Cakes', 'price' => 650, 'original_price' => 720,
+                'name' => 'Classic Mocha Cake', 'category' => 'Cake', 'price' => 650, 'original_price' => 720,
                 'description' => 'Moist chocolate sponge layered with mocha buttercream and a dusting of cocoa.',
                 'image_path' => $img('1565958011703-44f9829ba187'), 'calories' => 420, 'features' => ['Gluten', 'Eggs', 'Milk'],
                 'is_featured' => true, 'status' => 'best_seller',
             ],
             [
-                'name' => 'Ube Chiffon Cake', 'category' => 'Cakes', 'price' => 720,
+                'name' => 'Ube Chiffon Cake', 'category' => 'Cake', 'price' => 720,
                 'description' => 'Light-as-air purple yam chiffon with sweet ube halaya swirl.',
                 'image_path' => $img('1488477181946-6428a0291777'), 'calories' => 380, 'features' => ['Gluten', 'Eggs', 'Milk'],
                 'status' => 'new',
             ],
             [
-                'name' => 'Red Velvet Slice', 'category' => 'Cakes', 'price' => 150,
+                'name' => 'Red Velvet Slice', 'category' => 'Cake', 'price' => 150,
                 'description' => 'Velvety cocoa cake with tangy cream cheese frosting.',
                 'image_path' => $img('1586985289688-ca3cf47d3e6e'), 'calories' => 410, 'features' => ['Gluten', 'Eggs', 'Milk'],
                 'status' => 'new',
@@ -54,31 +54,31 @@ class ProductSeeder extends Seeder
 
             // --- Breads ---
             [
-                'name' => 'Soft Ensaymada', 'category' => 'Breads', 'price' => 45,
+                'name' => 'Soft Ensaymada', 'category' => 'Bread', 'price' => 45,
                 'description' => 'Buttery brioche topped with cheese and a sprinkle of sugar.',
                 'image_path' => $img('1509440159596-0249088772ff'), 'calories' => 290, 'features' => ['Gluten', 'Eggs', 'Milk'],
                 'status' => 'best_seller',
             ],
             [
-                'name' => 'Fresh Pandesal (12pcs)', 'category' => 'Breads', 'price' => 60,
+                'name' => 'Fresh Pandesal (12pcs)', 'category' => 'Bread', 'price' => 60,
                 'description' => 'The classic Filipino breakfast roll, baked fresh every morning.',
                 'image_path' => $img('1549931319-a545dcf3bc73'), 'calories' => 140, 'features' => ['Gluten', 'Soy'],
             ],
             [
-                'name' => 'Whole Wheat Loaf', 'category' => 'Breads', 'price' => 95,
+                'name' => 'Whole Wheat Loaf', 'category' => 'Bread', 'price' => 95,
                 'description' => 'Hearty whole-wheat sandwich loaf, soft and lightly sweet.',
                 'image_path' => $img('1598373182133-52452f7691ef'), 'calories' => 220, 'features' => ['Gluten', 'Soy'],
             ],
 
             // --- Pastries ---
             [
-                'name' => 'Buttery Croissant', 'category' => 'Pastries', 'price' => 85,
+                'name' => 'Buttery Croissant', 'category' => 'Pastry', 'price' => 85,
                 'description' => 'Flaky, golden, 24-hour laminated croissant.',
                 'image_path' => $img('1555507036-ab1f4038808a'), 'calories' => 270, 'features' => ['Gluten', 'Milk'],
                 'status' => 'best_seller',
             ],
             [
-                'name' => 'Chocolate Danish', 'category' => 'Pastries', 'price' => 95,
+                'name' => 'Chocolate Danish', 'category' => 'Pastry', 'price' => 95,
                 'description' => 'Buttery danish pastry filled with rich dark chocolate.',
                 'image_path' => $img('1509365390695-33acd1f0c6c2'), 'calories' => 320, 'features' => ['Gluten', 'Eggs', 'Milk'],
                 'status' => 'new',
@@ -101,12 +101,12 @@ class ProductSeeder extends Seeder
 
             // --- Beverages ---
             [
-                'name' => 'Iced Americano', 'category' => 'Beverages', 'price' => 110,
+                'name' => 'Iced Americano', 'category' => 'Drinks', 'price' => 110,
                 'description' => 'Bold espresso over ice — the perfect pairing for any treat.',
                 'image_path' => $img('1517701550927-30cf4ba1dba5'), 'calories' => 15, 'features' => [],
             ],
             [
-                'name' => 'Hot Chocolate', 'category' => 'Beverages', 'price' => 120,
+                'name' => 'Hot Chocolate', 'category' => 'Drinks', 'price' => 120,
                 'description' => 'Velvety dark hot chocolate, topped with marshmallows.',
                 'image_path' => $img('1542990253-0d0f5be5f0ed'), 'calories' => 250, 'features' => ['Milk'],
                 'status' => 'sold_out',

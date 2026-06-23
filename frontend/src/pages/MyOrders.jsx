@@ -22,6 +22,8 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+const PAYMENT_LABEL = { cod: 'Cash on Delivery', gcash: 'GCash', qrph: 'QRPH' }
+
 const TABS = [
   { key: 'all', label: 'All Orders' },
   { key: 'active', label: 'Active' },
@@ -72,14 +74,6 @@ export default function MyOrders() {
       alive = false
     }
   }, [])
-
-  const points = useMemo(
-    () =>
-      orders
-        .filter((o) => o.status !== 'cancelled')
-        .reduce((s, o) => s + Math.floor(Number(o.total || 0) / 10), 0),
-    [orders],
-  )
 
   const counts = useMemo(() => {
     const c = { all: orders.length, active: 0, completed: 0, cancelled: 0 }
@@ -135,19 +129,12 @@ export default function MyOrders() {
                 <p className="text-sm text-slate-500">Track and reorder your favorite treats.</p>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <Link
-                to="/menu"
-                className="text-sm font-medium text-slate-500 transition hover:text-brand-600"
-              >
-                ← Back to menu
-              </Link>
-              <span className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-700">
-                <span className="text-base">⭐</span>
-                <span className="text-xs font-semibold uppercase tracking-wide">BW Points</span>
-                <span className="text-sm font-bold">{points.toLocaleString()}</span>
-              </span>
-            </div>
+            <Link
+              to="/menu"
+              className="text-sm font-medium text-slate-500 transition hover:text-brand-600"
+            >
+              ← Back to menu
+            </Link>
           </div>
 
           {/* filter tabs */}
@@ -296,15 +283,23 @@ function Thumbs({ items, imgMap }) {
 }
 
 function Totals({ order }) {
-  const itemCount = (Array.isArray(order.items) ? order.items : []).reduce(
-    (s, i) => s + (i.qty || 0),
-    0,
-  )
+  const items = Array.isArray(order.items) ? order.items : []
+  const itemCount = items.reduce((s, i) => s + (i.qty || 0), 0)
   return (
     <div className="text-sm">
       <p className="mb-1 font-semibold text-navy-800">
         {itemCount} item{itemCount === 1 ? '' : 's'}
       </p>
+      <ul className="mb-2 space-y-0.5 text-xs text-slate-600">
+        {items.map((i, idx) => (
+          <li key={idx} className="flex justify-between gap-4">
+            <span className="truncate">
+              <span className="font-semibold text-navy-700">{i.qty}×</span> {i.name}
+            </span>
+            <span className="shrink-0 text-slate-400">{peso((i.price || 0) * (i.qty || 0))}</span>
+          </li>
+        ))}
+      </ul>
       <dl className="space-y-0.5 text-xs text-slate-500">
         <Row label="Subtotal" value={peso(order.subtotal)} />
         {Number(order.discount) > 0 && (
@@ -356,6 +351,39 @@ function Tracker({ status }) {
   )
 }
 
+function FulfillmentChips({ order }) {
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
+        {order.delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'}
+      </span>
+      {order.payment_method && (
+        <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
+          {PAYMENT_LABEL[order.payment_method] || order.payment_method}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function FulfillmentDetails({ order }) {
+  if (!order.address && !order.notes) return null
+  return (
+    <div className="mt-3 rounded-lg bg-navy-50/60 p-3 text-xs text-slate-600">
+      {order.address && (
+        <p>
+          <span className="font-semibold text-navy-700">📍 Deliver to:</span> {order.address}
+        </p>
+      )}
+      {order.notes && (
+        <p className="mt-1">
+          <span className="font-semibold text-navy-700">📝 Notes:</span> {order.notes}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function StatusBadge({ status }) {
   return (
     <span
@@ -377,6 +405,7 @@ function ActiveOrderCard({ order, imgMap, onReorder }) {
         <div>
           <h3 className="font-bold text-navy-800">Order {orderRef(order.id)}</h3>
           <p className="text-xs text-slate-400">{orderDate(order.created_at)}</p>
+          <FulfillmentChips order={order} />
         </div>
         <StatusBadge status={order.status} />
       </div>
@@ -385,18 +414,23 @@ function ActiveOrderCard({ order, imgMap, onReorder }) {
         <Tracker status={order.status} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-t border-slate-100 pt-4">
+        <div className="flex items-start gap-4">
           <Thumbs items={items} imgMap={imgMap} />
           <Totals order={order} />
         </div>
-        <div className="text-right">
+        <div className="shrink-0 text-right">
           <p className="text-xs text-slate-400">Total</p>
           <p className="text-xl font-bold text-brand-600">{peso(order.total)}</p>
         </div>
       </div>
 
-      {open && <ItemList items={items} imgMap={imgMap} />}
+      {open && (
+        <>
+          <FulfillmentDetails order={order} />
+          <ItemList items={items} imgMap={imgMap} />
+        </>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
@@ -426,21 +460,32 @@ function PastOrderCard({ order, imgMap, onReorder }) {
   const itemCount = items.reduce((s, i) => s + (i.qty || 0), 0)
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
           <Thumbs items={items} imgMap={imgMap} />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-bold text-navy-800">Order {orderRef(order.id)}</h3>
               <StatusBadge status={order.status} />
             </div>
             <p className="text-xs text-slate-400">{orderDate(order.created_at)}</p>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <FulfillmentChips order={order} />
+            <p className="mb-1 mt-2 text-sm font-semibold text-navy-800">
               {itemCount} item{itemCount === 1 ? '' : 's'}
             </p>
+            <ul className="space-y-0.5 text-xs text-slate-600">
+              {items.map((i, idx) => (
+                <li key={idx} className="flex justify-between gap-6">
+                  <span className="truncate">
+                    <span className="font-semibold text-navy-700">{i.qty}×</span> {i.name}
+                  </span>
+                  <span className="shrink-0 text-slate-400">{peso((i.price || 0) * (i.qty || 0))}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 flex-col items-end gap-3">
           <div className="text-right">
             <p className="text-xs text-slate-400">Total</p>
             <p className="text-lg font-bold text-brand-600">{peso(order.total)}</p>
@@ -462,7 +507,12 @@ function PastOrderCard({ order, imgMap, onReorder }) {
       >
         {open ? 'Hide details' : 'View Details'}
       </button>
-      {open && <ItemList items={items} imgMap={imgMap} order={order} />}
+      {open && (
+        <>
+          <FulfillmentDetails order={order} />
+          <ItemList items={items} imgMap={imgMap} order={order} />
+        </>
+      )}
     </div>
   )
 }

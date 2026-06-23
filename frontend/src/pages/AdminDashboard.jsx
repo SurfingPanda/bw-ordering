@@ -21,6 +21,8 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
+const PAYMENT_LABEL = { qrph: 'QRPH', cash: 'Cash on Pickup', cod: 'Cash on Delivery', gcash: 'GCash' }
+
 export default function AdminDashboard() {
   const { user, logout } = useAuth()
   const [orders, setOrders] = useState([])
@@ -433,7 +435,34 @@ function OrderRow({ order, onStatus }) {
             </span>
           </div>
           <p className="text-xs text-slate-500">{order.customer_email}</p>
+          {order.customer_phone && (
+            <p className="text-xs text-slate-500">{order.customer_phone}</p>
+          )}
           <p className="mt-1 text-xs text-slate-400">{date}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
+              {order.delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'}
+              {order.delivery_type !== 'pickup' && order.delivery_speed
+                ? ` · ${order.delivery_speed}`
+                : ''}
+            </span>
+            {order.payment_method && (
+              <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
+                {PAYMENT_LABEL[order.payment_method] || order.payment_method}
+              </span>
+            )}
+            {order.payment_status && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${
+                  order.payment_status === 'paid'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                {order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+              </span>
+            )}
+          </div>
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-brand-600">{peso(order.total)}</p>
@@ -467,6 +496,20 @@ function OrderRow({ order, onStatus }) {
 
       {open && (
         <div className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-sm">
+          {(order.address || order.notes) && (
+            <div className="mb-2 rounded-lg bg-navy-50/60 p-3 text-xs text-slate-600">
+              {order.address && (
+                <p>
+                  <span className="font-semibold text-navy-700">📍 Address:</span> {order.address}
+                </p>
+              )}
+              {order.notes && (
+                <p className="mt-1">
+                  <span className="font-semibold text-navy-700">📝 Notes:</span> {order.notes}
+                </p>
+              )}
+            </div>
+          )}
           {items.map((i, idx) => (
             <div key={idx} className="flex justify-between text-slate-600">
               <span>

@@ -30,7 +30,25 @@ class OrderController extends Controller
             'items.*.product_id' => 'required|string',
             'items.*.qty' => 'required|integer|min:1',
             'voucher' => 'nullable|string',
+            'payment_method' => 'nullable|in:qrph,cash',
+            'delivery_type' => 'nullable|in:delivery,pickup',
+            'delivery_speed' => 'nullable|in:standard,express',
+            'address' => 'nullable|string|max:500',
+            'phone' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:1000',
         ]);
+
+        $deliveryType = $data['delivery_type'] ?? 'delivery';
+        $payMethod = $data['payment_method'] ?? 'qrph';
+
+        // Cash is only allowed for pickup orders.
+        if ($payMethod === 'cash' && $deliveryType !== 'pickup') {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Cash is only available for pickup orders.',
+            ]);
+        }
+        // QRPH is paid online up front; cash is collected at pickup.
+        $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
 
         // Trusted product lookup (non-archived only).
         $ids = collect($data['items'])->pluck('product_id')->unique()->all();
@@ -82,7 +100,8 @@ class OrderController extends Controller
         }
 
         $discounted = $subtotal - $discount;
-        $delivery = $freeDelivery ? 0 : self::DELIVERY_FEE;
+        // Pickup orders never pay a delivery fee.
+        $delivery = ($deliveryType === 'pickup' || $freeDelivery) ? 0 : self::DELIVERY_FEE;
         $vat = $discounted * self::VAT_RATE;
         $total = $discounted + $vat + $delivery;
 
@@ -90,8 +109,15 @@ class OrderController extends Controller
             'user_id' => $user['id'] ?? null,
             'customer_name' => $user['name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'Customer'),
             'customer_email' => $user['email'] ?? null,
+            'customer_phone' => $data['phone'] ?? null,
             'items' => $items,
             'voucher' => $voucherCode,
+            'payment_method' => $payMethod,
+            'payment_status' => $payStatus,
+            'delivery_type' => $deliveryType,
+            'delivery_speed' => $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'standard'),
+            'address' => $deliveryType === 'pickup' ? null : ($data['address'] ?? null),
+            'notes' => $data['notes'] ?? null,
             'subtotal' => round($subtotal, 2),
             'discount' => round($discount, 2),
             'delivery' => round($delivery, 2),

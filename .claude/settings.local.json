@@ -31,7 +31,10 @@
       "Bash(npx eslint *)",
       "Bash(awk '{print length}')",
       "Bash(php -l app/Http/Middleware/SupabaseAuth.php)",
-      "Bash(php -l database/seeders/ProductSeeder.php)"
+      "Bash(php -l database/seeders/ProductSeeder.php)",
+      "Bash(php -l app/Http/Controllers/OrderController.php)",
+      "Bash(php -l app/Models/Order.php)",
+      "Bash(timeout 90 npm install qrcode)"
     ]
   }
 }

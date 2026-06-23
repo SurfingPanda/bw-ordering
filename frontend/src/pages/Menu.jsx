@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchMenuProducts } from '../lib/content'
@@ -65,6 +66,7 @@ export default function Menu() {
   const [menu, setMenu] = useState([])
   const [menuLoading, setMenuLoading] = useState(true)
   const [active, setActive] = useState('All')
+  const [tag, setTag] = useState('all') // in-category filter: all | new | best_seller | bundle
   const [query, setQuery] = useState('')
   // Lazy-init from the persisted cart so it survives /checkout → "Add more
   // items" → /menu. try/catch returns {} on the server (no localStorage),
@@ -122,22 +124,33 @@ export default function Menu() {
     }
   }, [cart])
 
+  const inActiveCategory = (p) =>
+    active === 'All'
+      ? true
+      : active === "What's New"
+        ? p.status === 'new'
+        : active === 'Best Sellers'
+          ? p.status === 'best_seller'
+          : p.category === active
+
+  // Status filters available within the current category (only show chips that
+  // actually have matching products).
+  const availableTags = useMemo(() => {
+    const present = new Set(menu.filter(inActiveCategory).map((p) => p.status))
+    return TAGS.filter((t) => present.has(t.key))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu, active])
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return menu.filter((p) => {
-      const inCategory =
-        active === 'All'
-          ? true
-          : active === "What's New"
-            ? p.status === 'new'
-            : active === 'Best Sellers'
-              ? p.status === 'best_seller'
-              : p.category === active
+      const matchesTag = tag === 'all' || p.status === tag
       const matches =
         !q || p.name.toLowerCase().includes(q) || (p.desc || '').toLowerCase().includes(q)
-      return inCategory && matches
+      return inActiveCategory(p) && matchesTag && matches
     })
-  }, [menu, active, query])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu, active, tag, query])
 
   const lines = useMemo(
     () =>
@@ -160,7 +173,6 @@ export default function Menu() {
     const hasNew = menu.some((p) => p.status === 'new')
     const hasBest = menu.some((p) => p.status === 'best_seller')
     return [
-      { name: 'All', img: '/images/bakery-interior.jpg' },
       ...(hasNew ? [{ name: "What's New", icon: 'new' }] : []),
       ...(hasBest ? [{ name: 'Best Sellers', icon: 'best' }] : []),
       ...[...seen].map(([name, img]) => ({ name, img })),
@@ -200,7 +212,14 @@ export default function Menu() {
   return (
     <div className="animate-page-in flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* left — full-height categories sidebar (with logo on top) */}
-      <CategorySidebar active={active} onChange={setActive} categories={categories} />
+      <CategorySidebar
+        active={active}
+        onChange={(name) => {
+          setActive(name)
+          setTag('all')
+        }}
+        categories={categories}
+      />
 
       {/* right — header + content */}
       <div className="flex min-w-0 flex-1 flex-col">
@@ -229,6 +248,27 @@ export default function Menu() {
               />
             </div>
           </div>
+
+          {availableTags.length > 0 && (
+            <div className="mb-5 flex flex-wrap gap-2">
+              {[{ key: 'all', label: 'All', icon: '' }, ...availableTags].map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTag(t.key)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                    tag === t.key
+                      ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/30'
+                      : 'bg-white text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {t.icon ? `${t.icon} ` : ''}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {menuLoading ? (
             <div className="py-16 text-center text-sm text-slate-500">Loading menu…</div>
           ) : visible.length === 0 ? (
@@ -324,8 +364,10 @@ function CategorySidebar({ active, onChange, categories }) {
         <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-11 w-auto" />
       </Link>
 
-      {/* categories — fill the remaining height */}
-      <nav className="flex gap-3 overflow-x-auto p-3 lg:flex-1 lg:flex-col lg:justify-between lg:gap-2 lg:overflow-x-hidden lg:overflow-y-auto">
+      {/* categories — fill the remaining height. Scrollbar is hidden (still
+          scrollable by wheel/touch) so a long list stays tidy, and items are
+          compact so most fit without scrolling. */}
+      <nav className="flex gap-2 overflow-x-auto p-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:min-h-0 lg:flex-1 lg:flex-col lg:justify-evenly lg:gap-1 lg:overflow-x-hidden lg:overflow-y-auto [&::-webkit-scrollbar]:hidden">
         {categories.map((c) => {
           const isActive = active === c.name
           return (
@@ -341,7 +383,7 @@ function CategorySidebar({ active, onChange, categories }) {
             >
               {c.icon ? (
                 <span
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow ring-1 ring-black/5 ${
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow ring-1 ring-black/5 ${
                     c.icon === 'new'
                       ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
                       : 'bg-gradient-to-br from-amber-400 to-orange-500'
@@ -354,7 +396,7 @@ function CategorySidebar({ active, onChange, categories }) {
                   )}
                 </span>
               ) : (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
                   <img src={c.img} alt="" className="h-full w-full object-cover" />
                 </span>
               )}
@@ -442,86 +484,243 @@ function MenuHeader({ itemCount }) {
 const STATUS_LABEL = {
   new: 'New',
   best_seller: 'Best Seller',
+  bundle: 'Bundle',
   sold_out: 'Sold out',
 }
 
+// In-category status filters (chips above the product grid).
+const TAGS = [
+  { key: 'new', label: 'New', icon: '✨' },
+  { key: 'best_seller', label: 'Best Seller', icon: '🏆' },
+  { key: 'bundle', label: 'Bundle', icon: '🎁' },
+]
+
 function MenuCard({ product, qty, onAdd, onDec }) {
+  const [open, setOpen] = useState(false)
   const soldOut = product.status === 'sold_out'
   const onSale = product.originalPrice != null && product.originalPrice > product.price
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition hover:shadow-xl">
-      <div className="relative overflow-hidden">
-        <img
-          src={product.img}
-          alt={product.name}
-          className={`h-56 w-full object-cover transition duration-300 group-hover:scale-105 ${
-            soldOut ? 'opacity-60 grayscale' : ''
-          }`}
-        />
-        {product.status && (
-          <span
-            className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${
-              soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
+        aria-label={`View ${product.name}`}
+        className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
+        <div className="relative overflow-hidden">
+          <img
+            src={product.img}
+            alt={product.name}
+            className={`h-56 w-full object-cover transition duration-300 group-hover:scale-105 ${
+              soldOut ? 'opacity-60 grayscale' : ''
             }`}
-          >
-            {STATUS_LABEL[product.status] || product.status}
-          </span>
-        )}
+          />
+          {product.status && (
+            <span
+              className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${
+                soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'
+              }`}
+            >
+              {STATUS_LABEL[product.status] || product.status}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col p-4">
+          <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
+          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{product.desc}</p>
+          {(product.calories != null || product.features?.length > 0) && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {product.calories != null && (
+                <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+                  {product.calories} cal
+                </span>
+              )}
+              {product.features?.map((a) => (
+                <span
+                  key={a}
+                  title={`Contains ${a}`}
+                  className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-auto flex items-center justify-between pt-3">
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
+              {onSale && (
+                <span className="text-xs text-slate-400 line-through">{peso(product.originalPrice)}</span>
+              )}
+            </span>
+            {soldOut ? (
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400">
+                Sold out
+              </span>
+            ) : qty === 0 ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAdd(product.id)
+                }}
+                className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+              >
+                Add
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <QtyButton
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDec(product.id)
+                  }}
+                  label="Decrease"
+                >
+                  −
+                </QtyButton>
+                <span className="w-5 text-center text-sm font-semibold">{qty}</span>
+                <QtyButton
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onAdd(product.id)
+                  }}
+                  label="Increase"
+                >
+                  +
+                </QtyButton>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="text-sm font-semibold text-navy-800">{product.name}</h3>
-        <p className="mt-1 line-clamp-2 text-xs text-slate-500">{product.desc}</p>
-        {(product.calories != null || product.features?.length > 0) && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {open && (
+        <ProductMenuModal
+          product={product}
+          qty={qty}
+          onAdd={onAdd}
+          onDec={onDec}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+// Product detail modal opened by clicking a MenuCard.
+function ProductMenuModal({ product, qty, onAdd, onDec, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const soldOut = product.status === 'sold_out'
+  const onSale = product.originalPrice != null && product.originalPrice > product.price
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={product.name}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+        <div className="grid md:grid-cols-2">
+          <img
+            src={product.img}
+            alt={product.name}
+            className={`h-64 w-full object-cover md:h-full md:min-h-[24rem] ${
+              soldOut ? 'opacity-60 grayscale' : ''
+            }`}
+          />
+          <div className="flex flex-col p-8">
+            {product.status && (
+              <span className="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">
+                {STATUS_LABEL[product.status] || product.status}
+              </span>
+            )}
+            <h3 className="mt-3 text-2xl font-bold text-navy-800">{product.name}</h3>
+            {product.desc && (
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">{product.desc}</p>
+            )}
             {product.calories != null && (
-              <span className="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
+              <span className="mt-4 w-fit rounded-full bg-navy-50 px-3 py-1 text-sm font-semibold text-navy-700">
                 {product.calories} cal
               </span>
             )}
-            {product.features?.map((a) => (
-              <span
-                key={a}
-                title={`Contains ${a}`}
-                className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
-              >
-                {a}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="flex items-baseline gap-1.5">
-            <span className="text-lg font-bold text-brand-600">{peso(product.price)}</span>
-            {onSale && (
-              <span className="text-xs text-slate-400 line-through">{peso(product.originalPrice)}</span>
+            {product.features?.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-700">Allergens</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {product.features.map((a) => (
+                    <span
+                      key={a}
+                      className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700"
+                    >
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
-          </span>
-          {soldOut ? (
-            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400">
-              Sold out
-            </span>
-          ) : qty === 0 ? (
-            <button
-              type="button"
-              onClick={() => onAdd(product.id)}
-              className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
-            >
-              Add
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <QtyButton onClick={() => onDec(product.id)} label="Decrease">
-                −
-              </QtyButton>
-              <span className="w-5 text-center text-sm font-semibold">{qty}</span>
-              <QtyButton onClick={() => onAdd(product.id)} label="Increase">
-                +
-              </QtyButton>
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
+              <span className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-brand-600">{peso(product.price)}</span>
+                {onSale && (
+                  <span className="text-sm text-slate-400 line-through">{peso(product.originalPrice)}</span>
+                )}
+              </span>
+              {soldOut ? (
+                <span className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-400">
+                  Sold out
+                </span>
+              ) : qty === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onAdd(product.id)}
+                  className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+                >
+                  Add to cart
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <QtyButton onClick={() => onDec(product.id)} label="Decrease">
+                    −
+                  </QtyButton>
+                  <span className="w-6 text-center text-base font-semibold">{qty}</span>
+                  <QtyButton onClick={() => onAdd(product.id)} label="Increase">
+                    +
+                  </QtyButton>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

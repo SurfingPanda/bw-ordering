@@ -24,6 +24,7 @@ const SECTIONS = [
   { key: 'categories', label: 'Categories', Icon: GridIcon },
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
   { key: 'products', label: 'Products', Icon: TagIcon },
+  { key: 'menuCategories', label: 'Menu Categories', Icon: GridIcon },
   { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
   { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
   { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
@@ -135,6 +136,10 @@ export default function AdminContent() {
   const ap = content?.authPanel || DEFAULT_CONTENT.authPanel
   const setAuthPanel = (patch) =>
     setContent((c) => ({ ...c, authPanel: { ...(c.authPanel || DEFAULT_CONTENT.authPanel), ...patch } }))
+
+  // Distinct existing product categories — powers the category combobox so
+  // editors reuse names (avoids Bread/Breads-style duplicates) or add new ones.
+  const categoryOptions = [...new Set(products.map((p) => p.category).filter(Boolean))].sort()
 
   const setFranchise = (patch) =>
     setContent((c) => ({ ...c, franchise: { ...(c.franchise || DEFAULT_CONTENT.franchise), ...patch } }))
@@ -501,6 +506,11 @@ export default function AdminContent() {
               title="Menu Products"
               subtitle="The shared product catalogue shown on /menu and used for order pricing. Removing a product archives it (soft-delete)."
             >
+              <datalist id="bw-categories">
+                {categoryOptions.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {products.map((p, i) => (
                   <ItemCard
@@ -521,10 +531,12 @@ export default function AdminContent() {
                       onChange={(name) => updateProduct(i, { name })}
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <TextRow
+                      <ComboRow
                         label="Category"
                         value={p.category}
                         onChange={(category) => updateProduct(i, { category })}
+                        listId="bw-categories"
+                        placeholder="Pick or type new…"
                       />
                       <SelectRow
                         label="Status"
@@ -534,6 +546,7 @@ export default function AdminContent() {
                           ['', 'None'],
                           ['new', 'New'],
                           ['best_seller', 'Best seller'],
+                          ['bundle', 'Bundle'],
                           ['sold_out', 'Sold out'],
                         ]}
                       />
@@ -580,6 +593,19 @@ export default function AdminContent() {
                 ))}
               </div>
               <AddButton onClick={addProduct}>+ Add product</AddButton>
+            </Panel>
+          )}
+
+          {active === 'menuCategories' && (
+            <Panel
+              title="Menu Categories"
+              subtitle="Categories are derived from products. Rename to merge two categories into one, or delete a category and move its products elsewhere. Click “Save changes” to apply."
+            >
+              <CategoryManager
+                products={products}
+                setProducts={setProducts}
+                categoryOptions={categoryOptions}
+              />
             </Panel>
           )}
 
@@ -1050,6 +1076,132 @@ function TextRow({ label, value, onChange }) {
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
       />
     </label>
+  )
+}
+
+// Free-text input with autocomplete suggestions from a shared <datalist>.
+// Lets editors reuse an existing category or type a brand-new one.
+function ComboRow({ label, value, onChange, listId, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <input
+        list={listId}
+        value={value || ''}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+    </label>
+  )
+}
+
+// Bulk category management. Categories are derived from products, so renaming
+// (= merging) and deleting (= reassigning) are just edits to product.category.
+// Changes mutate the editor's local products state, persisted on global Save.
+function CategoryManager({ products, setProducts, categoryOptions }) {
+  const counts = {}
+  products.forEach((p) => {
+    if (p.category) counts[p.category] = (counts[p.category] || 0) + 1
+  })
+  const cats = Object.keys(counts).sort()
+
+  const renameCategory = (from, to) => {
+    if (!to || to === from) return
+    setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to } : p)))
+  }
+  const deleteCategory = (from, to) =>
+    setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to || null } : p)))
+
+  if (cats.length === 0) {
+    return (
+      <p className="text-sm text-slate-500">
+        No categories yet — add one from the Products tab (the Category field).
+      </p>
+    )
+  }
+
+  return (
+    <>
+      <datalist id="bw-categories">
+        {categoryOptions.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {cats.map((name) => (
+          <CategoryRow
+            key={name}
+            name={name}
+            count={counts[name]}
+            others={cats.filter((c) => c !== name)}
+            onRename={renameCategory}
+            onDelete={deleteCategory}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function CategoryRow({ name, count, others, onRename, onDelete }) {
+  const targetOptions = [...new Set([...others, 'Other'])].filter((o) => o !== name)
+  const [rename, setRename] = useState(name)
+  const [target, setTarget] = useState(targetOptions[0] || 'Other')
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+      <div className="flex items-center justify-between">
+        <p className="font-semibold text-navy-800">{name}</p>
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+          {count} product{count === 1 ? '' : 's'}
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-end gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="mb-1 block text-xs font-medium text-slate-500">Rename / merge to</span>
+          <input
+            list="bw-categories"
+            value={rename}
+            onChange={(e) => setRename(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => onRename(name, rename.trim())}
+          disabled={!rename.trim() || rename.trim() === name}
+          className="shrink-0 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Apply
+        </button>
+      </div>
+
+      <div className="mt-2 flex items-end gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="mb-1 block text-xs font-medium text-slate-500">Delete & move products to</span>
+          <select
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-500"
+          >
+            {targetOptions.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => onDelete(name, target)}
+          className="shrink-0 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
   )
 }
 
