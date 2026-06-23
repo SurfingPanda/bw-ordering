@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useAuth } from '../context/AuthContext'
 import { createOrder } from '../lib/orders'
+import { fetchActiveVouchers } from '../lib/vouchers'
 
 // Multi-section checkout page reached from the Menu cart ("Proceed to
 // Checkout"). The cart summary is handed over via localStorage (key
@@ -16,12 +17,6 @@ const VAT_RATE = 0.12
 const DELIVERY_FEE = 79
 const EXPRESS_FEE = 149
 const FREE_DELIVERY_MIN = 1000
-
-const VOUCHERS = {
-  BW10: { type: 'percent', value: 10, label: '10% off' },
-  SAVE50: { type: 'amount', value: 50, label: '₱50 off' },
-  FREEDEL: { type: 'freedel', label: 'Free delivery' },
-}
 
 const STEPS = ['Cart', 'Delivery', 'Details', 'Payment', 'Confirmation']
 
@@ -51,6 +46,11 @@ export default function Checkout() {
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(payload?.voucher ? { code: payload.voucher } : null)
   const [voucherError, setVoucherError] = useState('')
+  const [voucherDefs, setVoucherDefs] = useState({})
+
+  useEffect(() => {
+    fetchActiveVouchers().then(setVoucherDefs).catch(() => {})
+  }, [])
 
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
@@ -67,7 +67,7 @@ export default function Checkout() {
     [items],
   )
 
-  const def = voucher ? VOUCHERS[voucher.code] : null
+  const def = voucher ? voucherDefs[voucher.code] : null
   let discount = 0
   if (def?.type === 'percent') discount = (subtotal * def.value) / 100
   else if (def?.type === 'amount') discount = Math.min(def.value, subtotal)
@@ -95,7 +95,7 @@ export default function Checkout() {
   const applyVoucher = () => {
     const key = code.trim().toUpperCase()
     if (!key) return
-    if (!VOUCHERS[key]) {
+    if (!voucherDefs[key]) {
       setVoucher(null)
       setVoucherError('Invalid voucher code')
       return

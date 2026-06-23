@@ -34,7 +34,11 @@
       "Bash(php -l database/seeders/ProductSeeder.php)",
       "Bash(php -l app/Http/Controllers/OrderController.php)",
       "Bash(php -l app/Models/Order.php)",
-      "Bash(timeout 90 npm install qrcode)"
+      "Bash(timeout 90 npm install qrcode)",
+      "Bash(cd *)",
+      "Bash(php -l app/Http/Controllers/VoucherController.php)",
+      "Bash(curl -s http://localhost:8000/api/vouchers/active)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers)"
     ]
   }
 }

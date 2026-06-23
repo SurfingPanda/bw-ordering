@@ -60,6 +60,9 @@ export const DEFAULT_CONTENT = {
     { name: 'Red Velvet Slice', price: '₱150', tag: 'New', img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80' },
   ],
   buttons: ALL_BUTTONS_VISIBLE,
+  // Editor-declared menu categories (lets you create a category before any
+  // product uses it). Menu categories are otherwise derived from products.
+  menuCategories: [],
   // Editable left panel of the Login / Register pages (src/components/BrandPanel.jsx).
   authPanel: {
     logo: '/images/logo (1).png',

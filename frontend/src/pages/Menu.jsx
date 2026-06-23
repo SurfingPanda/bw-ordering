@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchMenuProducts } from '../lib/content'
+import { fetchActiveVouchers } from '../lib/vouchers'
 import { useSeo } from '../lib/seo'
 
 // Shopping / menu page — browse foods by category and build a cart.
@@ -14,13 +15,6 @@ const peso = (n) =>
 const VAT_RATE = 0.12 // 12% Philippine VAT
 const DELIVERY_FEE = 79
 const FREE_DELIVERY_MIN = 1000
-
-// Demo voucher codes (case-insensitive).
-const VOUCHERS = {
-  BW10: { type: 'percent', value: 10, label: '10% off' },
-  SAVE50: { type: 'amount', value: 50, label: '₱50 off' },
-  FREEDEL: { type: 'freedel', label: 'Free delivery' },
-}
 
 // Which categories pair well together — drives the "Best paired with" cart
 // suggestions. Listed in priority order; a drink almost always pairs.
@@ -60,18 +54,21 @@ function pairedSuggestions(lines, menu, limit = 3) {
   return pick.slice(0, limit)
 }
 
-export default function Menu() {
-  useSeo('/menu')
+export default function Menu({ previewProducts, preview = false }) {
+  useSeo('/menu', !preview)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [menu, setMenu] = useState([])
-  const [menuLoading, setMenuLoading] = useState(true)
+  const [fetchedMenu, setFetchedMenu] = useState([])
+  // In the Site Editor preview, render the editor's live (unsaved) products.
+  const menu = previewProducts ?? fetchedMenu
+  const [menuLoading, setMenuLoading] = useState(!previewProducts)
   const [active, setActive] = useState('All')
   const [tag, setTag] = useState('all') // in-category filter: all | new | best_seller | bundle
   const [query, setQuery] = useState('')
   // Lazy-init from the persisted cart so it survives /checkout → "Add more
   // items" → /menu. try/catch returns {} on the server (no localStorage),
-  // matching the repo's SSR-safe cache pattern.
+  // matching the repo's SSR-safe cache pattern. The editor preview starts empty.
   const [cart, setCart] = useState(() => {
+    if (preview) return {}
     try {
       return JSON.parse(localStorage.getItem('bw_cart') || '{}') || {}
     } catch {
@@ -84,11 +81,12 @@ export default function Menu() {
   // trigger trusts). Once loaded, honor a /menu?add=<name> deep link from the
   // landing "Best Sellers" by adding that product and filtering to its category.
   useEffect(() => {
+    if (previewProducts) return // preview uses the editor's products, no fetch
     let alive = true
     fetchMenuProducts()
       .then((rows) => {
         if (!alive) return
-        setMenu(rows)
+        setFetchedMenu(rows)
         setMenuLoading(false)
         const name = searchParams.get('add')
         if (name) {
@@ -113,6 +111,7 @@ export default function Menu() {
   // initial value isn't needlessly rewritten.
   const firstSave = useRef(true)
   useEffect(() => {
+    if (preview) return // don't touch the real cart from the editor preview
     if (firstSave.current) {
       firstSave.current = false
       return
@@ -122,7 +121,7 @@ export default function Menu() {
     } catch {
       // best-effort
     }
-  }, [cart])
+  }, [cart, preview])
 
   const inActiveCategory = (p) =>
     active === 'All'
@@ -281,7 +280,13 @@ export default function Menu() {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {visible.map((p) => (
-                <MenuCard key={p.id} product={p} qty={cart[p.id] || 0} onAdd={add} onDec={dec} />
+                <MenuCard
+                  key={p.id || p._key}
+                  product={p}
+                  qty={cart[p.id] || 0}
+                  onAdd={add}
+                  onDec={dec}
+                />
               ))}
             </div>
           )}
@@ -742,11 +747,16 @@ function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onChec
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
   const [error, setError] = useState('')
+  const [voucherDefs, setVoucherDefs] = useState({})
+
+  useEffect(() => {
+    fetchActiveVouchers().then(setVoucherDefs).catch(() => {})
+  }, [])
 
   const applyVoucher = () => {
     const key = code.trim().toUpperCase()
     if (!key) return
-    const def = VOUCHERS[key]
+    const def = voucherDefs[key]
     if (!def) {
       setVoucher(null)
       setError('Invalid voucher code')

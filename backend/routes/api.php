@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SiteContentController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 
 // Legacy Sanctum auth (unused by the frontend — kept for now).
@@ -22,6 +23,10 @@ Route::get('/products', [ProductController::class, 'index']);
 // Landing/franchise CMS blob (public read).
 Route::get('/site-content', [SiteContentController::class, 'show']);
 
+// Active voucher codes for the checkout preview (public; the order endpoint
+// still re-validates server-side).
+Route::get('/vouchers/active', [VoucherController::class, 'active']);
+
 // Careers — applicants are anonymous, so resume upload + submit are public.
 Route::post('/resumes', [ApplicationController::class, 'uploadResume']);
 Route::post('/applications', [ApplicationController::class, 'store']);
@@ -36,6 +41,9 @@ Route::middleware('supabase')->group(function () {
 
     Route::put('/site-content', [SiteContentController::class, 'update']);
     Route::post('/uploads', [UploadController::class, 'store']);
+
+    Route::get('/vouchers', [VoucherController::class, 'index']);
+    Route::post('/vouchers/sync', [VoucherController::class, 'sync']);
 
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/mine', [OrderController::class, 'mine']);

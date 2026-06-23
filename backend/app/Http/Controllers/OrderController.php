@@ -86,6 +86,9 @@ class OrderController extends Controller
         if (! empty($data['voucher'])) {
             $voucher = Voucher::where('code', strtoupper(trim($data['voucher'])))
                 ->where('active', true)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')->orWhereDate('expires_at', '>=', now()->toDateString());
+                })
                 ->first();
             if ($voucher) {
                 $voucherCode = $voucher->code;

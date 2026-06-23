@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Landing from './Landing'
 import Franchise from './Franchise'
 import Login from './Login'
+import Menu from './Menu'
 import {
   DEFAULT_CONTENT,
   LANDING_BUTTONS,
@@ -13,6 +14,7 @@ import {
   syncProducts,
   uploadImage,
 } from '../lib/content'
+import { fetchVouchers, syncVouchers } from '../lib/vouchers'
 
 // Admin "Site Content" editor — full-width CMS layout with a section sidebar.
 // Edits the landing page content, the Menu products, and the Franchise page.
@@ -25,6 +27,7 @@ const SECTIONS = [
   { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
   { key: 'products', label: 'Products', Icon: TagIcon },
   { key: 'menuCategories', label: 'Menu Categories', Icon: GridIcon },
+  { key: 'vouchers', label: 'Vouchers', Icon: TicketIcon },
   { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
   { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
   { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
@@ -44,6 +47,9 @@ export default function AdminContent() {
   const [content, setContent] = useState(null)
   const [products, setProducts] = useState([])
   const [originalIds, setOriginalIds] = useState([])
+  const [vouchers, setVouchers] = useState([])
+  const [voucherIds, setVoucherIds] = useState([])
+  const [voucherFilter, setVoucherFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -51,10 +57,16 @@ export default function AdminContent() {
   const [active, setActive] = useState('announcement')
 
   useEffect(() => {
-    Promise.all([getSiteContent(), fetchAllProducts().catch(() => [])]).then(([c, p]) => {
+    Promise.all([
+      getSiteContent(),
+      fetchAllProducts().catch(() => []),
+      fetchVouchers().catch(() => []),
+    ]).then(([c, p, v]) => {
       setContent(c)
       setProducts(p)
       setOriginalIds(p.map((x) => x.id))
+      setVouchers(v)
+      setVoucherIds(v.map((x) => x.id))
       setLoading(false)
     })
   }, [])
@@ -67,6 +79,19 @@ export default function AdminContent() {
       // in the shared products table (also used for order pricing) — save both.
       await saveSiteContent(content)
       await syncProducts(products, originalIds)
+      const freshVouchers = await syncVouchers(vouchers, voucherIds)
+      setVouchers(
+        freshVouchers.map((v) => ({
+          id: v.id,
+          code: v.code,
+          type: v.type,
+          value: Number(v.value) || 0,
+          label: v.label || '',
+          active: !!v.active,
+          expiresAt: v.expires_at ? String(v.expires_at).slice(0, 10) : '',
+        })),
+      )
+      setVoucherIds(freshVouchers.map((v) => v.id))
       setMessage('saved')
     } catch (err) {
       setMessage(`error:${err.message}`)
@@ -127,6 +152,25 @@ export default function AdminContent() {
     ])
   const removeProduct = (idx) => setProducts((ps) => ps.filter((_, i) => i !== idx))
 
+  // Vouchers (own table; edited locally, synced on Save). New vouchers have no
+  // id yet — `_key` is a stable React key until the DB assigns one.
+  const updateVoucher = (idx, patch) =>
+    setVouchers((vs) => vs.map((v, i) => (i === idx ? { ...v, ...patch } : v)))
+  const addVoucher = () =>
+    setVouchers((vs) => [
+      ...vs,
+      {
+        _key: crypto.randomUUID(),
+        code: '',
+        type: 'percent',
+        value: 10,
+        label: '',
+        active: true,
+        expiresAt: '',
+      },
+    ])
+  const removeVoucher = (idx) => setVouchers((vs) => vs.filter((_, i) => i !== idx))
+
   // Franchise content (nested under content.franchise).
   const fr = content?.franchise || DEFAULT_CONTENT.franchise
   const wn = content?.whatsNew || DEFAULT_CONTENT.whatsNew
@@ -137,9 +181,19 @@ export default function AdminContent() {
   const setAuthPanel = (patch) =>
     setContent((c) => ({ ...c, authPanel: { ...(c.authPanel || DEFAULT_CONTENT.authPanel), ...patch } }))
 
-  // Distinct existing product categories — powers the category combobox so
-  // editors reuse names (avoids Bread/Breads-style duplicates) or add new ones.
-  const categoryOptions = [...new Set(products.map((p) => p.category).filter(Boolean))].sort()
+  // Editor-declared categories (may have no products yet) live in the CMS blob.
+  const declaredCategories = content?.menuCategories || []
+  const setDeclaredCategories = (updater) =>
+    setContent((c) => ({
+      ...c,
+      menuCategories: updater(c?.menuCategories || []),
+    }))
+
+  // Distinct categories — from products + declared — powers the category
+  // combobox so editors reuse names (avoids Bread/Breads-style duplicates).
+  const categoryOptions = [
+    ...new Set([...products.map((p) => p.category).filter(Boolean), ...declaredCategories]),
+  ].sort()
 
   const setFranchise = (patch) =>
     setContent((c) => ({ ...c, franchise: { ...(c.franchise || DEFAULT_CONTENT.franchise), ...patch } }))
@@ -375,6 +429,11 @@ export default function AdminContent() {
                       value={p.name}
                       onChange={(name) => updateItem('whatsNewProducts', i, { name })}
                     />
+                    <TextAreaRow
+                      label="Description"
+                      value={p.desc}
+                      onChange={(desc) => updateItem('whatsNewProducts', i, { desc })}
+                    />
                     <div className="grid grid-cols-2 gap-2">
                       <TextRow
                         label="Price"
@@ -412,6 +471,7 @@ export default function AdminContent() {
                 onClick={() =>
                   addItem('whatsNewProducts', {
                     name: 'New item',
+                    desc: '',
                     price: '₱0',
                     tag: 'New',
                     img: '',
@@ -476,6 +536,11 @@ export default function AdminContent() {
                       value={p.name}
                       onChange={(name) => updateItem('bestSellers', i, { name })}
                     />
+                    <TextAreaRow
+                      label="Description"
+                      value={p.desc}
+                      onChange={(desc) => updateItem('bestSellers', i, { desc })}
+                    />
                     <div className="grid grid-cols-2 gap-2">
                       <TextRow
                         label="Price"
@@ -488,12 +553,38 @@ export default function AdminContent() {
                         onChange={(tag) => updateItem('bestSellers', i, { tag })}
                       />
                     </div>
+                    <NumberRow
+                      label="Calories (optional)"
+                      value={p.calories ?? ''}
+                      onChange={(calories) =>
+                        updateItem('bestSellers', i, {
+                          calories: calories === '' ? null : calories,
+                        })
+                      }
+                    />
+                    <TextAreaRow
+                      label="Allergens (one per line)"
+                      value={(p.allergens || []).join('\n')}
+                      onChange={(v) =>
+                        updateItem('bestSellers', i, {
+                          allergens: v.split('\n').map((s) => s.trim()).filter(Boolean),
+                        })
+                      }
+                    />
                   </ItemCard>
                 ))}
               </div>
               <AddButton
                 onClick={() =>
-                  addItem('bestSellers', { name: 'New item', price: '₱0', tag: 'New', img: '' })
+                  addItem('bestSellers', {
+                    name: 'New item',
+                    desc: '',
+                    price: '₱0',
+                    tag: 'New',
+                    img: '',
+                    calories: null,
+                    allergens: [],
+                  })
                 }
               >
                 + Add product
@@ -605,7 +696,61 @@ export default function AdminContent() {
                 products={products}
                 setProducts={setProducts}
                 categoryOptions={categoryOptions}
+                declared={declaredCategories}
+                setDeclared={setDeclaredCategories}
               />
+            </Panel>
+          )}
+
+          {active === 'vouchers' && (
+            <Panel
+              title="Vouchers"
+              subtitle="Discount codes customers can apply at checkout. These are the real codes — order totals are validated against them. Click “Save changes” to apply."
+            >
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {vouchers.map((v, i) => (
+                  <ItemCard
+                    key={v.id || v._key}
+                    index={i}
+                    total={vouchers.length}
+                    hideMove
+                    onRemove={() => removeVoucher(i)}
+                  >
+                    <TextRow
+                      label="Code"
+                      value={v.code}
+                      onChange={(code) => updateVoucher(i, { code: code.toUpperCase() })}
+                    />
+                    <SelectRow
+                      label="Type"
+                      value={v.type}
+                      onChange={(type) => updateVoucher(i, { type })}
+                      options={[
+                        ['percent', '% off'],
+                        ['amount', '₱ off'],
+                        ['freedel', 'Free delivery'],
+                      ]}
+                    />
+                    {v.type !== 'freedel' && (
+                      <NumberRow
+                        label={v.type === 'percent' ? 'Percent off (%)' : 'Amount off (₱)'}
+                        value={v.value}
+                        onChange={(value) => updateVoucher(i, { value })}
+                      />
+                    )}
+                    <TextRow
+                      label="Label (shown to customer)"
+                      value={v.label}
+                      onChange={(label) => updateVoucher(i, { label })}
+                    />
+                    <label className="flex items-center justify-between pt-1">
+                      <span className="text-xs font-medium text-slate-500">Active</span>
+                      <Toggle on={!!v.active} onChange={(active) => updateVoucher(i, { active })} />
+                    </label>
+                  </ItemCard>
+                ))}
+              </div>
+              <AddButton onClick={addVoucher}>+ Add voucher</AddButton>
             </Panel>
           )}
 
@@ -830,7 +975,7 @@ export default function AdminContent() {
               <span className="h-2 w-2 rounded-full bg-green-500" />
               Live preview — full page, unsaved changes
             </p>
-            <FullPreview content={content} active={active} />
+            <FullPreview content={content} active={active} products={products} />
           </div>
         </aside>
         </div>
@@ -909,7 +1054,7 @@ const SECTION_ANCHOR = {
   buttons: null,
 }
 
-function FullPreview({ content, active }) {
+function FullPreview({ content, active, products }) {
   const wrapRef = useRef(null)
   const innerRef = useRef(null)
   const [scale, setScale] = useState(0.4)
@@ -972,6 +1117,8 @@ function FullPreview({ content, active }) {
           <Franchise content={content} preview />
         ) : active === 'authPanel' ? (
           <Login content={content} preview />
+        ) : active === 'products' || active === 'menuCategories' ? (
+          <Menu previewProducts={products} preview />
         ) : (
           <Landing content={content} preview />
         )}
@@ -1099,26 +1246,31 @@ function ComboRow({ label, value, onChange, listId, placeholder }) {
 // Bulk category management. Categories are derived from products, so renaming
 // (= merging) and deleting (= reassigning) are just edits to product.category.
 // Changes mutate the editor's local products state, persisted on global Save.
-function CategoryManager({ products, setProducts, categoryOptions }) {
+function CategoryManager({ products, setProducts, categoryOptions, declared, setDeclared }) {
+  const [newCat, setNewCat] = useState('')
+
   const counts = {}
   products.forEach((p) => {
     if (p.category) counts[p.category] = (counts[p.category] || 0) + 1
   })
-  const cats = Object.keys(counts).sort()
+  const cats = [...new Set([...Object.keys(counts), ...declared])].sort()
+
+  const addCategory = () => {
+    const name = newCat.trim()
+    if (!name || cats.includes(name)) return
+    setDeclared((list) => [...new Set([...list, name])])
+    setNewCat('')
+  }
 
   const renameCategory = (from, to) => {
     if (!to || to === from) return
     setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to } : p)))
+    setDeclared((list) => [...new Set(list.map((c) => (c === from ? to : c)))])
   }
-  const deleteCategory = (from, to) =>
-    setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to || null } : p)))
 
-  if (cats.length === 0) {
-    return (
-      <p className="text-sm text-slate-500">
-        No categories yet — add one from the Products tab (the Category field).
-      </p>
-    )
+  const deleteCategory = (from, to) => {
+    setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to || null } : p)))
+    setDeclared((list) => list.filter((c) => c !== from))
   }
 
   return (
@@ -1128,18 +1280,45 @@ function CategoryManager({ products, setProducts, categoryOptions }) {
           <option key={c} value={c} />
         ))}
       </datalist>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {cats.map((name) => (
-          <CategoryRow
-            key={name}
-            name={name}
-            count={counts[name]}
-            others={cats.filter((c) => c !== name)}
-            onRename={renameCategory}
-            onDelete={deleteCategory}
+
+      {/* add a new category */}
+      <div className="mb-5 flex items-end gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4">
+        <label className="min-w-0 flex-1">
+          <span className="mb-1 block text-xs font-medium text-slate-500">Add a new category</span>
+          <input
+            value={newCat}
+            onChange={(e) => setNewCat(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+            placeholder="e.g. Sandwiches"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
           />
-        ))}
+        </label>
+        <button
+          type="button"
+          onClick={addCategory}
+          disabled={!newCat.trim() || cats.includes(newCat.trim())}
+          className="shrink-0 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          + Add
+        </button>
       </div>
+
+      {cats.length === 0 ? (
+        <p className="text-sm text-slate-500">No categories yet — add one above.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {cats.map((name) => (
+            <CategoryRow
+              key={name}
+              name={name}
+              count={counts[name] || 0}
+              others={cats.filter((c) => c !== name)}
+              onRename={renameCategory}
+              onDelete={deleteCategory}
+            />
+          ))}
+        </div>
+      )}
     </>
   )
 }
@@ -1374,6 +1553,14 @@ function SparkleIcon(p) {
   return (
     <svg {...iconBase({ ...p, fill: 'currentColor' })}>
       <path d="M12 2l1.9 5.6a3 3 0 0 0 1.9 1.9L21.4 11.4l-5.6 1.9a3 3 0 0 0-1.9 1.9L12 20.8l-1.9-5.6a3 3 0 0 0-1.9-1.9L2.6 11.4l5.6-1.9a3 3 0 0 0 1.9-1.9L12 2z" />
+    </svg>
+  )
+}
+function TicketIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z" />
+      <path d="M13 7v2M13 15v2" />
     </svg>
   )
 }
