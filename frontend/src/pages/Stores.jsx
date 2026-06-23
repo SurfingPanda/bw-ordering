@@ -16,28 +16,43 @@ const REGIONS = ['All', 'Metro Manila', 'Luzon', 'Visayas', 'Mindanao']
 const dirHref = (address) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
 
-export default function Stores() {
-  useSeo('/stores')
-  const [stores, setStores] = useState([])
+// `previewStores` (Site Editor) renders the page from the in-editor branch list
+// instead of fetching; `preview` disables the SEO <head> takeover.
+export default function Stores({ previewStores = null, preview = false }) {
+  useSeo('/stores', !preview)
+  const [fetched, setFetched] = useState([])
   const [region, setRegion] = useState('All')
   const [query, setQuery] = useState('')
   const [selectedName, setSelectedName] = useState(null)
 
-  // Load branches (with coordinates) from the Laravel API.
+  // Load branches (with coordinates) from the Laravel API — skipped in preview,
+  // where the editor passes the live (unsaved) list straight in.
   useEffect(() => {
+    if (previewStores) return
     let active = true
     api
       .get('/stores')
       .then((res) => {
-        if (active) setStores(res.data)
+        if (active) setFetched(res.data)
       })
       .catch(() => {
-        if (active) setStores([])
+        if (active) setFetched([])
       })
     return () => {
       active = false
     }
-  }, [])
+  }, [previewStores])
+
+  // Coords may arrive as strings from the editor; coerce so StoreMap's
+  // Number.isFinite checks pass (empty → NaN, which it safely skips).
+  const stores = useMemo(() => {
+    const toNum = (v) => (v === '' || v == null ? NaN : Number(v))
+    return (previewStores || fetched).map((s) => ({
+      ...s,
+      latitude: toNum(s.latitude),
+      longitude: toNum(s.longitude),
+    }))
+  }, [previewStores, fetched])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()

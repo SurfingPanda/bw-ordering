@@ -1,8 +1,8 @@
 import api from './api'
 
-// Toggleable call-to-action buttons on the landing page. The admin "Buttons"
-// editor renders a switch per entry; Landing hides a button when its key is set
-// to false. Keys default to visible (anything other than an explicit false).
+// Call-to-action buttons on the landing page. The admin "Buttons" editor sets
+// each to one of three states: 'on' (visible & working), 'disabled' (visible but
+// clicking does nothing), or 'off' (hidden from the live site).
 export const LANDING_BUTTONS = [
   { key: 'navSignIn', label: 'Sign In', group: 'Navigation bar' },
   { key: 'navOrder', label: 'Order Now', group: 'Navigation bar' },
@@ -12,10 +12,24 @@ export const LANDING_BUTTONS = [
   { key: 'newsletterSubscribe', label: 'Subscribe form', group: 'Newsletter' },
 ]
 
-// True unless the button has been explicitly switched off. Unknown keys (e.g.
-// buttons added after a save) default to visible.
+// Resolve a button's state from the stored value. Stored as `false` (off),
+// 'disabled', or anything else / undefined (on) — so old boolean saves still
+// work (true → on, false → off) and unknown keys default to on.
+export function buttonState(buttons, key) {
+  const v = buttons?.[key]
+  if (v === false || v === 'off') return 'off'
+  if (v === 'disabled') return 'disabled'
+  return 'on'
+}
+
+// True unless the button is hidden (off). Disabled buttons are still visible.
 export function isButtonVisible(content, key) {
-  return content?.buttons?.[key] !== false
+  return buttonState(content?.buttons, key) !== 'off'
+}
+
+// True when the button should render but be inert (clicks do nothing).
+export function isButtonDisabled(content, key) {
+  return buttonState(content?.buttons, key) === 'disabled'
 }
 
 const ALL_BUTTONS_VISIBLE = Object.fromEntries(LANDING_BUTTONS.map((b) => [b.key, true]))
@@ -60,6 +74,35 @@ export const DEFAULT_CONTENT = {
     { name: 'Red Velvet Slice', price: '₱150', tag: 'New', img: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80' },
   ],
   buttons: ALL_BUTTONS_VISIBLE,
+  // "Custom Cake" promo banner on the landing page (src/pages/Landing.jsx
+  // PromoBanner). The whole banner links to /menu; its button is toggled in the
+  // Buttons editor (promoOrder).
+  customCake: {
+    eyebrow: 'Celebrate every moment',
+    title: 'Custom cakes for birthdays & special occasions',
+    subtitle:
+      'Make it unforgettable with a personalized cake, baked fresh and decorated just the way you want it.',
+    buttonLabel: 'Order a custom cake',
+    image: '/images/custom-cakes.png',
+    alt: 'Custom tiered celebration cakes — wedding, themed, and princess designs',
+    // Where clicking the banner / its button goes. Internal path (e.g. /menu)
+    // or a full external URL (https://…).
+    bannerLink: '/menu',
+    buttonLink: '/register',
+  },
+  // "Sweet Deals" newsletter section on the landing page (Landing.jsx Newsletter).
+  newsletter: {
+    title: 'Get sweet deals in your inbox 🍰',
+    subtitle: 'Subscribe for exclusive promos, new treats, and special occasion offers.',
+    placeholder: 'Enter your email',
+    buttonLabel: 'Subscribe',
+  },
+  // Checkout payment settings. `qrPayload` is the merchant's QR Ph data string
+  // (decode your static QR to get it); checkout regenerates the QR per order with
+  // the amount injected. When empty, checkout falls back to a generated demo QR.
+  payment: {
+    qrPayload: '',
+  },
   // Editor-declared menu categories (lets you create a category before any
   // product uses it). Menu categories are otherwise derived from products.
   menuCategories: [],

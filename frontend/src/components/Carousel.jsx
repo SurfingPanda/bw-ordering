@@ -10,6 +10,7 @@ export default function Carousel({
   interval = 5000,
   className = '',
   arrows = true,
+  dots = true,
 }) {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -74,6 +75,7 @@ export default function Carousel({
           )}
 
           {/* dots */}
+          {dots && (
           <div className="absolute inset-x-0 bottom-5 z-20 flex justify-center gap-2">
             {slides.map((_, i) => (
               <button
@@ -87,6 +89,7 @@ export default function Carousel({
               />
             ))}
           </div>
+          )}
         </>
       )}
     </div>

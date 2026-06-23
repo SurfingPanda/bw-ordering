@@ -3,7 +3,45 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
-import { DEFAULT_CONTENT, getCachedContent, getSiteContent } from '../lib/content'
+import { DEFAULT_CONTENT, buttonState, getCachedContent, getSiteContent } from '../lib/content'
+
+// Disabled CTA styling + an onClick that swallows the click (and stops it from
+// bubbling to any clickable parent, e.g. the promo banner). Spread onto a Link
+// when its button state is 'disabled'.
+const DISABLED_BTN_CLS = 'cursor-not-allowed opacity-60'
+const swallowClick = (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// Editor-set destinations may be an internal route (/menu) or a full URL.
+const isExternal = (href) => /^https?:\/\//i.test(href || '')
+
+// A CTA that links to an editor-configured internal route or external URL, with
+// optional disabled (inert) state. Stops click propagation so it can sit inside
+// a clickable parent (e.g. the promo banner).
+function CtaLink({ to, disabled, className, children }) {
+  const cls = `${className}${disabled ? ` ${DISABLED_BTN_CLS}` : ''}`
+  const onClick = (e) => (disabled ? swallowClick(e) : e.stopPropagation())
+  const common = {
+    onClick,
+    className: cls,
+    'aria-disabled': disabled || undefined,
+    tabIndex: disabled ? -1 : undefined,
+  }
+  if (isExternal(to)) {
+    return (
+      <a href={to} target="_blank" rel="noreferrer" {...common}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <Link to={to || '#'} {...common}>
+      {children}
+    </Link>
+  )
+}
 import { useSeo } from '../lib/seo'
 
 // Goldilocks-style marketing landing page. Editable sections (announcement,
@@ -35,9 +73,9 @@ export default function Landing({ content: controlledContent, preview = false })
       <WhatsNew heading={content.whatsNew} products={content.whatsNewProducts} />
       <BestSellers products={content.bestSellers} buttons={buttons} />
       <Categories items={content.categories} />
-      <PromoBanner buttons={buttons} />
+      <PromoBanner buttons={buttons} data={content.customCake} />
       <StoreLocator buttons={buttons} />
-      <Newsletter buttons={buttons} />
+      <Newsletter buttons={buttons} data={content.newsletter} />
       <Footer />
     </div>
   )
@@ -62,8 +100,12 @@ function AnnouncementBar({ text }) {
 
 function NavBar({ buttons }) {
   const [open, setOpen] = useState(false)
-  const showSignIn = buttons?.navSignIn !== false
-  const showOrder = buttons?.navOrder !== false
+  const signInState = buttonState(buttons, 'navSignIn')
+  const orderState = buttonState(buttons, 'navOrder')
+  const showSignIn = signInState !== 'off'
+  const showOrder = orderState !== 'off'
+  const signInOff = signInState === 'disabled'
+  const orderOff = orderState === 'disabled'
   const links = [
     { label: 'Home', href: '#home' },
     { label: 'Menu', to: '/menu' },
@@ -95,7 +137,10 @@ function NavBar({ buttons }) {
           {showSignIn && (
             <Link
               to="/login"
-              className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
+              aria-disabled={signInOff}
+              tabIndex={signInOff ? -1 : undefined}
+              onClick={signInOff ? swallowClick : undefined}
+              className={`text-sm font-semibold text-navy-700 transition hover:text-brand-600 ${signInOff ? DISABLED_BTN_CLS : ''}`}
             >
               Sign In
             </Link>
@@ -103,7 +148,10 @@ function NavBar({ buttons }) {
           {showOrder && (
             <Link
               to="/menu"
-              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+              aria-disabled={orderOff}
+              tabIndex={orderOff ? -1 : undefined}
+              onClick={orderOff ? swallowClick : undefined}
+              className={`rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 ${orderOff ? DISABLED_BTN_CLS : ''}`}
             >
               Order Now
             </Link>
@@ -150,7 +198,10 @@ function NavBar({ buttons }) {
               {showSignIn && (
                 <Link
                   to="/login"
-                  className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
+                  aria-disabled={signInOff}
+                  tabIndex={signInOff ? -1 : undefined}
+                  onClick={signInOff ? swallowClick : undefined}
+                  className={`flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 ${signInOff ? DISABLED_BTN_CLS : ''}`}
                 >
                   Sign In
                 </Link>
@@ -158,7 +209,10 @@ function NavBar({ buttons }) {
               {showOrder && (
                 <Link
                   to="/menu"
-                  className="flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                  aria-disabled={orderOff}
+                  tabIndex={orderOff ? -1 : undefined}
+                  onClick={orderOff ? swallowClick : undefined}
+                  className={`flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white ${orderOff ? DISABLED_BTN_CLS : ''}`}
                 >
                   Order Now
                 </Link>
@@ -194,6 +248,8 @@ function Hero({ banners }) {
   return (
     <section id="home" className="bg-navy-900">
       <Carousel
+        arrows={false}
+        dots={false}
         slides={banners.map((s, i) => (
           <HeroSlide key={s.img + i} slide={s} />
         ))}
@@ -273,16 +329,24 @@ function BestSellers({ products, buttons }) {
             </Reveal>
           ))}
         </div>
-        {buttons?.bestSellersMenu !== false && (
-          <div className="mt-10 text-center">
-            <Link
-              to="/menu"
-              className="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900"
-            >
-              See full menu
-            </Link>
-          </div>
-        )}
+        {(() => {
+          const state = buttonState(buttons, 'bestSellersMenu')
+          if (state === 'off') return null
+          const off = state === 'disabled'
+          return (
+            <div className="mt-10 text-center">
+              <Link
+                to="/menu"
+                aria-disabled={off}
+                tabIndex={off ? -1 : undefined}
+                onClick={off ? swallowClick : undefined}
+                className={`inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900 ${off ? DISABLED_BTN_CLS : ''}`}
+              >
+                See full menu
+              </Link>
+            </div>
+          )
+        })()}
       </div>
     </section>
   )
@@ -443,46 +507,53 @@ function ProductModal({ product, onClose }) {
 /* Promo banner                                                        */
 /* ------------------------------------------------------------------ */
 
-function PromoBanner({ buttons }) {
+function PromoBanner({ buttons, data }) {
   const navigate = useNavigate()
+  const c = { ...DEFAULT_CONTENT.customCake, ...(data || {}) }
+  const goToBanner = () => {
+    if (isExternal(c.bannerLink)) window.open(c.bannerLink, '_blank', 'noopener')
+    else navigate(c.bannerLink || '/menu')
+  }
   return (
     <Reveal as="section" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <div
+        id="custom-cake"
         role="button"
         tabIndex={0}
-        onClick={() => navigate('/menu')}
+        onClick={goToBanner}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            navigate('/menu')
+            goToBanner()
           }
         }}
         aria-label="Order custom cakes"
         className="relative min-h-[300px] cursor-pointer rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl outline-none transition hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-white/70 sm:px-12"
       >
-        <img
-          src="/images/custom-cakes.png"
-          alt="Custom tiered celebration cakes — wedding, themed, and princess designs"
-          className="pointer-events-none absolute bottom-0 right-0 hidden w-[58%] max-w-[680px] drop-shadow-2xl sm:block"
-        />
+        {c.image && (
+          <img
+            src={c.image}
+            alt={c.alt}
+            className="pointer-events-none absolute bottom-0 right-0 hidden w-[58%] max-w-[680px] drop-shadow-2xl sm:block"
+          />
+        )}
         <div className="relative z-10 max-w-md">
-          <p className="font-script text-2xl text-white/90">Celebrate every moment</p>
-          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-            Custom cakes for birthdays & special occasions
-          </h2>
-          <p className="mt-3 text-sm text-white/90">
-            Make it unforgettable with a personalized cake, baked fresh and
-            decorated just the way you want it.
-          </p>
-          {buttons?.promoOrder !== false && (
-            <Link
-              to="/register"
-              onClick={(e) => e.stopPropagation()}
-              className="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50"
-            >
-              Order a custom cake
-            </Link>
-          )}
+          {c.eyebrow && <p className="font-script text-2xl text-white/90">{c.eyebrow}</p>}
+          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">{c.title}</h2>
+          {c.subtitle && <p className="mt-3 text-sm text-white/90">{c.subtitle}</p>}
+          {(() => {
+            const state = buttonState(buttons, 'promoOrder')
+            if (state === 'off') return null
+            return (
+              <CtaLink
+                to={c.buttonLink || '/register'}
+                disabled={state === 'disabled'}
+                className="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50"
+              >
+                {c.buttonLabel || 'Order a custom cake'}
+              </CtaLink>
+            )
+          })()}
         </div>
       </div>
     </Reveal>
@@ -533,21 +604,30 @@ function StoreLocator({ buttons }) {
         <p className="mt-3 text-sm text-navy-50/80">
           Find your nearest branch or simply order online for delivery and pickup.
         </p>
-        {buttons?.storeLocatorFind !== false && (
-          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-            <input
-              type="text"
-              placeholder="Enter your city or area"
-              className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 sm:w-72"
-            />
-            <Link
-              to="/stores"
-              className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-            >
-              Find a store
-            </Link>
-          </div>
-        )}
+        {(() => {
+          const state = buttonState(buttons, 'storeLocatorFind')
+          if (state === 'off') return null
+          const off = state === 'disabled'
+          return (
+            <div className={`mt-7 flex flex-col justify-center gap-3 sm:flex-row ${off ? DISABLED_BTN_CLS : ''}`}>
+              <input
+                type="text"
+                placeholder="Enter your city or area"
+                disabled={off}
+                className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed sm:w-72"
+              />
+              <Link
+                to="/stores"
+                aria-disabled={off}
+                tabIndex={off ? -1 : undefined}
+                onClick={off ? swallowClick : undefined}
+                className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+              >
+                Find a store
+              </Link>
+            </div>
+          )
+        })()}
       </Reveal>
     </section>
   )
@@ -557,35 +637,39 @@ function StoreLocator({ buttons }) {
 /* Newsletter                                                          */
 /* ------------------------------------------------------------------ */
 
-function Newsletter({ buttons }) {
+function Newsletter({ buttons, data }) {
+  const n = { ...DEFAULT_CONTENT.newsletter, ...(data || {}) }
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+    <section id="newsletter" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <Reveal className="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12">
-        <h2 className="text-2xl font-bold text-navy-800 sm:text-3xl">
-          Get sweet deals in your inbox 🍰
-        </h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Subscribe for exclusive promos, new treats, and special occasion offers.
-        </p>
-        {buttons?.newsletterSubscribe !== false && (
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row"
-          >
-            <input
-              type="email"
-              required
-              placeholder="Enter your email"
-              className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-            />
-            <button
-              type="submit"
-              className="rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900"
+        <h2 className="text-2xl font-bold text-navy-800 sm:text-3xl">{n.title}</h2>
+        {n.subtitle && <p className="mt-2 text-sm text-slate-600">{n.subtitle}</p>}
+        {(() => {
+          const state = buttonState(buttons, 'newsletterSubscribe')
+          if (state === 'off') return null
+          const off = state === 'disabled'
+          return (
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className={`mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row ${off ? DISABLED_BTN_CLS : ''}`}
             >
-              Subscribe
-            </button>
-          </form>
-        )}
+              <input
+                type="email"
+                required
+                disabled={off}
+                placeholder={n.placeholder}
+                className="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed"
+              />
+              <button
+                type="submit"
+                disabled={off}
+                className="rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900 disabled:cursor-not-allowed"
+              >
+                {n.buttonLabel}
+              </button>
+            </form>
+          )
+        })()}
       </Reveal>
     </section>
   )

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Voucher;
+use App\Services\PayMongoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
@@ -30,7 +32,7 @@ class OrderController extends Controller
             'items.*.product_id' => 'required|string',
             'items.*.qty' => 'required|integer|min:1',
             'voucher' => 'nullable|string',
-            'payment_method' => 'nullable|in:qrph,cash',
+            'payment_method' => 'nullable|in:qrph,cash,paymongo',
             'delivery_type' => 'nullable|in:delivery,pickup',
             'delivery_speed' => 'nullable|in:standard,express',
             'address' => 'nullable|string|max:500',
@@ -47,7 +49,8 @@ class OrderController extends Controller
                 'payment_method' => 'Cash is only available for pickup orders.',
             ]);
         }
-        // QRPH is paid online up front; cash is collected at pickup.
+        // Manual QRPH is treated as paid up front; cash is collected at pickup;
+        // PayMongo stays pending until the gateway confirms (webhook / return check).
         $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
 
         // Trusted product lookup (non-archived only).
@@ -132,6 +135,94 @@ class OrderController extends Controller
         return response()->json($order, 201);
     }
 
+    /** Public: which online payment methods are available (drives the UI). */
+    public function paymentConfig(PayMongoService $paymongo)
+    {
+        return response()->json(['paymongo' => $paymongo->enabled()]);
+    }
+
+    /**
+     * Start a PayMongo hosted checkout for an order the user owns. Returns the
+     * checkout page URL for the frontend to redirect to.
+     */
+    public function pay(Request $request, string $id, PayMongoService $paymongo)
+    {
+        $user = $this->supabaseUser($request);
+        $order = Order::findOrFail($id);
+
+        if (($order->user_id ?? null) !== ($user['id'] ?? null)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+        if (! $paymongo->enabled()) {
+            return response()->json(['message' => 'Online payment is not available.'], 422);
+        }
+        if ($order->payment_status === 'paid') {
+            return response()->json(['message' => 'This order is already paid.'], 422);
+        }
+
+        $front = rtrim(config('services.frontend_url'), '/');
+        $success = $front.'/checkout?payment=success&order='.$order->id;
+        $cancel = $front.'/checkout?payment=cancelled&order='.$order->id;
+
+        try {
+            $session = $paymongo->createCheckoutSession($order, $success, $cancel);
+        } catch (\Throwable $e) {
+            Log::error('PayMongo checkout failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+
+            return response()->json(['message' => 'Could not start the payment. Please try again.'], 502);
+        }
+
+        $order->update(['payment_ref' => $session['id'], 'payment_method' => 'paymongo']);
+
+        return response()->json(['checkout_url' => $session['url']]);
+    }
+
+    /**
+     * Fetch a single order (owner or admin). For a pending PayMongo order this
+     * also reconciles payment with the gateway — covers localhost where the
+     * webhook can't reach us.
+     */
+    public function show(Request $request, string $id, PayMongoService $paymongo)
+    {
+        $user = $this->supabaseUser($request);
+        $order = Order::findOrFail($id);
+
+        $owner = ($order->user_id ?? null) === ($user['id'] ?? null);
+        if (! $owner && ! $this->isAdmin($user['email'] ?? null)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        if ($order->payment_status !== 'paid' && $order->payment_ref && $paymongo->enabled()) {
+            $session = $paymongo->getCheckoutSession($order->payment_ref);
+            if ($paymongo->sessionIsPaid($session)) {
+                $order->update(['payment_status' => 'paid']);
+            }
+        }
+
+        return $order;
+    }
+
+    /** PayMongo webhook — marks the order paid when the gateway confirms. */
+    public function paymongoWebhook(Request $request, PayMongoService $paymongo)
+    {
+        if (! $paymongo->verifyWebhook($request->header('Paymongo-Signature'), $request->getContent())) {
+            return response()->json(['message' => 'Invalid signature.'], 400);
+        }
+
+        $type = $request->json('data.attributes.type');
+        $resource = $request->json('data.attributes.data');
+
+        if (in_array($type, ['checkout_session.payment.paid', 'payment.paid'], true)) {
+            $orderId = data_get($resource, 'attributes.metadata.order_id')
+                ?? data_get($resource, 'attributes.reference_number');
+            if ($orderId) {
+                Order::where('id', $orderId)->update(['payment_status' => 'paid']);
+            }
+        }
+
+        return response()->json(['received' => true]);
+    }
+
     /** Current user's own orders, newest first. */
     public function mine(Request $request)
     {
@@ -167,6 +258,24 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($id);
         $order->update(['status' => $data['status']]);
+
+        return $order;
+    }
+
+    /** Admin: manually set an order's payment status (e.g. cash collected, or a fix). */
+    public function updatePaymentStatus(Request $request, string $id)
+    {
+        $user = $this->supabaseUser($request);
+        if (! $this->isAdmin($user['email'] ?? null)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $data = $request->validate([
+            'payment_status' => 'required|in:paid,pending',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $order->update(['payment_status' => $data['payment_status']]);
 
         return $order;
     }

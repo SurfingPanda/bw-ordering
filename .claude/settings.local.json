@@ -38,7 +38,18 @@
       "Bash(cd *)",
       "Bash(php -l app/Http/Controllers/VoucherController.php)",
       "Bash(curl -s http://localhost:8000/api/vouchers/active)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers)",
+      "PowerShell(cd C:\\\\xampp\\\\htdocs\\\\ordering\\\\backend; foreach \\($f in @\\('app/Http/Controllers/OrderController.php','app/Services/PayMongoService.php','config/services.php','routes/api.php','app/Models/Order.php','database/migrations/2026_06_23_000004_add_payment_ref_to_orders.php'\\)\\) { php -l $f })",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -m 3 http://localhost:8000/api/config/payments)",
+      "Bash(echo \" \\(exit:$?\\)\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/webhooks/paymongo -H 'Content-Type: application/json' -d '{\"data\":{\"attributes\":{\"type\":\"checkout_session.payment.paid\",\"data\":{\"attributes\":{\"metadata\":{\"order_id\":\"019ef333-184d-71b2-a406-20b5686bb386\"},\"payments\":[{\"attributes\":{\"status\":\"paid\"}}]}}}}}')",
+      "Bash(PAYMONGO_WEBHOOK_SECRET=whsk_test php artisan tinker '--execute= *)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000/pay)",
+      "Bash(echo \"no-auth POST /orders/{id}/pay  -> $\\(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000/pay\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000)",
+      "Bash(echo \"no-auth GET  /orders/{id}      -> $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000/payment-status)"
     ]
   }
 }

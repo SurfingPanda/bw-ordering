@@ -33,6 +33,30 @@ export async function fetchMyOrders() {
   return data || []
 }
 
+// Fetch a single order (owner/admin). For a pending PayMongo order the server
+// also reconciles payment with the gateway, so this doubles as a "did it pay?"
+// check on return from the hosted checkout.
+export async function fetchOrder(id) {
+  const { data } = await api.get(`/orders/${id}`)
+  return data
+}
+
+// Which online payment methods the backend has enabled (e.g. { paymongo: true }).
+export async function fetchPaymentConfig() {
+  try {
+    const { data } = await api.get('/config/payments')
+    return data || {}
+  } catch {
+    return {}
+  }
+}
+
+// Start a PayMongo hosted checkout for an order; returns the URL to redirect to.
+export async function payOrder(id) {
+  const { data } = await api.post(`/orders/${id}/pay`)
+  return data?.checkout_url || null
+}
+
 // Admin: fetch every order, newest first.
 export async function fetchAllOrders() {
   const { data } = await api.get('/orders')
@@ -42,4 +66,9 @@ export async function fetchAllOrders() {
 // Admin: update an order's status (pending → preparing → completed / cancelled).
 export async function updateOrderStatus(id, status) {
   await api.patch(`/orders/${id}/status`, { status })
+}
+
+// Admin: manually set an order's payment status ('paid' | 'pending').
+export async function updatePaymentStatus(id, paymentStatus) {
+  await api.patch(`/orders/${id}/payment-status`, { payment_status: paymentStatus })
 }

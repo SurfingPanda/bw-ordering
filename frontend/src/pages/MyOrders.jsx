@@ -22,7 +22,13 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
-const PAYMENT_LABEL = { cod: 'Cash on Delivery', gcash: 'GCash', qrph: 'QRPH' }
+const PAYMENT_LABEL = {
+  cod: 'Cash on Delivery',
+  gcash: 'GCash',
+  qrph: 'QRPH',
+  cash: 'Cash on Pickup',
+  paymongo: 'Online (PayMongo)',
+}
 
 const TABS = [
   { key: 'all', label: 'All Orders' },
@@ -351,7 +357,21 @@ function Tracker({ status }) {
   )
 }
 
+// Customer-facing payment status: paid → green "Paid"; otherwise a friendly
+// "pay later" hint (cash at pickup) or "awaiting payment".
+function paymentBadge(order) {
+  if (order.payment_status === 'paid') {
+    return { label: '✓ Paid', cls: 'bg-green-100 text-green-700' }
+  }
+  if (order.status === 'cancelled') return null
+  if (order.payment_method === 'cash') {
+    return { label: 'Pay at pickup', cls: 'bg-amber-100 text-amber-700' }
+  }
+  return { label: 'Awaiting payment', cls: 'bg-amber-100 text-amber-700' }
+}
+
 function FulfillmentChips({ order }) {
+  const pay = paymentBadge(order)
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
       <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
@@ -360,6 +380,11 @@ function FulfillmentChips({ order }) {
       {order.payment_method && (
         <span className="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">
           {PAYMENT_LABEL[order.payment_method] || order.payment_method}
+        </span>
+      )}
+      {pay && (
+        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${pay.cls}`}>
+          {pay.label}
         </span>
       )}
     </div>

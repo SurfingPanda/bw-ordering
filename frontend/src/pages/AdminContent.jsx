@@ -5,9 +5,11 @@ import Landing from './Landing'
 import Franchise from './Franchise'
 import Login from './Login'
 import Menu from './Menu'
+import Stores from './Stores'
 import {
   DEFAULT_CONTENT,
   LANDING_BUTTONS,
+  buttonState,
   fetchAllProducts,
   getSiteContent,
   saveSiteContent,
@@ -15,23 +17,57 @@ import {
   uploadImage,
 } from '../lib/content'
 import { fetchVouchers, syncVouchers } from '../lib/vouchers'
+import { fetchStores, syncStores } from '../lib/stores'
+import { buildQrphPayload } from '../lib/qrph'
+import QRCode from 'qrcode'
 
 // Admin "Site Content" editor — full-width CMS layout with a section sidebar.
 // Edits the landing page content, the Menu products, and the Franchise page.
 
-const SECTIONS = [
-  { key: 'announcement', label: 'Announcement', Icon: MegaphoneIcon },
-  { key: 'banners', label: 'Promo Banners', Icon: ImageIcon },
-  { key: 'whatsNew', label: "What's New", Icon: SparkleIcon },
-  { key: 'categories', label: 'Categories', Icon: GridIcon },
-  { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
-  { key: 'products', label: 'Products', Icon: TagIcon },
-  { key: 'menuCategories', label: 'Menu Categories', Icon: GridIcon },
-  { key: 'vouchers', label: 'Vouchers', Icon: TicketIcon },
-  { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
-  { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
-  { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
+// Sidebar sections, organised into collapsible groups.
+const SECTION_GROUPS = [
+  {
+    key: 'landing',
+    label: 'Landing Page',
+    items: [
+      { key: 'announcement', label: 'Announcement', Icon: MegaphoneIcon },
+      { key: 'banners', label: 'Promo Banners', Icon: ImageIcon },
+      { key: 'whatsNew', label: "What's New", Icon: SparkleIcon },
+      { key: 'categories', label: 'Categories', Icon: GridIcon },
+      { key: 'bestSellers', label: 'Best Sellers', Icon: StarIcon },
+      { key: 'customCake', label: 'Custom Cake', Icon: CakeIcon },
+      { key: 'newsletter', label: 'Sweet Deals', Icon: MailIcon },
+      { key: 'stores', label: 'Find a Store', Icon: PinIcon },
+      { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
+    ],
+  },
+  {
+    key: 'shop',
+    label: 'Shop & Menu',
+    items: [
+      { key: 'products', label: 'Products', Icon: TagIcon },
+      { key: 'menuCategories', label: 'Menu Categories', Icon: GridIcon },
+      { key: 'vouchers', label: 'Vouchers', Icon: TicketIcon },
+      { key: 'payment', label: 'Payment QR', Icon: QrIcon },
+    ],
+  },
+  {
+    key: 'pages',
+    label: 'Other Pages',
+    items: [
+      { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
+      { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
+    ],
+  },
 ]
+
+// Flat list (used to resolve the active section's label).
+const SECTIONS = SECTION_GROUPS.flatMap((g) => g.items)
+
+// Which group a section key belongs to (so we can keep its group open).
+const GROUP_OF = Object.fromEntries(
+  SECTION_GROUPS.flatMap((g) => g.items.map((it) => [it.key, g.key])),
+)
 
 // LANDING_BUTTONS grouped by their `group` field, preserving first-seen order,
 // for the "Buttons" editor's sectioned switch list.
@@ -50,23 +86,38 @@ export default function AdminContent() {
   const [vouchers, setVouchers] = useState([])
   const [voucherIds, setVoucherIds] = useState([])
   const [voucherFilter, setVoucherFilter] = useState('all')
+  const [stores, setStores] = useState([])
+  const [storeIds, setStoreIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('announcement')
+  // Collapsible sidebar groups — the active section's group starts open.
+  const [openGroups, setOpenGroups] = useState(() => new Set([GROUP_OF.announcement]))
+  const toggleGroup = (key) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
 
   useEffect(() => {
     Promise.all([
       getSiteContent(),
       fetchAllProducts().catch(() => []),
       fetchVouchers().catch(() => []),
-    ]).then(([c, p, v]) => {
+      fetchStores().catch(() => []),
+    ]).then(([c, p, v, s]) => {
       setContent(c)
       setProducts(p)
       setOriginalIds(p.map((x) => x.id))
       setVouchers(v)
       setVoucherIds(v.map((x) => x.id))
+      setStores(s)
+      setStoreIds(s.map((x) => x.id))
       setLoading(false)
     })
   }, [])
@@ -92,6 +143,20 @@ export default function AdminContent() {
         })),
       )
       setVoucherIds(freshVouchers.map((v) => v.id))
+      const freshStores = await syncStores(stores, storeIds)
+      setStores(
+        freshStores.map((s) => ({
+          id: s.id,
+          name: s.name || '',
+          region: s.region || '',
+          address: s.address || '',
+          hours: s.hours || '',
+          phone: s.phone || '',
+          latitude: s.latitude ?? '',
+          longitude: s.longitude ?? '',
+        })),
+      )
+      setStoreIds(freshStores.map((s) => s.id))
       setMessage('saved')
     } catch (err) {
       setMessage(`error:${err.message}`)
@@ -109,8 +174,8 @@ export default function AdminContent() {
   }
 
   const setField = (key, value) => setContent((c) => ({ ...c, [key]: value }))
-  const setButton = (key, on) =>
-    setContent((c) => ({ ...c, buttons: { ...(c.buttons || {}), [key]: on } }))
+  const setButton = (key, state) =>
+    setContent((c) => ({ ...c, buttons: { ...(c.buttons || {}), [key]: state } }))
   const updateItem = (key, idx, patch) =>
     setContent((c) => ({
       ...c,
@@ -171,6 +236,26 @@ export default function AdminContent() {
     ])
   const removeVoucher = (idx) => setVouchers((vs) => vs.filter((_, i) => i !== idx))
 
+  // Stores (locator branches; own table, edited locally, synced on Save). New
+  // stores have no id yet — `_key` is a stable React key until the DB assigns one.
+  const updateStore = (idx, patch) =>
+    setStores((ss) => ss.map((s, i) => (i === idx ? { ...s, ...patch } : s)))
+  const addStore = () =>
+    setStores((ss) => [
+      ...ss,
+      {
+        _key: crypto.randomUUID(),
+        name: '',
+        region: 'Metro Manila',
+        address: '',
+        hours: 'Mon–Sun, 7:00 AM – 9:00 PM',
+        phone: '',
+        latitude: '',
+        longitude: '',
+      },
+    ])
+  const removeStore = (idx) => setStores((ss) => ss.filter((_, i) => i !== idx))
+
   // Franchise content (nested under content.franchise).
   const fr = content?.franchise || DEFAULT_CONTENT.franchise
   const wn = content?.whatsNew || DEFAULT_CONTENT.whatsNew
@@ -180,6 +265,18 @@ export default function AdminContent() {
   const ap = content?.authPanel || DEFAULT_CONTENT.authPanel
   const setAuthPanel = (patch) =>
     setContent((c) => ({ ...c, authPanel: { ...(c.authPanel || DEFAULT_CONTENT.authPanel), ...patch } }))
+
+  const cc = content?.customCake || DEFAULT_CONTENT.customCake
+  const setCustomCake = (patch) =>
+    setContent((c) => ({ ...c, customCake: { ...(c.customCake || DEFAULT_CONTENT.customCake), ...patch } }))
+
+  const nl = content?.newsletter || DEFAULT_CONTENT.newsletter
+  const setNewsletter = (patch) =>
+    setContent((c) => ({ ...c, newsletter: { ...(c.newsletter || DEFAULT_CONTENT.newsletter), ...patch } }))
+
+  const pm = content?.payment || DEFAULT_CONTENT.payment
+  const setPayment = (patch) =>
+    setContent((c) => ({ ...c, payment: { ...(c.payment || DEFAULT_CONTENT.payment), ...patch } }))
 
   // Editor-declared categories (may have no products yet) live in the CMS blob.
   const declaredCategories = content?.menuCategories || []
@@ -217,6 +314,8 @@ export default function AdminContent() {
     categories: content.categories.length,
     bestSellers: content.bestSellers.length,
     products: products.length,
+    vouchers: vouchers.length,
+    stores: stores.length,
   }
   const activeLabel = SECTIONS.find((s) => s.key === active)?.label
 
@@ -235,31 +334,55 @@ export default function AdminContent() {
           <p className="mt-1 text-xs text-navy-50/60">Manage your landing page</p>
         </div>
 
-        <nav className="flex gap-2 overflow-x-auto p-3 lg:flex-1 lg:flex-col lg:gap-1 lg:overflow-y-auto">
-          {SECTIONS.map((s) => {
-            const on = active === s.key
+        <nav className="flex flex-col gap-1 overflow-y-auto p-3 lg:flex-1">
+          {SECTION_GROUPS.map((group) => {
+            const open = openGroups.has(group.key)
+            const groupActive = group.items.some((it) => it.key === active)
             return (
-              <button
-                key={s.key}
-                onClick={() => setActive(s.key)}
-                className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition lg:w-full ${
-                  on
-                    ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30'
-                    : 'text-navy-50/70 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <s.Icon className="h-5 w-5 shrink-0" />
-                <span>{s.label}</span>
-                {counts[s.key] !== undefined && (
-                  <span
-                    className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${
-                      on ? 'bg-white/25 text-white' : 'bg-white/10 text-navy-50/70'
-                    }`}
-                  >
-                    {counts[s.key]}
-                  </span>
+              <div key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition ${
+                    groupActive ? 'text-brand-400' : 'text-navy-50/50 hover:text-navy-50/90'
+                  }`}
+                >
+                  <ChevronRightIcon
+                    className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
+                  />
+                  <span>{group.label}</span>
+                </button>
+                {open && (
+                  <div className="mb-1 mt-0.5 space-y-0.5 pl-2">
+                    {group.items.map((s) => {
+                      const on = active === s.key
+                      return (
+                        <button
+                          key={s.key}
+                          onClick={() => setActive(s.key)}
+                          className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                            on
+                              ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30'
+                              : 'text-navy-50/70 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <s.Icon className="h-5 w-5 shrink-0" />
+                          <span>{s.label}</span>
+                          {counts[s.key] !== undefined && (
+                            <span
+                              className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${
+                                on ? 'bg-white/25 text-white' : 'bg-white/10 text-navy-50/70'
+                              }`}
+                            >
+                              {counts[s.key]}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             )
           })}
         </nav>
@@ -290,7 +413,7 @@ export default function AdminContent() {
               View site
             </Link>
             <button
-              onClick={logout}
+              onClick={() => setConfirmLogout(true)}
               className="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600"
             >
               Logout
@@ -391,7 +514,7 @@ export default function AdminContent() {
           {active === 'whatsNew' && (
             <Panel
               title="What's New"
-              subtitle="Heading + the product cards shown in the “What’s New?” section. A card’s “+” adds it to the cart by name, so match a real menu product name."
+              subtitle="Heading + the product cards shown in the “What’s New?” section. A card’s “+” adds it to the cart by name, so match a real menu product name. Best image size: 800 × 600 px (landscape, ~4:3) — square works too; images are center-cropped to fill the card."
             >
               <TextRow
                 label="Eyebrow"
@@ -486,7 +609,7 @@ export default function AdminContent() {
           )}
 
           {active === 'categories' && (
-            <Panel title="Categories" subtitle="The round “Shop by category” badges.">
+            <Panel title="Categories" subtitle="The round “Shop by category” badges. Best image size: 400 × 400 px (square) — shown as a circle, center-cropped.">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {content.categories.map((c, i) => (
                   <ItemCard
@@ -516,7 +639,7 @@ export default function AdminContent() {
           )}
 
           {active === 'bestSellers' && (
-            <Panel title="Best Selling Foods" subtitle="The “Our Best Sellers” product cards.">
+            <Panel title="Best Selling Foods" subtitle="The “Our Best Sellers” product cards. Best image size: 800 × 600 px (landscape, ~4:3) — square works too; images are center-cropped to fill the card.">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {content.bestSellers.map((p, i) => (
                   <ItemCard
@@ -754,6 +877,188 @@ export default function AdminContent() {
             </Panel>
           )}
 
+          {active === 'payment' && (
+            <Panel
+              title="Payment QR (QR Ph)"
+              subtitle="Paste your merchant’s QR Ph data string. Checkout regenerates the QR for each order with the exact amount baked in — so it’s never a fixed/static code. Leave it empty to use a generated demo QR."
+            >
+              <TextAreaRow
+                label="QR Ph payload"
+                value={pm.qrPayload}
+                onChange={(qrPayload) => setPayment({ qrPayload })}
+              />
+              <p className="-mt-1 text-xs text-slate-400">
+                This is the text encoded in your printed/static QR Ph code — scan it with any QR
+                reader (e.g. your phone’s camera) and copy the result here. It starts with
+                something like <code>00020101…</code>.
+              </p>
+              {pm.qrPayload && (
+                <button
+                  type="button"
+                  onClick={() => setPayment({ qrPayload: '' })}
+                  className="mt-2 text-xs font-semibold text-red-600 transition hover:text-red-700"
+                >
+                  Clear (use demo QR)
+                </button>
+              )}
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-medium text-slate-500">
+                  Live preview — checkout QR Ph box
+                </p>
+                <QrphPreview payload={pm.qrPayload} />
+              </div>
+            </Panel>
+          )}
+
+          {active === 'customCake' && (
+            <Panel
+              title="Custom Cake Banner"
+              subtitle="The big orange promo banner on the landing page. Clicking the banner opens the menu; the “Order a custom cake” button is shown/hidden in the Buttons section (promoOrder). Cake image: a transparent PNG works best, around 1200 × 900 px."
+            >
+              <TextRow
+                label="Eyebrow (script text)"
+                value={cc.eyebrow}
+                onChange={(eyebrow) => setCustomCake({ eyebrow })}
+              />
+              <TextRow
+                label="Title"
+                value={cc.title}
+                onChange={(title) => setCustomCake({ title })}
+              />
+              <TextAreaRow
+                label="Subtitle"
+                value={cc.subtitle}
+                onChange={(subtitle) => setCustomCake({ subtitle })}
+              />
+              <TextRow
+                label="Button label"
+                value={cc.buttonLabel}
+                onChange={(buttonLabel) => setCustomCake({ buttonLabel })}
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <TextRow
+                  label="Banner link (where clicking the banner goes)"
+                  value={cc.bannerLink}
+                  onChange={(bannerLink) => setCustomCake({ bannerLink })}
+                />
+                <TextRow
+                  label="Button link (where the button goes)"
+                  value={cc.buttonLink}
+                  onChange={(buttonLink) => setCustomCake({ buttonLink })}
+                />
+              </div>
+              <p className="-mt-1 text-xs text-slate-400">
+                Use an internal path like <code>/menu</code> or a full URL like{' '}
+                <code>https://…</code>.
+              </p>
+              <ImageField
+                label="Cake image"
+                value={cc.image}
+                onChange={(image) => setCustomCake({ image })}
+                wide
+              />
+              <TextRow
+                label="Image alt text"
+                value={cc.alt}
+                onChange={(alt) => setCustomCake({ alt })}
+              />
+            </Panel>
+          )}
+
+          {active === 'newsletter' && (
+            <Panel
+              title="Sweet Deals (Newsletter)"
+              subtitle="The “Get sweet deals in your inbox” newsletter section near the bottom of the landing page. The Subscribe button is shown/hidden in the Buttons section (newsletterSubscribe)."
+            >
+              <TextRow
+                label="Title"
+                value={nl.title}
+                onChange={(title) => setNewsletter({ title })}
+              />
+              <TextAreaRow
+                label="Subtitle"
+                value={nl.subtitle}
+                onChange={(subtitle) => setNewsletter({ subtitle })}
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <TextRow
+                  label="Input placeholder"
+                  value={nl.placeholder}
+                  onChange={(placeholder) => setNewsletter({ placeholder })}
+                />
+                <TextRow
+                  label="Button label"
+                  value={nl.buttonLabel}
+                  onChange={(buttonLabel) => setNewsletter({ buttonLabel })}
+                />
+              </div>
+            </Panel>
+          )}
+
+          {active === 'stores' && (
+            <Panel
+              title="Find a Store"
+              subtitle="Branches shown on the “Find a Store” page and map. Latitude/longitude place the map pin — copy them from Google Maps (right-click a spot → the coordinates at the top). Click “Save changes” to publish."
+            >
+              <div className="grid gap-4 xl:grid-cols-2">
+                {stores.map((s, i) => (
+                  <ItemCard
+                    key={s.id || s._key}
+                    index={i}
+                    total={stores.length}
+                    hideMove
+                    onRemove={() => removeStore(i)}
+                  >
+                    <TextRow
+                      label="Branch name"
+                      value={s.name}
+                      onChange={(name) => updateStore(i, { name })}
+                    />
+                    <SelectRow
+                      label="Region"
+                      value={s.region}
+                      onChange={(region) => updateStore(i, { region })}
+                      options={[
+                        ['Metro Manila', 'Metro Manila'],
+                        ['Luzon', 'Luzon'],
+                        ['Visayas', 'Visayas'],
+                        ['Mindanao', 'Mindanao'],
+                      ]}
+                    />
+                    <TextAreaRow
+                      label="Address"
+                      value={s.address}
+                      onChange={(address) => updateStore(i, { address })}
+                    />
+                    <TextRow
+                      label="Hours"
+                      value={s.hours}
+                      onChange={(hours) => updateStore(i, { hours })}
+                    />
+                    <TextRow
+                      label="Phone"
+                      value={s.phone}
+                      onChange={(phone) => updateStore(i, { phone })}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <TextRow
+                        label="Latitude"
+                        value={s.latitude}
+                        onChange={(latitude) => updateStore(i, { latitude })}
+                      />
+                      <TextRow
+                        label="Longitude"
+                        value={s.longitude}
+                        onChange={(longitude) => updateStore(i, { longitude })}
+                      />
+                    </div>
+                  </ItemCard>
+                ))}
+              </div>
+              <AddButton onClick={addStore}>+ Add store</AddButton>
+            </Panel>
+          )}
+
           {active === 'franchise' && (
             <div className="space-y-6">
               <Panel title="Franchise — Hero" subtitle="The top of the /franchise page.">
@@ -905,7 +1210,7 @@ export default function AdminContent() {
           {active === 'authPanel' && (
             <Panel
               title="Login Page"
-              subtitle="The branded left panel shown on the Login and Register pages."
+              subtitle="The branded left panel shown on the Login and Register pages. Use transparent PNGs — logo ~400 px tall, image ~600 px wide."
             >
               <ImageField
                 label="Logo"
@@ -934,7 +1239,7 @@ export default function AdminContent() {
           {active === 'buttons' && (
             <Panel
               title="Buttons & Calls-to-Action"
-              subtitle="Show or hide the action buttons across your landing page. Hidden buttons disappear from the live site."
+              subtitle="Control each action button across your landing page. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site."
             >
               <div className="space-y-6">
                 {BUTTON_GROUPS.map(([group, items]) => (
@@ -943,20 +1248,20 @@ export default function AdminContent() {
                       {group}
                     </p>
                     <div className="overflow-hidden rounded-xl border border-slate-200">
-                      {items.map((b, i) => {
-                        const on = content.buttons?.[b.key] !== false
-                        return (
-                          <div
-                            key={b.key}
-                            className={`flex items-center justify-between gap-4 px-4 py-3 ${
-                              i > 0 ? 'border-t border-slate-100' : ''
-                            }`}
-                          >
-                            <span className="text-sm font-medium text-navy-800">{b.label}</span>
-                            <Toggle on={on} onChange={(v) => setButton(b.key, v)} />
-                          </div>
-                        )
-                      })}
+                      {items.map((b, i) => (
+                        <div
+                          key={b.key}
+                          className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${
+                            i > 0 ? 'border-t border-slate-100' : ''
+                          }`}
+                        >
+                          <span className="text-sm font-medium text-navy-800">{b.label}</span>
+                          <ButtonStateControl
+                            value={buttonState(content.buttons, b.key)}
+                            onChange={(state) => setButton(b.key, state)}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -975,7 +1280,7 @@ export default function AdminContent() {
               <span className="h-2 w-2 rounded-full bg-green-500" />
               Live preview — full page, unsaved changes
             </p>
-            <FullPreview content={content} active={active} products={products} />
+            <FullPreview content={content} active={active} products={products} stores={stores} />
           </div>
         </aside>
         </div>
@@ -988,6 +1293,16 @@ export default function AdminContent() {
           confirmLabel="Reset to defaults"
           onConfirm={doReset}
           onCancel={() => setConfirmReset(false)}
+        />
+      )}
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out of the Site Editor. Any unsaved changes will be lost."
+          confirmLabel="Log out"
+          onConfirm={logout}
+          onCancel={() => setConfirmLogout(false)}
         />
       )}
     </div>
@@ -1049,12 +1364,16 @@ const SECTION_ANCHOR = {
   banners: '#home',
   categories: '#categories',
   bestSellers: '#best-sellers',
+  customCake: '#custom-cake',
+  newsletter: '#newsletter',
   products: null,
+  payment: null,
+  stores: null,
   franchise: null,
   buttons: null,
 }
 
-function FullPreview({ content, active, products }) {
+function FullPreview({ content, active, products, stores }) {
   const wrapRef = useRef(null)
   const innerRef = useRef(null)
   const [scale, setScale] = useState(0.4)
@@ -1117,6 +1436,8 @@ function FullPreview({ content, active, products }) {
           <Franchise content={content} preview />
         ) : active === 'authPanel' ? (
           <Login content={content} preview />
+        ) : active === 'stores' ? (
+          <Stores previewStores={stores} preview />
         ) : active === 'products' || active === 'menuCategories' ? (
           <Menu previewProducts={products} preview />
         ) : (
@@ -1133,6 +1454,50 @@ function Panel({ title, subtitle, children }) {
       <h2 className="text-lg font-bold text-navy-800">{title}</h2>
       {subtitle && <p className="mb-5 mt-0.5 text-sm text-slate-500">{subtitle}</p>}
       {children}
+    </div>
+  )
+}
+
+// Renders the checkout QR Ph box as it will appear, generating a real QR from the
+// merchant payload (with a sample amount) so the editor can confirm it scans.
+const QR_PREVIEW_AMOUNT = 100
+function QrphPreview({ payload }) {
+  const [url, setUrl] = useState('')
+  const trimmed = (payload || '').trim()
+  const built = trimmed ? buildQrphPayload(trimmed, QR_PREVIEW_AMOUNT) : null
+  const invalid = !!trimmed && !built
+
+  useEffect(() => {
+    const data = built || `QRPH|BW Superbakeshop|PHP ${QR_PREVIEW_AMOUNT.toFixed(2)}`
+    QRCode.toDataURL(data, { width: 220, margin: 1 })
+      .then(setUrl)
+      .catch(() => setUrl(''))
+  }, [built])
+
+  return (
+    <div className="mx-auto flex max-w-xs flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
+      {url ? (
+        <img src={url} alt="QR Ph preview" className="h-48 w-48 rounded-lg" />
+      ) : (
+        <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-300">
+          …
+        </div>
+      )}
+      <p className="text-sm font-semibold text-navy-800">Scan to pay ₱{QR_PREVIEW_AMOUNT.toFixed(2)}</p>
+      {invalid ? (
+        <p className="text-xs font-medium text-red-600">
+          Couldn’t read this as a QR Ph code — a demo QR will be shown at checkout.
+        </p>
+      ) : built ? (
+        <p className="text-xs text-slate-500">
+          Preview shows a sample ₱{QR_PREVIEW_AMOUNT.toFixed(2)} — the real order amount is injected
+          at checkout.
+        </p>
+      ) : (
+        <p className="text-xs text-slate-400">
+          No payload set — a demo QR is shown at checkout.
+        </p>
+      )}
     </div>
   )
 }
@@ -1210,6 +1575,41 @@ function Toggle({ on, onChange }) {
         }`}
       />
     </button>
+  )
+}
+
+// Three-way segmented control for a landing button: Visible / Disabled / Hidden.
+const BUTTON_STATES = [
+  ['on', 'Visible'],
+  ['disabled', 'Disabled'],
+  ['off', 'Hidden'],
+]
+function ButtonStateControl({ value, onChange }) {
+  return (
+    <div className="inline-flex shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+      {BUTTON_STATES.map(([state, label]) => {
+        const active = value === state
+        return (
+          <button
+            key={state}
+            type="button"
+            onClick={() => onChange(state)}
+            aria-pressed={active}
+            className={`px-3 py-1.5 text-xs font-semibold transition ${
+              active
+                ? state === 'off'
+                  ? 'bg-slate-500 text-white'
+                  : state === 'disabled'
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-brand-500 text-white'
+                : 'text-slate-500 hover:bg-slate-100'
+            }`}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -1586,6 +1986,48 @@ function BriefcaseIcon(p) {
       <rect x="2" y="7" width="20" height="14" rx="2" />
       <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <path d="M2 13h20" />
+    </svg>
+  )
+}
+function PinIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+}
+function ChevronRightIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+function CakeIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="M4 21h16v-7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3Z" />
+      <path d="M4 16c1.5 0 1.5 1.5 3 1.5s1.5-1.5 3-1.5 1.5 1.5 3 1.5 1.5-1.5 3-1.5 1.5 1.5 3 1.5" />
+      <path d="M12 8V4M12 4l-1.2 1M12 4l1.2 1" />
+    </svg>
+  )
+}
+function MailIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </svg>
+  )
+}
+function QrIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01" />
     </svg>
   )
 }

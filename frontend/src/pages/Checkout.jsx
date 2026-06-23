@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useAuth } from '../context/AuthContext'
-import { createOrder } from '../lib/orders'
+import { createOrder, fetchOrder, fetchPaymentConfig, payOrder } from '../lib/orders'
 import { fetchActiveVouchers } from '../lib/vouchers'
+import { getCachedContent, getSiteContent } from '../lib/content'
+import { buildQrphPayload } from '../lib/qrph'
 
 // Multi-section checkout page reached from the Menu cart ("Proceed to
 // Checkout"). The cart summary is handed over via localStorage (key
@@ -50,6 +52,51 @@ export default function Checkout() {
 
   useEffect(() => {
     fetchActiveVouchers().then(setVoucherDefs).catch(() => {})
+    getSiteContent()
+      .then((c) => setQrPayload(c?.payment?.qrPayload || ''))
+      .catch(() => {})
+    fetchPaymentConfig().then((cfg) => setPaymongoEnabled(!!cfg.paymongo)).catch(() => {})
+  }, [])
+
+  // Handle the redirect back from the PayMongo hosted checkout
+  // (/checkout?payment=success|cancelled&order=<id>).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('payment')
+    const orderId = params.get('order')
+    if (!status || !orderId) return
+
+    // Clean the query string so a refresh doesn't re-trigger this.
+    window.history.replaceState({}, '', '/checkout')
+
+    if (status === 'cancelled') {
+      setError('Payment was cancelled. You can try again.')
+      setStep('payment')
+      return
+    }
+
+    setVerifying(true)
+    fetchOrder(orderId)
+      .then((order) => {
+        if (order?.payment_status === 'paid') {
+          try {
+            localStorage.removeItem('bw_checkout')
+            localStorage.removeItem('bw_cart')
+          } catch {
+            // best-effort
+          }
+          setPayMethod(order.payment_method || 'paymongo')
+          setPlacedOrder(order)
+          setStep('done')
+          window.scrollTo({ top: 0 })
+        } else {
+          setError('We couldn’t confirm your payment yet. If you were charged, it will update shortly.')
+          setStep('payment')
+        }
+      })
+      .catch(() => setError('We couldn’t verify your payment. Please check My Orders.'))
+      .finally(() => setVerifying(false))
   }, [])
 
   const [placing, setPlacing] = useState(false)
@@ -57,8 +104,18 @@ export default function Checkout() {
 
   // Wizard step: 'form' (Delivery + Details) → 'payment' → 'done' (Confirmation).
   const [step, setStep] = useState('form')
-  const [payMethod, setPayMethod] = useState('qrph') // qrph | cash (cash = pickup only)
+  const [payMethod, setPayMethod] = useState('qrph') // qrph | cash | paymongo (cash = pickup only)
+  const [paymongoEnabled, setPaymongoEnabled] = useState(false)
+  // True while we verify a payment after returning from the PayMongo hosted page.
+  // Seeded from the URL so the empty-cart guard doesn't flash on return.
+  const [verifying, setVerifying] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('payment') === 'success'
+  })
   const [qrUrl, setQrUrl] = useState('')
+  // Merchant QR Ph payload set in the Site Editor (Payment QR). Seed from the
+  // localStorage cache for instant paint, then refresh from the API.
+  const [qrPayload, setQrPayload] = useState(() => getCachedContent()?.payment?.qrPayload || '')
   const [placedOrder, setPlacedOrder] = useState(null)
   const stepIndex = step === 'payment' ? 3 : step === 'done' ? 4 : 1
 
@@ -83,14 +140,22 @@ export default function Checkout() {
   const points = Math.floor(discounted / 10)
   const awayFromFree = Math.max(0, FREE_DELIVERY_MIN - subtotal)
 
-  // Render a QRPH code for the amount due (demo merchant QR).
+  // The merchant's QR Ph payload with this order's amount injected (null when no
+  // valid merchant payload is configured → we show a demo QR instead).
+  const merchantPayload = useMemo(
+    () => (qrPayload ? buildQrphPayload(qrPayload, total) : null),
+    [qrPayload, total],
+  )
+
+  // Render the QRPH code for the amount due — the merchant's dynamic QR Ph when
+  // configured, otherwise a generated demo QR.
   useEffect(() => {
     if (step !== 'payment' || payMethod !== 'qrph') return
-    const payload = `QRPH|BW Superbakeshop|PHP ${total.toFixed(2)}`
+    const payload = merchantPayload || `QRPH|BW Superbakeshop|PHP ${total.toFixed(2)}`
     QRCode.toDataURL(payload, { width: 220, margin: 1 })
       .then(setQrUrl)
       .catch(() => setQrUrl(''))
-  }, [step, payMethod, total])
+  }, [step, payMethod, total, merchantPayload])
 
   const applyVoucher = () => {
     const key = code.trim().toUpperCase()
@@ -133,6 +198,18 @@ export default function Checkout() {
         phone,
         notes,
       })
+
+      // PayMongo: hand off to the hosted checkout. Keep the cart until payment is
+      // confirmed on return, so a cancel can be retried.
+      if (payMethod === 'paymongo') {
+        const url = await payOrder(order.id)
+        if (url) {
+          window.location.href = url
+          return
+        }
+        throw new Error('Could not start the online payment. Please try again.')
+      }
+
       try {
         localStorage.removeItem('bw_checkout')
         localStorage.removeItem('bw_cart')
@@ -149,7 +226,20 @@ export default function Checkout() {
     }
   }
 
-  if (!items.length) {
+  // Returning from PayMongo (verifying or showing the confirmation) — don't show
+  // the empty-cart screen even though the cart may already be cleared.
+  const inPaymentReturn = verifying || (step === 'done' && placedOrder)
+
+  if (verifying) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy-50/40 px-4 text-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <p className="text-sm font-medium text-slate-500">Confirming your payment…</p>
+      </div>
+    )
+  }
+
+  if (!items.length && !inPaymentReturn) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy-50/40 px-4 text-center">
         <p className="text-lg font-semibold text-navy-800">Your cart is empty.</p>
@@ -343,6 +433,15 @@ export default function Checkout() {
           {/* 4. Payment */}
           <Section step="4" title="Payment Method">
             <div className="space-y-3">
+              {paymongoEnabled && (
+                <PayCard
+                  active={payMethod === 'paymongo'}
+                  onClick={() => setPayMethod('paymongo')}
+                  icon="💳"
+                  title="Pay online (GCash / Card / Maya)"
+                  subtitle="Secure checkout powered by PayMongo"
+                />
+              )}
               <PayCard
                 active={payMethod === 'qrph'}
                 onClick={() => setPayMethod('qrph')}
@@ -373,8 +472,12 @@ export default function Checkout() {
                 <p className="text-sm font-semibold text-navy-800">Scan to pay {peso(total)}</p>
                 <p className="text-xs text-slate-500">
                   Open your bank or e-wallet app, scan this QRPH code to pay, then place your order.
-                  <br />
-                  <span className="text-slate-400">(Demo QR — no real charge is made.)</span>
+                  {!merchantPayload && (
+                    <>
+                      <br />
+                      <span className="text-slate-400">(Demo QR — no real charge is made.)</span>
+                    </>
+                  )}
                 </p>
               </div>
             )}
@@ -383,6 +486,13 @@ export default function Checkout() {
               <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
                 💵 Pay with cash when you pick up your order at the store. Please bring the exact
                 amount if possible.
+              </p>
+            )}
+
+            {payMethod === 'paymongo' && (
+              <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
+                💳 You’ll be redirected to PayMongo’s secure checkout to pay {peso(total)} with
+                GCash, a card, or Maya, then brought back here once it’s done.
               </p>
             )}
           </Section>
@@ -403,7 +513,9 @@ export default function Checkout() {
               ? 'Placing order…'
               : payMethod === 'qrph'
                 ? `I've Paid · ${peso(total)}`
-                : `Place Order · ${peso(total)}`}
+                : payMethod === 'paymongo'
+                  ? `Pay online · ${peso(total)}`
+                  : `Place Order · ${peso(total)}`}
             {!placing && <ArrowIcon className="h-4 w-4" />}
           </button>
           <button

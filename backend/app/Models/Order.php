@@ -21,6 +21,7 @@ class Order extends Model
         'voucher',
         'payment_method',
         'payment_status',
+        'payment_ref',
         'delivery_type',
         'delivery_speed',
         'address',

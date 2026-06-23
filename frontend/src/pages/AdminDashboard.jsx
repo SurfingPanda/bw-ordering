@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchAllOrders, updateOrderStatus } from '../lib/orders'
+import { fetchAllOrders, updateOrderStatus, updatePaymentStatus } from '../lib/orders'
 
 const peso = (n) =>
   `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -21,7 +21,13 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
-const PAYMENT_LABEL = { qrph: 'QRPH', cash: 'Cash on Pickup', cod: 'Cash on Delivery', gcash: 'GCash' }
+const PAYMENT_LABEL = {
+  qrph: 'QRPH',
+  cash: 'Cash on Pickup',
+  cod: 'Cash on Delivery',
+  gcash: 'GCash',
+  paymongo: 'Online (PayMongo)',
+}
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth()
@@ -53,6 +59,16 @@ export default function AdminDashboard() {
       await updateOrderStatus(id, status)
     } catch (err) {
       window.alert(`Could not update status: ${err.message}`)
+      load()
+    }
+  }
+
+  const changePayment = async (id, paymentStatus) => {
+    setOrders((os) => os.map((o) => (o.id === id ? { ...o, payment_status: paymentStatus } : o)))
+    try {
+      await updatePaymentStatus(id, paymentStatus)
+    } catch (err) {
+      window.alert(`Could not update payment: ${err.message}`)
       load()
     }
   }
@@ -157,7 +173,7 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-4">
               {visible.map((o) => (
-                <OrderRow key={o.id} order={o} onStatus={changeStatus} />
+                <OrderRow key={o.id} order={o} onStatus={changeStatus} onPayment={changePayment} />
               ))}
             </div>
           )}
@@ -414,11 +430,12 @@ function Card({ title, children }) {
 /* ------------------------------------------------------------------ */
 /* order row                                                          */
 /* ------------------------------------------------------------------ */
-function OrderRow({ order, onStatus }) {
+function OrderRow({ order, onStatus, onPayment }) {
   const [open, setOpen] = useState(false)
   const items = Array.isArray(order.items) ? order.items : []
   const count = items.reduce((sum, i) => sum + (i.qty || 0), 0)
   const date = order.created_at ? new Date(order.created_at).toLocaleString() : ''
+  const isPaid = order.payment_status === 'paid'
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -482,7 +499,18 @@ function OrderRow({ order, onStatus }) {
         >
           {open ? 'Hide items' : 'View items'}
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPayment(order.id, isPaid ? 'pending' : 'paid')}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              isPaid
+                ? 'border-amber-300 text-amber-700 hover:bg-amber-50'
+                : 'border-green-300 text-green-700 hover:bg-green-50'
+            }`}
+          >
+            {isPaid ? 'Mark unpaid' : 'Mark paid'}
+          </button>
           <span className="text-xs text-slate-400">Set status:</span>
           <select
             value={order.status}

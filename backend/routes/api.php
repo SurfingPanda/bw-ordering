@@ -17,6 +17,12 @@ Route::post('/login', [AuthController::class, 'login']);
 // Store locator.
 Route::get('/stores', [StoreController::class, 'index']);
 
+// Public: which online payment methods are available.
+Route::get('/config/payments', [OrderController::class, 'paymentConfig']);
+
+// PayMongo webhook (public; gated by signature verification in the controller).
+Route::post('/webhooks/paymongo', [OrderController::class, 'paymongoWebhook']);
+
 // Products catalogue (menu is public; editing requires admin/editor).
 Route::get('/products', [ProductController::class, 'index']);
 
@@ -45,10 +51,15 @@ Route::middleware('supabase')->group(function () {
     Route::get('/vouchers', [VoucherController::class, 'index']);
     Route::post('/vouchers/sync', [VoucherController::class, 'sync']);
 
+    Route::post('/stores/sync', [StoreController::class, 'sync']);
+
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/mine', [OrderController::class, 'mine']);
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders/{id}/pay', [OrderController::class, 'pay']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('/orders/{id}/payment-status', [OrderController::class, 'updatePaymentStatus']);
 
     Route::get('/applications', [ApplicationController::class, 'index']);
     Route::get('/resumes/url', [ApplicationController::class, 'resumeUrl']);
