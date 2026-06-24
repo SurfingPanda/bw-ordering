@@ -295,6 +295,8 @@ function Categories({ items }) {
                 <img
                   src={c.img}
                   alt={c.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
                 />
               </span>
@@ -373,6 +375,8 @@ function ProductCard({ product }) {
           <img
             src={product.img}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
           />
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-600">
@@ -452,6 +456,8 @@ function ProductModal({ product, onClose }) {
           <img
             src={product.img}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="h-64 w-full object-cover md:h-full md:min-h-[28rem]"
           />
           <div className="flex flex-col p-8 sm:p-10">
@@ -534,6 +540,8 @@ function PromoBanner({ buttons, data }) {
           <img
             src={c.image}
             alt={c.alt}
+            loading="lazy"
+            decoding="async"
             className="pointer-events-none absolute bottom-0 right-0 hidden w-[58%] max-w-[680px] drop-shadow-2xl sm:block"
           />
         )}
@@ -762,7 +770,7 @@ function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-navy-50/60 sm:flex-row sm:px-6">
-          <p>© {2026} BW Superbakeshop Ordering. All rights reserved.</p>
+          <p>© {2026} BW Superbakeshop. All rights reserved.</p>
           
         </div>
       </div>

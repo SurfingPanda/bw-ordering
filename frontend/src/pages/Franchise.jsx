@@ -75,6 +75,8 @@ function Hero({ hero, href }) {
         src="/images/bakery-interior.jpg"
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90" />
@@ -248,7 +250,7 @@ function Footer() {
           <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-10 w-auto" />
           <span className="font-brand text-xl font-bold text-white">Superbakeshop</span>
         </div>
-        <p className="text-xs">© {2026} bw Superbakeshop. Made with 🧡</p>
+        <p className="text-xs">© {2026} BW Superbakeshop</p>
         <Link to="/" className="text-xs font-medium transition hover:text-brand-400">
           ← Back to home
         </Link>

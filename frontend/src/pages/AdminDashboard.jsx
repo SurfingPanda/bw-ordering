@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 import { fetchAllOrders, updateOrderStatus, updatePaymentStatus } from '../lib/orders'
 
 const peso = (n) =>
@@ -187,6 +188,7 @@ export default function AdminDashboard() {
 /* sidebar                                                             */
 /* ------------------------------------------------------------------ */
 function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
+  const [confirmLogout, setConfirmLogout] = useState(false)
   return (
     <aside className="sticky top-0 z-30 flex shrink-0 flex-col bg-navy-900 text-white lg:h-screen lg:w-64">
       <div className="flex h-16 items-center gap-2 border-b border-white/10 px-5">
@@ -264,13 +266,24 @@ function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
             Storefront
           </Link>
           <button
-            onClick={onLogout}
+            onClick={() => setConfirmLogout(true)}
             className="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600"
           >
             Logout
           </button>
         </div>
       </div>
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out of the dashboard."
+          confirmLabel="Log out"
+          loadingLabel="Logging out"
+          onConfirm={onLogout}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
     </aside>
   )
 }

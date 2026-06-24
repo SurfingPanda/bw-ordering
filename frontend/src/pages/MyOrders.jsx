@@ -273,7 +273,7 @@ function Thumbs({ items, imgMap }) {
           className="-ml-2 h-12 w-12 overflow-hidden rounded-xl border-2 border-white bg-slate-100 shadow-sm first:ml-0"
         >
           {imgFor(i, imgMap) ? (
-            <img src={imgFor(i, imgMap)} alt={i.name} className="h-full w-full object-cover" />
+            <img src={imgFor(i, imgMap)} alt={i.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-lg">🍞</span>
           )}
@@ -549,7 +549,7 @@ function ItemList({ items, imgMap, order }) {
         <div key={idx} className="flex items-center gap-3">
           <span className="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-slate-100">
             {imgFor(i, imgMap) ? (
-              <img src={imgFor(i, imgMap)} alt={i.name} className="h-full w-full object-cover" />
+              <img src={imgFor(i, imgMap)} alt={i.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center">🍞</span>
             )}

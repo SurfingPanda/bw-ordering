@@ -145,6 +145,20 @@ export function AuthProvider({ children }) {
     return normalize(data.user)
   }
 
+  // Change the signed-in user's password. Supabase updates the password for the
+  // current session; there's no separate "old password" check on the client, so
+  // we just validate the new value matches its confirmation here.
+  const changePassword = async (password, password_confirmation) => {
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters.')
+    }
+    if (password_confirmation !== undefined && password !== password_confirmation) {
+      throw new Error('Passwords do not match.')
+    }
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
@@ -168,6 +182,7 @@ export function AuthProvider({ children }) {
         loginWithFacebook,
         register,
         updateContactNumber,
+        changePassword,
         logout,
       }}
     >

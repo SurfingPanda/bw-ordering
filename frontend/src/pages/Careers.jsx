@@ -74,6 +74,8 @@ function Hero({ hero }) {
         src={h.image || '/images/bakery-team.jpg'}
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90" />
@@ -191,6 +193,8 @@ function Culture({ culture }) {
           <img
             src={c.image}
             alt="Bakers working together in the kitchen"
+            loading="lazy"
+            decoding="async"
             className="h-80 w-full rounded-3xl object-cover shadow-xl"
           />
           <div className="absolute -bottom-5 -right-3 hidden rounded-2xl bg-navy-800 px-5 py-4 text-white shadow-xl sm:block">
@@ -400,7 +404,7 @@ function Footer() {
           <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-10 w-auto" />
           <span className="font-brand text-xl font-bold text-white">Superbakeshop</span>
         </div>
-        <p className="text-xs">&copy; {2026} bw Superbakeshop. Made with &#x1F9E1;</p>
+        <p className="text-xs">&copy; {2026} BW Superbakeshop</p>
         <Link to="/" className="text-xs font-medium transition hover:text-brand-400">
           &larr; Back to home
         </Link>

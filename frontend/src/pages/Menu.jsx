@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchMenuProducts } from '../lib/content'
+import ConfirmModal from '../components/ConfirmModal'
+import {
+  fetchMenuProducts,
+  getCachedContent,
+  getSiteContent,
+  isButtonVisible,
+  isButtonDisabled,
+} from '../lib/content'
 import { fetchActiveVouchers } from '../lib/vouchers'
 import { useSeo } from '../lib/seo'
 
@@ -76,6 +83,16 @@ export default function Menu({ previewProducts, preview = false }) {
     }
   }) // { [id]: qty }
   const [cartOpen, setCartOpen] = useState(false) // mobile cart drawer
+
+  // Site content drives the "Proceed to checkout" button state (visible /
+  // disabled / hidden), set in the Site Editor's Buttons section. Seed from the
+  // synchronous cache so first paint is correct, then refresh from the API.
+  const [content, setContent] = useState(() => getCachedContent())
+  useEffect(() => {
+    getSiteContent().then(setContent).catch(() => {})
+  }, [])
+  const checkoutVisible = isButtonVisible(content, 'menuCheckout')
+  const checkoutDisabled = isButtonDisabled(content, 'menuCheckout')
 
   // Load the menu from the products table (the same source the order-pricing
   // trigger trusts). Once loaded, honor a /menu?add=<name> deep link from the
@@ -304,6 +321,8 @@ export default function Menu({ previewProducts, preview = false }) {
               onDec={dec}
               onRemove={remove}
               onCheckout={checkout}
+              checkoutVisible={checkoutVisible}
+              checkoutDisabled={checkoutDisabled}
             />
           </div>
         </div>
@@ -350,6 +369,8 @@ export default function Menu({ previewProducts, preview = false }) {
               onDec={dec}
               onRemove={remove}
               onCheckout={checkout}
+              checkoutVisible={checkoutVisible}
+              checkoutDisabled={checkoutDisabled}
             />
           </div>
         </div>
@@ -402,7 +423,7 @@ function CategorySidebar({ active, onChange, categories }) {
                 </span>
               ) : (
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
-                  <img src={c.img} alt="" className="h-full w-full object-cover" />
+                  <img src={c.img} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 </span>
               )}
               {c.name}
@@ -417,6 +438,7 @@ function CategorySidebar({ active, onChange, categories }) {
 function MenuHeader({ itemCount }) {
   const { user, isAdmin, isEditor, logout } = useAuth()
   const navigate = useNavigate()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -457,7 +479,7 @@ function MenuHeader({ itemCount }) {
               </span>
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setConfirmLogout(true)}
                 className="text-sm font-medium text-navy-700 transition hover:text-brand-600"
               >
                 Logout
@@ -482,6 +504,17 @@ function MenuHeader({ itemCount }) {
           </div>
         </div>
       </div>
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out of your account."
+          confirmLabel="Log out"
+          loadingLabel="Logging out"
+          onConfirm={handleLogout}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
     </header>
   )
 }
@@ -523,6 +556,8 @@ function MenuCard({ product, qty, onAdd, onDec }) {
           <img
             src={product.img}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className={`h-56 w-full object-cover transition duration-300 group-hover:scale-105 ${
               soldOut ? 'opacity-60 grayscale' : ''
             }`}
@@ -656,6 +691,8 @@ function ProductMenuModal({ product, qty, onAdd, onDec, onClose }) {
           <img
             src={product.img}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className={`h-64 w-full object-cover md:h-full md:min-h-[24rem] ${
               soldOut ? 'opacity-60 grayscale' : ''
             }`}
@@ -742,7 +779,18 @@ function QtyButton({ children, onClick, label }) {
   )
 }
 
-function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onCheckout }) {
+function Cart({
+  lines,
+  menu,
+  subtotal,
+  itemCount,
+  onInc,
+  onDec,
+  onRemove,
+  onCheckout,
+  checkoutVisible = true,
+  checkoutDisabled = false,
+}) {
   const { user } = useAuth()
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
@@ -814,6 +862,8 @@ function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onChec
                 <img
                   src={product.img}
                   alt={product.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-12 w-12 shrink-0 rounded-lg object-cover"
                 />
                 <div className="min-w-0 flex-1">
@@ -856,6 +906,8 @@ function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onChec
                     <img
                       src={p.img}
                       alt={p.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-16 w-full rounded-lg object-cover"
                     />
                     <p className="mt-1.5 truncate text-xs font-medium text-navy-800">{p.name}</p>
@@ -944,38 +996,50 @@ function Cart({ lines, menu, subtotal, itemCount, onInc, onDec, onRemove, onChec
               )}
             </div>
 
-            {user ? (
-              <button
-                type="button"
-                onClick={() =>
-                  onCheckout({
-                    items: lines.map(({ product, qty }) => ({
-                      product_id: product.id,
-                      name: product.name,
-                      qty,
-                      img: product.img,
-                      price: product.price,
-                    })),
-                    voucher: voucher?.code || null,
-                  })
-                }
-                className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-              >
-                Proceed to Checkout
-              </button>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            {/* Checkout CTA — the Site Editor's Buttons section can set this to
+                visible (working), disabled (shown but inert), or hidden. */}
+            {checkoutVisible &&
+              (user ? (
+                <button
+                  type="button"
+                  disabled={checkoutDisabled}
+                  onClick={() =>
+                    onCheckout({
+                      items: lines.map(({ product, qty }) => ({
+                        product_id: product.id,
+                        name: product.name,
+                        qty,
+                        img: product.img,
+                        price: product.price,
+                      })),
+                      voucher: voucher?.code || null,
+                    })
+                  }
+                  className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Proceed to Checkout
-                </Link>
-                <p className="mt-2 text-center text-xs text-slate-400">
-                  Sign in to complete your order
-                </p>
-              </>
-            )}
+                </button>
+              ) : checkoutDisabled ? (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-4 block w-full cursor-not-allowed rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white opacity-60 shadow-md shadow-brand-500/30"
+                >
+                  Proceed to Checkout
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+                  >
+                    Proceed to Checkout
+                  </Link>
+                  <p className="mt-2 text-center text-xs text-slate-400">
+                    Sign in to complete your order
+                  </p>
+                </>
+              ))}
           </div>
         </>
       )}

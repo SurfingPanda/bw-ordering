@@ -44,6 +44,8 @@ export default function BrandPanel({ content: controlled }) {
         <img
           src={ap.image}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="relative z-10 mt-auto w-full max-w-xs self-center px-8 pb-8 drop-shadow-2xl"
         />
       )}

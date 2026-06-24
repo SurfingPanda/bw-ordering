@@ -463,7 +463,7 @@ export default function Checkout() {
             {payMethod === 'qrph' && (
               <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
                 {qrUrl ? (
-                  <img src={qrUrl} alt="QRPH payment code" className="h-48 w-48 rounded-lg" />
+                  <img src={qrUrl} alt="QRPH payment code" loading="lazy" decoding="async" className="h-48 w-48 rounded-lg" />
                 ) : (
                   <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-300">
                     Generating…
@@ -543,7 +543,7 @@ export default function Checkout() {
               {items.map((i) => (
                 <li key={i.product_id} className="flex items-center gap-3">
                   <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                    {i.img && <img src={i.img} alt={i.name} className="h-full w-full object-cover" />}
+                    {i.img && <img src={i.img} alt={i.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-navy-800 px-1 text-[0.6rem] font-bold text-white">
                       {i.qty}
                     </span>

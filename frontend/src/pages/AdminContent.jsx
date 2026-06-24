@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 import Landing from './Landing'
 import Franchise from './Franchise'
 import Login from './Login'
@@ -79,7 +80,7 @@ const BUTTON_GROUPS = LANDING_BUTTONS.reduce((acc, b) => {
 }, [])
 
 export default function AdminContent() {
-  const { logout, isAdmin, user } = useAuth()
+  const { logout, isAdmin, user, changePassword } = useAuth()
   const [content, setContent] = useState(null)
   const [products, setProducts] = useState([])
   const [originalIds, setOriginalIds] = useState([])
@@ -92,6 +93,9 @@ export default function AdminContent() {
   const [saving, setSaving] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const profileRef = useRef(null)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('announcement')
   // Collapsible sidebar groups — the active section's group starts open.
@@ -103,6 +107,21 @@ export default function AdminContent() {
       else next.add(key)
       return next
     })
+
+  // Close the profile dropdown on outside click or Escape.
+  useEffect(() => {
+    if (!profileMenuOpen) return
+    const onPointer = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileMenuOpen(false)
+    }
+    const onKey = (e) => e.key === 'Escape' && setProfileMenuOpen(false)
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [profileMenuOpen])
 
   useEffect(() => {
     Promise.all([
@@ -387,16 +406,45 @@ export default function AdminContent() {
           })}
         </nav>
 
-        <div className="border-t border-white/10 px-5 py-4">
-          <div className="flex items-center gap-3">
+        <div className="relative border-t border-white/10 px-5 py-4" ref={profileRef}>
+          <button
+            type="button"
+            onClick={() => setProfileMenuOpen((o) => !o)}
+            className="flex w-full items-center gap-3 rounded-lg p-1 text-left transition hover:bg-white/5"
+            aria-haspopup="menu"
+            aria-expanded={profileMenuOpen}
+          >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-bold">
               {(user?.email || 'E').charAt(0).toUpperCase()}
             </span>
-            <span className="min-w-0">
+            <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{user?.name || 'Editor'}</span>
               <span className="block truncate text-xs text-navy-50/60">{user?.email}</span>
             </span>
-          </div>
+            <ChevronUpIcon
+              className={`h-4 w-4 shrink-0 text-navy-50/50 transition ${profileMenuOpen ? '' : 'rotate-180'}`}
+            />
+          </button>
+
+          {profileMenuOpen && (
+            <div
+              role="menu"
+              className="absolute bottom-full left-5 right-5 mb-2 overflow-hidden rounded-xl border border-white/10 bg-navy-800 py-1 shadow-2xl shadow-black/40"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setProfileMenuOpen(false)
+                  setShowChangePassword(true)
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-navy-50 transition hover:bg-white/10"
+              >
+                <KeyIcon className="h-4 w-4 shrink-0 text-navy-50/70" />
+                Change my password
+              </button>
+            </div>
+          )}
           <div className="mt-3 flex gap-2">
             {isAdmin && (
               <Link
@@ -1239,7 +1287,7 @@ export default function AdminContent() {
           {active === 'buttons' && (
             <Panel
               title="Buttons & Calls-to-Action"
-              subtitle="Control each action button across your landing page. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site."
+              subtitle="Control each action button across your site. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site."
             >
               <div className="space-y-6">
                 {BUTTON_GROUPS.map(([group, items]) => (
@@ -1301,53 +1349,134 @@ export default function AdminContent() {
           title="Log out?"
           message="You’ll be signed out of the Site Editor. Any unsaved changes will be lost."
           confirmLabel="Log out"
+          loadingLabel="Logging out"
           onConfirm={logout}
           onCancel={() => setConfirmLogout(false)}
+        />
+      )}
+
+      {showChangePassword && (
+        <ChangePasswordModal
+          onSubmit={changePassword}
+          onClose={() => setShowChangePassword(false)}
         />
       )}
     </div>
   )
 }
 
-// Confirmation modal (replaces the native window.confirm).
-function ConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm, onCancel }) {
+
+// Change-password modal — new password + confirmation, submitted via the
+// AuthContext `changePassword` (Supabase updateUser).
+function ChangePasswordModal({ onSubmit, onClose }) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [show, setShow] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onCancel()
+    const onKey = (e) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onCancel])
+  }, [onClose])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      await onSubmit(password, confirm)
+      setDone(true)
+      setTimeout(onClose, 1200)
+    } catch (err) {
+      setError(err.message || 'Could not update password.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm"
-      onClick={onCancel}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={title}
+      aria-label="Change password"
     >
-      <div
+      <form
+        onSubmit={submit}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold text-navy-800">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">{message}</p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
+        <h3 className="text-lg font-bold text-navy-800">Change my password</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          Enter a new password for your account. It must be at least 6 characters.
+        </p>
+
+        {done ? (
+          <p className="mt-6 rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+            ✓ Password updated.
+          </p>
+        ) : (
+          <>
+            <div className="mt-5 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-navy-700">New password</label>
+                <input
+                  type={show ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                  autoComplete="new-password"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-navy-700">Confirm new password</label>
+                <input
+                  type={show ? 'text' : 'password'}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={show}
+                  onChange={(e) => setShow(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-slate-300"
+                />
+                Show passwords
+              </label>
+            </div>
+
+            {error && (
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600">{error}</p>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:opacity-60"
+              >
+                {busy ? 'Updating…' : 'Update password'}
+              </button>
+            </div>
+          </>
+        )}
+      </form>
     </div>
   )
 }
@@ -1477,7 +1606,7 @@ function QrphPreview({ payload }) {
   return (
     <div className="mx-auto flex max-w-xs flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
       {url ? (
-        <img src={url} alt="QR Ph preview" className="h-48 w-48 rounded-lg" />
+        <img src={url} alt="QR Ph preview" loading="lazy" decoding="async" className="h-48 w-48 rounded-lg" />
       ) : (
         <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-300">
           …
@@ -1862,7 +1991,7 @@ function ImageField({ label, value, onChange, wide }) {
           }`}
         >
           {value ? (
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <img src={value} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[0.6rem] text-slate-400">
               no image
@@ -1911,6 +2040,21 @@ function MegaphoneIcon(p) {
     <svg {...iconBase(p)}>
       <path d="m3 11 18-5v12L3 14v-3z" />
       <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+    </svg>
+  )
+}
+function ChevronUpIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  )
+}
+function KeyIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <circle cx="7.5" cy="15.5" r="4.5" />
+      <path d="m10.7 12.3 8.3-8.3M16 5l2 2M14 7l2 2" />
     </svg>
   )
 }

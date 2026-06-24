@@ -7,6 +7,8 @@ export default function BakeryBackdrop() {
         src="/images/bakery-interior.jpg"
         alt=""
         aria-hidden="true"
+        loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover"
       />
       {/* navy tint for contrast + brand warmth */}

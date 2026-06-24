@@ -1,8 +1,9 @@
 import api from './api'
 
-// Call-to-action buttons on the landing page. The admin "Buttons" editor sets
-// each to one of three states: 'on' (visible & working), 'disabled' (visible but
-// clicking does nothing), or 'off' (hidden from the live site).
+// Call-to-action buttons across the site (landing page + the menu checkout).
+// The admin "Buttons" editor sets each to one of three states: 'on' (visible &
+// working), 'disabled' (visible but clicking does nothing), or 'off' (hidden
+// from the live site).
 export const LANDING_BUTTONS = [
   { key: 'navSignIn', label: 'Sign In', group: 'Navigation bar' },
   { key: 'navOrder', label: 'Order Now', group: 'Navigation bar' },
@@ -10,6 +11,7 @@ export const LANDING_BUTTONS = [
   { key: 'promoOrder', label: 'Order a custom cake', group: 'Promo banner' },
   { key: 'storeLocatorFind', label: 'Find a store (+ search box)', group: 'Store locator' },
   { key: 'newsletterSubscribe', label: 'Subscribe form', group: 'Newsletter' },
+  { key: 'menuCheckout', label: 'Proceed to checkout', group: 'Menu page' },
 ]
 
 // Resolve a button's state from the stored value. Stored as `false` (off),

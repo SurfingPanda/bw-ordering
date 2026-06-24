@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BrandPanel from '../components/BrandPanel'
+import ConfirmModal from '../components/ConfirmModal'
 import { sanitizePhone, isValidPhone } from '../lib/phone'
 
 export default function CompleteProfile() {
@@ -11,6 +12,7 @@ export default function CompleteProfile() {
   const [contact, setContact] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   if (loading) {
     return (
@@ -99,7 +101,7 @@ export default function CompleteProfile() {
               Don&apos;t want to add a number?{' '}
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setConfirmLogout(true)}
                 disabled={submitting}
                 className="font-semibold text-brand-600 underline-offset-2 transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -109,6 +111,17 @@ export default function CompleteProfile() {
           </div>
         </div>
       </div>
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out without adding a contact number."
+          confirmLabel="Log out"
+          loadingLabel="Logging out"
+          onConfirm={handleLogout}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
     </div>
   )
 }

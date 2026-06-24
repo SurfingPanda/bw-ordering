@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 import Careers from './Careers'
 import {
   DEFAULT_CONTENT,
@@ -29,6 +30,7 @@ export default function AdminCareers() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('hero')
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   // Applications state
   const [applications, setApplications] = useState([])
@@ -169,7 +171,7 @@ export default function AdminCareers() {
               View site
             </Link>
             <button
-              onClick={logout}
+              onClick={() => setConfirmLogout(true)}
               className="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600"
             >
               Logout
@@ -488,6 +490,17 @@ export default function AdminCareers() {
           )}
         </div>
       </div>
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out of the Careers admin. Any unsaved changes will be lost."
+          confirmLabel="Log out"
+          loadingLabel="Logging out"
+          onConfirm={logout}
+          onCancel={() => setConfirmLogout(false)}
+        />
+      )}
     </div>
   )
 }
@@ -755,7 +768,7 @@ function ImageField({ label, value, onChange, wide }) {
           }`}
         >
           {value ? (
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <img src={value} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[0.6rem] text-slate-400">
               no image
