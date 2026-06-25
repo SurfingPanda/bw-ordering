@@ -71,7 +71,7 @@ export default function Landing({ content: controlledContent, preview = false })
   // construction" screen (still shown in the editor preview so the toggle is
   // visible there). Admin/editor routes live elsewhere, so they stay reachable.
   if (content.maintenance?.enabled) {
-    const uc = <UnderConstruction data={content.maintenance} />
+    const uc = <UnderConstruction data={content.maintenance} social={content.social} />
     if (preview) {
       return <StaticRevealContext.Provider value={true}>{uc}</StaticRevealContext.Provider>
     }
@@ -99,9 +99,34 @@ export default function Landing({ content: controlledContent, preview = false })
   return page
 }
 
+// Bakery treats that gently float in the backdrop. Position + per-item timing
+// are tuned for variety; all are decorative (aria-hidden).
+const FLOATING_TREATS = [
+  { emoji: '🥐', cls: 'left-[8%] top-[18%] text-5xl', delay: '0s', dur: '6s' },
+  { emoji: '🧁', cls: 'right-[10%] top-[22%] text-4xl', delay: '1.2s', dur: '7s' },
+  { emoji: '🍞', cls: 'left-[14%] bottom-[16%] text-5xl', delay: '0.6s', dur: '6.5s' },
+  { emoji: '🎂', cls: 'right-[14%] bottom-[20%] text-4xl', delay: '2s', dur: '8s' },
+  { emoji: '🍩', cls: 'left-[44%] top-[9%] text-3xl', delay: '1.6s', dur: '7.5s' },
+  { emoji: '🥖', cls: 'right-[6%] top-[55%] text-4xl', delay: '0.3s', dur: '6.8s' },
+]
+
+// Crumbs/chips flung off the logo on each hammer strike. --dx/--dy set the
+// fling direction; the keyframe times it to the 1.2s strike cycle.
+const DEBRIS = [
+  { cls: 'bg-brand-400', dx: '-46px', dy: '-54px' },
+  { cls: 'bg-amber-200', dx: '42px', dy: '-58px' },
+  { cls: 'bg-white', dx: '-60px', dy: '-28px' },
+  { cls: 'bg-brand-200', dx: '58px', dy: '-24px' },
+  { cls: 'bg-amber-300', dx: '0px', dy: '-68px' },
+]
+
 // Shown in place of the landing page when maintenance mode is enabled.
-function UnderConstruction({ data }) {
+function UnderConstruction({ data, social }) {
   const d = { ...DEFAULT_CONTENT.maintenance, ...(data || {}) }
+  // Only the social networks that actually have a URL are shown here.
+  const socials = SOCIAL_META.map((m) => ({ ...m, href: (social?.[m.key] || '').trim() })).filter(
+    (s) => s.href,
+  )
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-navy-900 px-6 text-center text-white animate-bg-pan">
       {/* drifting glow blobs behind the content */}
@@ -113,6 +138,18 @@ function UnderConstruction({ data }) {
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 bottom-8 h-80 w-80 rounded-full bg-brand-400/15 blur-3xl animate-drift-slow"
       />
+
+      {/* floating bakery treats */}
+      {FLOATING_TREATS.map((t, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          style={{ animationDelay: t.delay, animationDuration: t.dur }}
+          className={`pointer-events-none absolute select-none opacity-20 animate-bakery-float ${t.cls}`}
+        >
+          {t.emoji}
+        </span>
+      ))}
 
       <div className="relative z-10 flex flex-col items-center">
       <div className="animate-pop-in">
@@ -129,6 +166,15 @@ function UnderConstruction({ data }) {
           >
             💥
           </span>
+          {/* crumbs flung off on each strike */}
+          {DEBRIS.map((p, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              style={{ '--dx': p.dx, '--dy': p.dy }}
+              className={`pointer-events-none absolute left-1/2 top-2 h-2 w-2 -translate-x-1/2 rounded-full animate-debris ${p.cls}`}
+            />
+          ))}
           {/* hammer swings down onto the logo */}
           <span
             aria-hidden="true"
@@ -147,6 +193,22 @@ function UnderConstruction({ data }) {
       </span>
       <h1 className="mt-8 font-brand text-4xl font-bold sm:text-5xl">{d.title}</h1>
       <p className="mt-4 max-w-md text-base leading-relaxed text-navy-50/70">{d.message}</p>
+
+      {socials.length > 0 && (
+        <div className="mt-8 flex gap-3">
+          {socials.map((s) => (
+            <a
+              key={s.label}
+              href={s.href}
+              {...(isExternal(s.href) && { target: '_blank', rel: 'noopener noreferrer' })}
+              aria-label={s.label}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-base font-semibold text-white transition hover:scale-110 hover:bg-brand-600"
+            >
+              {s.icon}
+            </a>
+          ))}
+        </div>
+      )}
       </div>
     </div>
   )

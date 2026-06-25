@@ -138,6 +138,22 @@ body {
   animation: drift-slow 20s ease-in-out infinite;
 }
 
+/* Bakery treats that gently float in the backdrop of the "under construction"
+   page. Per-item duration/delay are set inline for variety. */
+@keyframes bakery-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-26px) rotate(8deg);
+  }
+}
+
+.animate-bakery-float {
+  animation: bakery-float 6s ease-in-out infinite;
+}
+
 /* "Under construction" hammer gag (src/pages/Landing.jsx UnderConstruction):
    the 🔨 swings down and strikes the logo, which squashes on impact. The two
    keyframe sets share the same 1.2s period so the squash lands with the blow. */
@@ -208,6 +224,28 @@ body {
   animation: impact-spark 1.2s ease-out infinite;
 }
 
+/* Crumbs/chips flung off the logo on each hammer strike. Direction is set per
+   piece via --dx/--dy; timing matches the 1.2s strike cycle. */
+@keyframes debris {
+  0%,
+  48% {
+    transform: translate(0, 0) scale(0);
+    opacity: 0;
+  }
+  54% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0), var(--dy, -40px)) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.animate-debris {
+  animation: debris 1.2s ease-out infinite;
+}
+
 /* Soft playful tilt for the 🚧 barrier on the same page. */
 @keyframes wiggle {
   0%,
@@ -235,8 +273,13 @@ body {
   .animate-spark,
   .animate-bg-pan,
   .animate-drift,
-  .animate-drift-slow {
+  .animate-drift-slow,
+  .animate-bakery-float,
+  .animate-debris {
     animation: none;
+  }
+  .animate-debris {
+    opacity: 0;
   }
   .animate-spark {
     opacity: 0;
