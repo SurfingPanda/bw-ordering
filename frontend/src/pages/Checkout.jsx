@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import { useAuth } from '../context/AuthContext'
 import { createOrder, fetchOrder, fetchPaymentConfig, payOrder } from '../lib/orders'
 import { fetchActiveVouchers } from '../lib/vouchers'
-import { getCachedContent, getSiteContent } from '../lib/content'
+import { fetchMenuProducts, getCachedContent, getSiteContent } from '../lib/content'
 import { buildQrphPayload } from '../lib/qrph'
 
 // Multi-section checkout page reached from the Menu cart ("Proceed to
@@ -35,7 +35,40 @@ export default function Checkout() {
   const { user } = useAuth()
 
   const [payload] = useState(readCheckout)
-  const items = useMemo(() => payload?.items || [], [payload])
+  // Live products fetched on mount so we can re-verify the cart against the
+  // server before the customer pays — prices may have changed since the cart
+  // was filled from the (cached) menu. `null` until loaded.
+  const [liveProducts, setLiveProducts] = useState(null)
+
+  // Reconcile the handed-over cart with live server data: update any changed
+  // prices (so the shown total matches what the server will charge) and flag
+  // items that are no longer available or sold out (the server rejects those).
+  const { items, priceChanges, unavailable } = useMemo(() => {
+    const base = payload?.items || []
+    if (!liveProducts) return { items: base, priceChanges: [], unavailable: [] }
+    const priceChanges = []
+    const unavailable = []
+    const reconciled = base.map((i) => {
+      const live = liveProducts[i.product_id]
+      if (!live) {
+        unavailable.push({ name: i.name, reason: 'no longer available' })
+        return i
+      }
+      if (live.status === 'sold_out') {
+        unavailable.push({ name: i.name, reason: 'sold out' })
+        return i
+      }
+      const livePrice = Number(live.price)
+      if (Number.isFinite(livePrice) && livePrice !== Number(i.price)) {
+        priceChanges.push({ name: i.name, from: Number(i.price), to: livePrice })
+        return { ...i, price: livePrice }
+      }
+      return i
+    })
+    return { items: reconciled, priceChanges, unavailable }
+  }, [payload, liveProducts])
+
+  const hasBlockingIssue = unavailable.length > 0
 
   const [mode, setMode] = useState('delivery') // 'delivery' | 'pickup'
   const [speed, setSpeed] = useState('standard') // 'standard' | 'express'
@@ -56,6 +89,16 @@ export default function Checkout() {
       .then((c) => setQrPayload(c?.payment?.qrPayload || ''))
       .catch(() => {})
     fetchPaymentConfig().then((cfg) => setPaymongoEnabled(!!cfg.paymongo)).catch(() => {})
+    // Re-verify cart prices/availability against the server before paying.
+    fetchMenuProducts()
+      .then((rows) => {
+        const map = {}
+        rows.forEach((p) => {
+          map[p.id] = p
+        })
+        setLiveProducts(map)
+      })
+      .catch(() => {})
   }, [])
 
   // Handle the redirect back from the PayMongo hosted checkout
@@ -171,6 +214,10 @@ export default function Checkout() {
   }
 
   const goToPayment = () => {
+    if (hasBlockingIssue) {
+      setError('Some items in your cart are no longer available. Please update your cart.')
+      return
+    }
     if (!name.trim() || !phone.trim() || !email.trim()) {
       setError('Please fill in your name, mobile number, and email.')
       return
@@ -185,6 +232,10 @@ export default function Checkout() {
   }
 
   const placeOrder = async () => {
+    if (hasBlockingIssue) {
+      setError('Some items in your cart are no longer available. Please update your cart.')
+      return
+    }
     setError('')
     setPlacing(true)
     try {
@@ -285,6 +336,38 @@ export default function Checkout() {
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_22rem]">
         {/* ---- left column ---- */}
         <div className="space-y-6">
+          {/* Cart re-verified against live server prices/availability. */}
+          {priceChanges.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p className="font-semibold">Prices updated</p>
+              <ul className="mt-1 list-disc pl-5 text-amber-700">
+                {priceChanges.map((c) => (
+                  <li key={c.name}>
+                    {c.name}: {peso(c.from)} → <span className="font-semibold">{peso(c.to)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-xs text-amber-600">
+                Your total reflects the latest prices.
+              </p>
+            </div>
+          )}
+          {unavailable.length > 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <p className="font-semibold">Some items are no longer available</p>
+              <ul className="mt-1 list-disc pl-5">
+                {unavailable.map((u) => (
+                  <li key={u.name}>
+                    {u.name} — {u.reason}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/menu" className="mt-1 inline-block text-xs font-semibold underline">
+                Update your cart
+              </Link>
+            </div>
+          )}
+
           {step === 'form' && (
           <>
           {/* 1. Delivery or Pickup */}
@@ -417,7 +500,8 @@ export default function Checkout() {
           <button
             type="button"
             onClick={goToPayment}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+            disabled={hasBlockingIssue}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Continue to Payment
             <ArrowIcon className="h-4 w-4" />
@@ -506,7 +590,7 @@ export default function Checkout() {
           <button
             type="button"
             onClick={placeOrder}
-            disabled={placing}
+            disabled={placing || hasBlockingIssue}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {placing

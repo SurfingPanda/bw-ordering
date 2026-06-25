@@ -306,12 +306,36 @@ function normalizeProduct(p) {
   }
 }
 
+// Local cache of the menu products (already normalized to the UI shape), so the
+// Menu page paints instantly on refresh/revisit instead of waiting on the
+// /products request. Best-effort and SSR-safe — returns null when storage is
+// unavailable (e.g. during prerender), mirroring getCachedContent.
+const PRODUCTS_CACHE_KEY = 'bw_menu_products'
+
+export function getCachedProducts() {
+  try {
+    const raw = localStorage.getItem(PRODUCTS_CACHE_KEY)
+    if (!raw) return null
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : null
+  } catch {
+    return null
+  }
+}
+
 // Menu page: every non-archived product. Products live in the Laravel API
 // (MySQL) now — Supabase is only used for auth. The API returns rows in the
-// same snake_case shape normalizeProduct expects.
+// same snake_case shape normalizeProduct expects. Successful reads update the
+// localStorage cache so the next visit can paint before the network responds.
 export async function fetchMenuProducts() {
   const { data } = await api.get('/products')
-  return (data || []).map(normalizeProduct)
+  const products = (data || []).map(normalizeProduct)
+  try {
+    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products))
+  } catch {
+    // storage full / unavailable — caching is best-effort
+  }
+  return products
 }
 
 // Editor: same set (non-archived), for management.

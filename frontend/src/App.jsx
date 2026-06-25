@@ -15,6 +15,7 @@ const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Profile = lazy(() => import('./pages/Profile'))
 const MyOrders = lazy(() => import('./pages/MyOrders'))
 const Checkout = lazy(() => import('./pages/Checkout'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
@@ -62,6 +63,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Suspense fallback={<Loading />}><Checkout /></Suspense>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}><Profile /></Suspense>
           </ProtectedRoute>
         }
       />

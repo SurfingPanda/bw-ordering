@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
+import { useAuth } from '../context/AuthContext'
 import { DEFAULT_CONTENT, buttonState, getCachedContent, getSiteContent } from '../lib/content'
 
 // Disabled CTA styling + an onClick that swallows the click (and stops it from
@@ -100,6 +101,8 @@ function AnnouncementBar({ text }) {
 
 function NavBar({ buttons }) {
   const [open, setOpen] = useState(false)
+  const { user, isAdmin, isEditor, isHr, logout } = useAuth()
+  const navigate = useNavigate()
   const signInState = buttonState(buttons, 'navSignIn')
   const orderState = buttonState(buttons, 'navOrder')
   const showSignIn = signInState !== 'off'
@@ -111,6 +114,22 @@ function NavBar({ buttons }) {
     { label: 'Menu', to: '/menu' },
     { label: 'Partner with us', to: '/franchise' },
   ]
+
+  // Where the signed-in account link goes, mirroring the post-login routing.
+  const firstName = (user?.name || '').split(' ')[0] || 'Account'
+  const accountRoute = isAdmin
+    ? '/admin'
+    : isEditor
+      ? '/admin/content'
+      : isHr
+        ? '/admin/careers'
+        : '/dashboard'
+
+  const handleLogout = async () => {
+    await logout()
+    setOpen(false)
+    navigate('/')
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white">
@@ -134,16 +153,34 @@ function NavBar({ buttons }) {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          {showSignIn && (
-            <Link
-              to="/login"
-              aria-disabled={signInOff}
-              tabIndex={signInOff ? -1 : undefined}
-              onClick={signInOff ? swallowClick : undefined}
-              className={`text-sm font-semibold text-navy-700 transition hover:text-brand-600 ${signInOff ? DISABLED_BTN_CLS : ''}`}
-            >
-              Sign In
-            </Link>
+          {user ? (
+            <>
+              <Link
+                to={accountRoute}
+                className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
+              >
+                Hi, {firstName}
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            showSignIn && (
+              <Link
+                to="/login"
+                aria-disabled={signInOff}
+                tabIndex={signInOff ? -1 : undefined}
+                onClick={signInOff ? swallowClick : undefined}
+                className={`text-sm font-semibold text-navy-700 transition hover:text-brand-600 ${signInOff ? DISABLED_BTN_CLS : ''}`}
+              >
+                Sign In
+              </Link>
+            )
           )}
           {showOrder && (
             <Link
@@ -193,18 +230,37 @@ function NavBar({ buttons }) {
               </li>
             ))}
           </ul>
-          {(showSignIn || showOrder) && (
+          {(user || showSignIn || showOrder) && (
             <div className="mt-3 flex gap-3">
-              {showSignIn && (
-                <Link
-                  to="/login"
-                  aria-disabled={signInOff}
-                  tabIndex={signInOff ? -1 : undefined}
-                  onClick={signInOff ? swallowClick : undefined}
-                  className={`flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 ${signInOff ? DISABLED_BTN_CLS : ''}`}
-                >
-                  Sign In
-                </Link>
+              {user ? (
+                <>
+                  <Link
+                    to={accountRoute}
+                    onClick={() => setOpen(false)}
+                    className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
+                  >
+                    Hi, {firstName}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                showSignIn && (
+                  <Link
+                    to="/login"
+                    aria-disabled={signInOff}
+                    tabIndex={signInOff ? -1 : undefined}
+                    onClick={signInOff ? swallowClick : undefined}
+                    className={`flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 ${signInOff ? DISABLED_BTN_CLS : ''}`}
+                  >
+                    Sign In
+                  </Link>
+                )
               )}
               {showOrder && (
                 <Link
