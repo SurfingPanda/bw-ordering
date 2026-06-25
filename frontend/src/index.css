@@ -73,11 +73,173 @@ body {
   animation: check-draw 0.4s 0.25s ease-out forwards;
 }
 
+/* Gentle continuous bob — used for the logo on the "under construction" page
+   (src/pages/Landing.jsx UnderConstruction) so it feels alive. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Animated backdrop for the "under construction" page: the base gradient slowly
+   pans while two soft brand-colored glows drift behind the content. */
+@keyframes bg-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-bg-pan {
+  background: linear-gradient(125deg, #0b1f3d 0%, #102a4f 38%, #0e2547 62%, #0b1f3d 100%);
+  background-size: 220% 220%;
+  animation: bg-pan 14s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(45px, -30px) scale(1.12);
+  }
+  66% {
+    transform: translate(-30px, 25px) scale(0.94);
+  }
+}
+
+.animate-drift {
+  animation: drift 16s ease-in-out infinite;
+}
+
+@keyframes drift-slow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-55px, 35px) scale(1.18);
+  }
+}
+
+.animate-drift-slow {
+  animation: drift-slow 20s ease-in-out infinite;
+}
+
+/* "Under construction" hammer gag (src/pages/Landing.jsx UnderConstruction):
+   the 🔨 swings down and strikes the logo, which squashes on impact. The two
+   keyframe sets share the same 1.2s period so the squash lands with the blow. */
+@keyframes hammer-swing {
+  0%,
+  35% {
+    transform: rotate(-58deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+  65% {
+    transform: rotate(-58deg);
+  }
+  100% {
+    transform: rotate(-58deg);
+  }
+}
+
+.animate-hammer {
+  animation: hammer-swing 1.2s cubic-bezier(0.5, 0, 0.4, 1) infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes logo-hit {
+  0%,
+  48% {
+    transform: translateY(0) scale(1, 1);
+  }
+  54% {
+    transform: translateY(6px) scale(1.08, 0.9);
+  }
+  62% {
+    transform: translateY(0) scale(0.96, 1.05);
+  }
+  72%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+.animate-logo-hit {
+  animation: logo-hit 1.2s ease-out infinite;
+  transform-origin: bottom center;
+}
+
+/* Impact spark that flashes at the moment of the hammer strike. */
+@keyframes impact-spark {
+  0%,
+  48% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  54% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  68% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-spark {
+  animation: impact-spark 1.2s ease-out infinite;
+}
+
+/* Soft playful tilt for the 🚧 barrier on the same page. */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 1.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-page-in,
   .animate-pop-in,
-  .animate-check-draw {
+  .animate-check-draw,
+  .animate-float,
+  .animate-wiggle,
+  .animate-hammer,
+  .animate-logo-hit,
+  .animate-spark,
+  .animate-bg-pan,
+  .animate-drift,
+  .animate-drift-slow {
     animation: none;
+  }
+  .animate-spark {
+    opacity: 0;
   }
   /* Without the draw animation, leave the tick fully visible. */
   .animate-check-draw {

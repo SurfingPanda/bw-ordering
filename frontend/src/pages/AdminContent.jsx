@@ -40,6 +40,7 @@ const SECTION_GROUPS = [
       { key: 'newsletter', label: 'Sweet Deals', Icon: MailIcon },
       { key: 'stores', label: 'Find a Store', Icon: PinIcon },
       { key: 'franchise', label: 'Franchise', Icon: BriefcaseIcon },
+      { key: 'footer', label: 'Footer', Icon: LayoutIcon },
     ],
   },
   {
@@ -302,6 +303,44 @@ export default function AdminContent() {
   const setSocial = (patch) =>
     setContent((c) => ({ ...c, social: { ...(c.social || DEFAULT_CONTENT.social), ...patch } }))
 
+  // Maintenance mode — when enabled, the public landing page shows an "under
+  // construction" screen instead of the normal content. Toggled in Buttons.
+  const mt = content?.maintenance || DEFAULT_CONTENT.maintenance
+  const setMaintenance = (patch) =>
+    setContent((c) => ({
+      ...c,
+      maintenance: { ...(c.maintenance || DEFAULT_CONTENT.maintenance), ...patch },
+    }))
+
+  // Footer content (logo/brand/description/copyright + link columns). Columns
+  // each hold a title and a list of { label, url } links.
+  const fo = content?.footer || DEFAULT_CONTENT.footer
+  const setFooter = (patch) =>
+    setContent((c) => ({ ...c, footer: { ...(c.footer || DEFAULT_CONTENT.footer), ...patch } }))
+  const footerColumns = fo.columns || []
+  const setFooterColumns = (cols) => setFooter({ columns: cols })
+  const updateFooterColumn = (ci, patch) =>
+    setFooterColumns(footerColumns.map((col, i) => (i === ci ? { ...col, ...patch } : col)))
+  const addFooterColumn = () =>
+    setFooterColumns([...footerColumns, { title: 'New column', links: [] }])
+  const removeFooterColumn = (ci) =>
+    setFooterColumns(footerColumns.filter((_, i) => i !== ci))
+  const moveFooterColumn = (ci, dir) => {
+    const next = [...footerColumns]
+    const j = ci + dir
+    if (j < 0 || j >= next.length) return
+    ;[next[ci], next[j]] = [next[j], next[ci]]
+    setFooterColumns(next)
+  }
+  const updateFooterLink = (ci, li, patch) =>
+    updateFooterColumn(ci, {
+      links: (footerColumns[ci].links || []).map((l, i) => (i === li ? { ...l, ...patch } : l)),
+    })
+  const addFooterLink = (ci) =>
+    updateFooterColumn(ci, { links: [...(footerColumns[ci].links || []), { label: 'New link', url: '' }] })
+  const removeFooterLink = (ci, li) =>
+    updateFooterColumn(ci, { links: (footerColumns[ci].links || []).filter((_, i) => i !== li) })
+
   // Editor-declared categories (may have no products yet) live in the CMS blob.
   const declaredCategories = content?.menuCategories || []
   const setDeclaredCategories = (updater) =>
@@ -374,8 +413,8 @@ export default function AdminContent() {
     <div className="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* sidebar */}
       <aside className="sticky top-0 z-30 flex shrink-0 flex-col bg-navy-900 text-white lg:h-screen lg:w-64">
-        <div className="flex h-16 items-center justify-center border-b border-white/10 px-5">
-          <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-12 w-auto" />
+        <div className="flex h-24 items-center justify-center border-b border-white/10 px-5">
+          <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-20 w-auto" />
         </div>
         <div className="border-b border-white/10 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">
@@ -1367,6 +1406,92 @@ export default function AdminContent() {
             </Panel>
           )}
 
+          {active === 'footer' && (
+            <div className="space-y-5">
+              <Panel
+                title="Footer"
+                subtitle="The site-wide footer shown at the bottom of every public page — brand, tagline, link columns, and copyright. Social icons live in the Social Links section."
+              >
+                <div className="space-y-4">
+                  <ImageField
+                    label="Logo"
+                    value={fo.logo}
+                    onChange={(logo) => setFooter({ logo })}
+                  />
+                  <TextRow
+                    label="Brand name"
+                    value={fo.brand}
+                    onChange={(brand) => setFooter({ brand })}
+                  />
+                  <TextAreaRow
+                    label="Description"
+                    value={fo.description}
+                    onChange={(description) => setFooter({ description })}
+                  />
+                  <TextRow
+                    label="Copyright line"
+                    value={fo.copyright}
+                    onChange={(copyright) => setFooter({ copyright })}
+                  />
+                </div>
+              </Panel>
+
+              <Panel
+                title="Link Columns"
+                subtitle="The columns of links beside the brand (Shop, Company, Support…). Each link’s URL may be an internal path (/menu) or a full external link; leave blank for an inert placeholder."
+              >
+                <div className="space-y-4">
+                  {footerColumns.map((col, ci) => (
+                    <ItemCard
+                      key={ci}
+                      index={ci}
+                      total={footerColumns.length}
+                      onMove={(dir) => moveFooterColumn(ci, dir)}
+                      onRemove={() => removeFooterColumn(ci)}
+                    >
+                      <TextRow
+                        label="Column title"
+                        value={col.title}
+                        onChange={(title) => updateFooterColumn(ci, { title })}
+                      />
+                      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                        {(col.links || []).map((l, li) => (
+                          <div key={li} className="flex items-start gap-2">
+                            <div className="grid flex-1 gap-2 sm:grid-cols-2">
+                              <TextRow
+                                label="Label"
+                                value={l.label}
+                                onChange={(label) => updateFooterLink(ci, li, { label })}
+                              />
+                              <TextRow
+                                label="URL"
+                                value={l.url}
+                                onChange={(url) => updateFooterLink(ci, li, { url })}
+                              />
+                            </div>
+                            <button
+                              onClick={() => removeFooterLink(ci, li)}
+                              className="mt-6 rounded-md px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => addFooterLink(ci)}
+                          className="w-full rounded-lg border-2 border-dashed border-slate-300 py-2 text-xs font-semibold text-slate-500 transition hover:border-brand-400 hover:text-brand-600"
+                        >
+                          + Add link
+                        </button>
+                      </div>
+                    </ItemCard>
+                  ))}
+                  <AddButton onClick={addFooterColumn}>+ Add column</AddButton>
+                </div>
+              </Panel>
+            </div>
+          )}
+
           {active === 'social' && (
             <Panel
               title="Social Links"
@@ -1391,10 +1516,42 @@ export default function AdminContent() {
           )}
 
           {active === 'buttons' && (
-            <Panel
-              title="Buttons & Calls-to-Action"
-              subtitle="Control each action button across your site. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site."
-            >
+            <div className="space-y-5">
+              <Panel
+                title="Landing Page"
+                subtitle="Turn the public landing page on or off. When off, visitors to the home page see an “under construction” screen instead. The Site Editor and other pages stay reachable."
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-navy-800">Show “Under Construction” page</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {mt.enabled
+                        ? 'The landing page is currently disabled.'
+                        : 'The landing page is live.'}
+                    </p>
+                  </div>
+                  <Toggle on={!!mt.enabled} onChange={(enabled) => setMaintenance({ enabled })} />
+                </div>
+                {mt.enabled && (
+                  <div className="mt-4 space-y-3">
+                    <TextRow
+                      label="Headline"
+                      value={mt.title}
+                      onChange={(title) => setMaintenance({ title })}
+                    />
+                    <TextAreaRow
+                      label="Message"
+                      value={mt.message}
+                      onChange={(message) => setMaintenance({ message })}
+                    />
+                  </div>
+                )}
+              </Panel>
+
+              <Panel
+                title="Buttons & Calls-to-Action"
+                subtitle="Control each action button across your site. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site."
+              >
               <div className="space-y-6">
                 {BUTTON_GROUPS.map(([group, items]) => (
                   <div key={group}>
@@ -1420,7 +1577,8 @@ export default function AdminContent() {
                   </div>
                 ))}
               </div>
-            </Panel>
+              </Panel>
+            </div>
           )}
         </main>
 
@@ -1605,6 +1763,7 @@ const SECTION_ANCHOR = {
   payment: null,
   stores: null,
   franchise: null,
+  footer: '#site-footer',
   buttons: null,
 }
 
@@ -2219,6 +2378,15 @@ function GridIcon(p) {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+function LayoutIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+      <line x1="9" y1="15" x2="9" y2="21" />
     </svg>
   )
 }

@@ -39,6 +39,14 @@ const ALL_BUTTONS_VISIBLE = Object.fromEntries(LANDING_BUTTONS.map((b) => [b.key
 // Editable landing-page content. These defaults render the site even before an
 // admin saves anything (or if Supabase isn't set up yet).
 export const DEFAULT_CONTENT = {
+  // When enabled, the public landing page ("/") is replaced by an "under
+  // construction" screen. Toggled from the Site Editor → Buttons section.
+  maintenance: {
+    enabled: false,
+    title: 'We’ll be right back',
+    message:
+      'Our landing page is getting a fresh bake. Please check back soon — thanks for your patience!',
+  },
   announcement:
     '🚚 Free delivery on orders over ₱1,000  •  Freshly baked every morning  •  Order now and taste the love!',
   banners: [
@@ -111,6 +119,46 @@ export const DEFAULT_CONTENT = {
     facebook: 'https://www.facebook.com/bwsuperbakeshop',
     linkedin: '',
     x: '',
+  },
+  // Footer content (src/pages/Landing.jsx Footer), editable in the Site Editor →
+  // Footer section. Social icons stay in `social` above. Each column link has a
+  // { label, url }; url may be an internal path (/menu), a full external URL, or
+  // blank (renders as an inert placeholder link).
+  footer: {
+    logo: '/images/logo (1).png',
+    brand: 'Superbakeshop',
+    description:
+      'Freshly baked. Made with love. Ordered with ease. Bringing bakeshop happiness to your doorstep.',
+    copyright: '© 2026 BW Superbakeshop. All rights reserved.',
+    columns: [
+      {
+        title: 'Shop',
+        links: [
+          { label: 'Cakes', url: '/menu' },
+          { label: 'Breads', url: '/menu' },
+          { label: 'Pastries', url: '/menu' },
+          { label: 'Delicacies', url: '/menu' },
+        ],
+      },
+      {
+        title: 'Company',
+        links: [
+          { label: 'About Us', url: '' },
+          { label: 'Our Stores', url: '/stores' },
+          { label: 'Careers', url: '/careers' },
+          { label: 'Contact', url: '' },
+        ],
+      },
+      {
+        title: 'Support',
+        links: [
+          { label: 'Help Center', url: '' },
+          { label: 'Delivery Info', url: '' },
+          { label: 'Returns', url: '' },
+          { label: 'FAQs', url: '' },
+        ],
+      },
+    ],
   },
   // Editor-declared menu categories (lets you create a category before any
   // product uses it). Menu categories are otherwise derived from products.

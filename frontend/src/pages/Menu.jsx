@@ -80,6 +80,10 @@ export default function Menu({ previewProducts, previewContent, preview = false 
   // then jumping once the fetch resolves below. A ?add= deep link targets a
   // specific category, so defer to the effect in that case.
   const [active, setActive] = useState(() => {
+    // A ?category= deep link (e.g. the landing "See What's New" button) picks
+    // the starting tab explicitly.
+    const cat = searchParams.get('category')
+    if (cat) return cat
     if (searchParams.get('add')) return 'All'
     return (getCachedProducts() || []).some((p) => p.status === 'new')
       ? "What's New"
@@ -135,7 +139,7 @@ export default function Menu({ previewProducts, previewContent, preview = false 
           }
           searchParams.delete('add')
           setSearchParams(searchParams, { replace: true })
-        } else if (rows.some((p) => p.status === 'new')) {
+        } else if (!searchParams.get('category') && rows.some((p) => p.status === 'new')) {
           setActive("What's New")
         }
       })

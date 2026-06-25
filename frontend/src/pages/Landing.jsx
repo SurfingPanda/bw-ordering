@@ -67,6 +67,17 @@ export default function Landing({ content: controlledContent, preview = false })
 
   const buttons = content.buttons
 
+  // When the editor disables the landing page, replace it with an "under
+  // construction" screen (still shown in the editor preview so the toggle is
+  // visible there). Admin/editor routes live elsewhere, so they stay reachable.
+  if (content.maintenance?.enabled) {
+    const uc = <UnderConstruction data={content.maintenance} />
+    if (preview) {
+      return <StaticRevealContext.Provider value={true}>{uc}</StaticRevealContext.Provider>
+    }
+    return uc
+  }
+
   const page = (
     <div className="min-h-screen bg-white text-navy-800">
       <AnnouncementBar text={content.announcement} />
@@ -78,7 +89,7 @@ export default function Landing({ content: controlledContent, preview = false })
       <PromoBanner buttons={buttons} data={content.customCake} />
       <StoreLocator buttons={buttons} />
       <Newsletter buttons={buttons} data={content.newsletter} />
-      <Footer social={content.social} />
+      <Footer social={content.social} footer={content.footer} />
     </div>
   )
 
@@ -86,6 +97,59 @@ export default function Landing({ content: controlledContent, preview = false })
     return <StaticRevealContext.Provider value={true}>{page}</StaticRevealContext.Provider>
   }
   return page
+}
+
+// Shown in place of the landing page when maintenance mode is enabled.
+function UnderConstruction({ data }) {
+  const d = { ...DEFAULT_CONTENT.maintenance, ...(data || {}) }
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-navy-900 px-6 text-center text-white animate-bg-pan">
+      {/* drifting glow blobs behind the content */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl animate-drift"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 bottom-8 h-80 w-80 rounded-full bg-brand-400/15 blur-3xl animate-drift-slow"
+      />
+
+      <div className="relative z-10 flex flex-col items-center">
+      <div className="animate-pop-in">
+        <div className="relative animate-float">
+          <img
+            src="/images/logo (1).png"
+            alt="bw Superbakeshop"
+            className="h-44 w-auto drop-shadow-2xl animate-logo-hit sm:h-56"
+          />
+          {/* spark flashes where the hammer lands */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 text-4xl animate-spark"
+          >
+            💥
+          </span>
+          {/* hammer swings down onto the logo */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 text-5xl animate-hammer sm:text-6xl"
+          >
+            🔨
+          </span>
+        </div>
+      </div>
+      <span
+        className="mt-10 inline-block text-6xl animate-wiggle"
+        role="img"
+        aria-label="Under construction"
+      >
+        🚧
+      </span>
+      <h1 className="mt-8 font-brand text-4xl font-bold sm:text-5xl">{d.title}</h1>
+      <p className="mt-4 max-w-md text-base leading-relaxed text-navy-50/70">{d.message}</p>
+      </div>
+    </div>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -395,13 +459,13 @@ function BestSellers({ products, buttons }) {
           return (
             <div className="mt-10 text-center">
               <Link
-                to="/menu"
+                to={`/menu?category=${encodeURIComponent('Best Sellers')}`}
                 aria-disabled={off}
                 tabIndex={off ? -1 : undefined}
                 onClick={off ? swallowClick : undefined}
                 className={`inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900 ${off ? DISABLED_BTN_CLS : ''}`}
               >
-                See full menu
+                See Best Sellers
               </Link>
             </div>
           )
@@ -644,6 +708,15 @@ function WhatsNew({ heading, products = [] }) {
           </Reveal>
         ))}
       </div>
+      <Reveal className="mt-10 text-center">
+        <Link
+          to={`/menu?category=${encodeURIComponent("What's New")}`}
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+        >
+          See What&apos;s New
+          <span aria-hidden="true">→</span>
+        </Link>
+      </Reveal>
     </section>
   )
 }
@@ -748,41 +821,23 @@ const SOCIAL_META = [
   { key: 'x', label: 'X (Twitter)', icon: '𝕏' },
 ]
 
-// Footer link labels that map to real routes (others are placeholders).
-const FOOTER_ROUTES = {
-  Cakes: '/menu',
-  Breads: '/menu',
-  Pastries: '/menu',
-  Delicacies: '/menu',
-  Careers: '/careers',
-  'Our Stores': '/stores',
-}
-
-function Footer({ social }) {
-  // All three icons always render; a network left blank in the editor is inert
-  // (links nowhere) rather than hidden.
+function Footer({ social, footer }) {
+  const f = { ...DEFAULT_CONTENT.footer, ...(footer || {}) }
+  // All three social icons always render; a network left blank in the editor is
+  // inert (links nowhere) rather than hidden.
   const socials = SOCIAL_META.map((m) => ({ ...m, href: (social?.[m.key] || '').trim() }))
-  const cols = [
-    { title: 'Shop', links: ['Cakes', 'Breads', 'Pastries', 'Delicacies'] },
-    { title: 'Company', links: ['About Us', 'Our Stores', 'Careers', 'Contact'] },
-    { title: 'Support', links: ['Help Center', 'Delivery Info', 'Returns', 'FAQs'] },
-  ]
+  const columns = f.columns || []
   return (
-    <footer className="bg-navy-900 text-navy-50/80">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+    <footer id="site-footer" className="bg-navy-900 text-navy-50/80">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_2.5fr]">
         <div>
           <div className="flex items-center gap-2">
-            <img
-              src="/images/logo (1).png"
-              alt="bw Superbakeshop"
-              className="h-12 w-auto"
-            />
-            <span className="font-brand text-2xl font-bold text-white">Superbakeshop</span>
+            {f.logo && <img src={f.logo} alt="bw Superbakeshop" className="h-12 w-auto" />}
+            {f.brand && (
+              <span className="font-brand text-2xl font-bold text-white">{f.brand}</span>
+            )}
           </div>
-          <p className="mt-4 max-w-xs text-sm text-navy-50/70">
-            Freshly baked. Made with love. Ordered with ease. Bringing bakeshop
-            happiness to your doorstep.
-          </p>
+          <p className="mt-4 max-w-xs text-sm text-navy-50/70">{f.description}</p>
           <div className="mt-5 flex gap-3">
             {socials.map((s) => {
               const external = isExternal(s.href)
@@ -802,37 +857,53 @@ function Footer({ social }) {
           </div>
         </div>
 
-        {cols.map((col) => (
-          <div key={col.title}>
-            <h4 className="text-sm font-semibold text-white">{col.title}</h4>
-            <ul className="mt-4 space-y-2 text-sm">
-              {col.links.map((l) => {
-                const route = FOOTER_ROUTES[l]
-                return (
-                  <li key={l}>
-                    {route ? (
-                      <Link to={route} className="transition hover:text-brand-400">
-                        {l}
-                      </Link>
-                    ) : (
-                      <a href="#" className="transition hover:text-brand-400">
-                        {l}
-                      </a>
-                    )}
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          {columns.map((col, ci) => (
+            <div key={ci}>
+              <h4 className="text-sm font-semibold text-white">{col.title}</h4>
+              <ul className="mt-4 space-y-2 text-sm">
+                {(col.links || []).map((l, li) => (
+                  <li key={li}>
+                    <FooterLink label={l.label} url={l.url} />
                   </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-navy-50/60 sm:flex-row sm:px-6">
-          <p>© {2026} BW Superbakeshop. All rights reserved.</p>
-          
+          <p>{f.copyright}</p>
         </div>
       </div>
     </footer>
+  )
+}
+
+// A single footer column link. The editor-set url may be an internal route
+// (/menu), a full external URL, or blank — a blank url renders an inert
+// placeholder (links nowhere) rather than being hidden.
+function FooterLink({ label, url }) {
+  const cls = 'transition hover:text-brand-600'
+  if (!url) {
+    return (
+      <a href="#" onClick={swallowClick} aria-disabled className={cls}>
+        {label}
+      </a>
+    )
+  }
+  if (isExternal(url)) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className={cls}>
+        {label}
+      </a>
+    )
+  }
+  return (
+    <Link to={url} className={cls}>
+      {label}
+    </Link>
   )
 }
 
