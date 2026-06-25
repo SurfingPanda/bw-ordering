@@ -105,6 +105,13 @@ export const DEFAULT_CONTENT = {
   payment: {
     qrPayload: '',
   },
+  // Footer social links (src/pages/Landing.jsx Footer). Each icon is shown only
+  // when its URL is filled in — an empty value hides that icon on the live site.
+  social: {
+    facebook: 'https://www.facebook.com/bwsuperbakeshop',
+    linkedin: '',
+    x: '',
+  },
   // Editor-declared menu categories (lets you create a category before any
   // product uses it). Menu categories are otherwise derived from products.
   menuCategories: [],

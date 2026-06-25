@@ -50,7 +50,14 @@
       "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000)",
       "Bash(echo \"no-auth GET  /orders/{id}      -> $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000\\)\")",
       "Bash(curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:8000/api/orders/00000000-0000-0000-0000-000000000000/payment-status)",
-      "Bash(grep -v 'set-state-in-effect\\\\|cascading\\\\|Effects are\\\\|^\\\\* \\\\|react.dev\\\\|^$\\\\|voucherFilter\\\\|setVoucherFilter\\\\|^ *[0-9]* |\\\\|^ *|')"
+      "Bash(grep -v 'set-state-in-effect\\\\|cascading\\\\|Effects are\\\\|^\\\\* \\\\|react.dev\\\\|^$\\\\|voucherFilter\\\\|setVoucherFilter\\\\|^ *[0-9]* |\\\\|^ *|')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/site-content)",
+      "Bash(curl -s -X PUT -w \"\\\\nHTTP:%{http_code}\\\\n\" http://localhost:8000/api/site-content)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/stores)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/products)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers/active)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist)"
     ]
   }
 }

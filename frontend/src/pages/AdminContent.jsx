@@ -57,6 +57,7 @@ const SECTION_GROUPS = [
     label: 'Other Pages',
     items: [
       { key: 'authPanel', label: 'Login Page', Icon: LoginIcon },
+      { key: 'social', label: 'Social Links', Icon: ShareIcon },
       { key: 'buttons', label: 'Buttons', Icon: ToggleIcon },
     ],
   },
@@ -296,6 +297,10 @@ export default function AdminContent() {
   const pm = content?.payment || DEFAULT_CONTENT.payment
   const setPayment = (patch) =>
     setContent((c) => ({ ...c, payment: { ...(c.payment || DEFAULT_CONTENT.payment), ...patch } }))
+
+  const so = content?.social || DEFAULT_CONTENT.social
+  const setSocial = (patch) =>
+    setContent((c) => ({ ...c, social: { ...(c.social || DEFAULT_CONTENT.social), ...patch } }))
 
   // Editor-declared categories (may have no products yet) live in the CMS blob.
   const declaredCategories = content?.menuCategories || []
@@ -1284,6 +1289,29 @@ export default function AdminContent() {
             </Panel>
           )}
 
+          {active === 'social' && (
+            <Panel
+              title="Social Links"
+              subtitle="The Facebook, LinkedIn, and X (Twitter) icons in the footer. Paste each profile’s full URL (https://…). All three icons always show; a field left empty just won’t link anywhere."
+            >
+              <TextRow
+                label="Facebook URL"
+                value={so.facebook}
+                onChange={(facebook) => setSocial({ facebook })}
+              />
+              <TextRow
+                label="LinkedIn URL"
+                value={so.linkedin}
+                onChange={(linkedin) => setSocial({ linkedin })}
+              />
+              <TextRow
+                label="X (Twitter) URL"
+                value={so.x}
+                onChange={(x) => setSocial({ x })}
+              />
+            </Panel>
+          )}
+
           {active === 'buttons' && (
             <Panel
               title="Buttons & Calls-to-Action"
@@ -2172,6 +2200,16 @@ function QrIcon(p) {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01" />
+    </svg>
+  )
+}
+function ShareIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
     </svg>
   )
 }

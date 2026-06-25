@@ -76,7 +76,7 @@ export default function Landing({ content: controlledContent, preview = false })
       <PromoBanner buttons={buttons} data={content.customCake} />
       <StoreLocator buttons={buttons} />
       <Newsletter buttons={buttons} data={content.newsletter} />
-      <Footer />
+      <Footer social={content.social} />
     </div>
   )
 
@@ -687,11 +687,12 @@ function Newsletter({ buttons, data }) {
 /* Footer                                                              */
 /* ------------------------------------------------------------------ */
 
-// Social links. Facebook is live; the others are placeholders until provided.
-const SOCIALS = [
-  { label: 'Facebook', icon: 'f', href: 'https://www.facebook.com/bwsuperbakeshop' },
-  { label: 'LinkedIn', icon: 'in', href: '#' },
-  { label: 'X (Twitter)', icon: '𝕏', href: '#' },
+// Social icon metadata; the actual URLs come from the editable site content
+// (content.social), set in the Site Editor → Social Links section.
+const SOCIAL_META = [
+  { key: 'facebook', label: 'Facebook', icon: 'f' },
+  { key: 'linkedin', label: 'LinkedIn', icon: 'in' },
+  { key: 'x', label: 'X (Twitter)', icon: '𝕏' },
 ]
 
 // Footer link labels that map to real routes (others are placeholders).
@@ -704,7 +705,10 @@ const FOOTER_ROUTES = {
   'Our Stores': '/stores',
 }
 
-function Footer() {
+function Footer({ social }) {
+  // All three icons always render; a network left blank in the editor is inert
+  // (links nowhere) rather than hidden.
+  const socials = SOCIAL_META.map((m) => ({ ...m, href: (social?.[m.key] || '').trim() }))
   const cols = [
     { title: 'Shop', links: ['Cakes', 'Breads', 'Pastries', 'Delicacies'] },
     { title: 'Company', links: ['About Us', 'Our Stores', 'Careers', 'Contact'] },
@@ -727,14 +731,15 @@ function Footer() {
             happiness to your doorstep.
           </p>
           <div className="mt-5 flex gap-3">
-            {SOCIALS.map((s) => {
-              const external = s.href !== '#'
+            {socials.map((s) => {
+              const external = isExternal(s.href)
               return (
                 <a
                   key={s.label}
-                  href={s.href}
+                  href={s.href || '#'}
                   aria-label={s.label}
                   {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+                  {...(!s.href && { onClick: swallowClick, 'aria-disabled': true })}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white transition hover:bg-brand-600"
                 >
                   {s.icon}
