@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
+import LazyImage from '../components/LazyImage'
 import { useAuth } from '../context/AuthContext'
 import { DEFAULT_CONTENT, buttonState, getCachedContent, getSiteContent } from '../lib/content'
 
@@ -428,12 +429,10 @@ function ProductCard({ product }) {
         className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <div className="relative overflow-hidden">
-          <img
+          <LazyImage
             src={product.img}
             alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
+            wrapperClassName="h-40 w-full transition duration-300 group-hover:scale-105"
           />
           <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-600">
             {product.tag}
@@ -509,12 +508,10 @@ function ProductModal({ product, onClose }) {
           <CloseIcon className="h-5 w-5" />
         </button>
         <div className="grid md:grid-cols-2">
-          <img
+          <LazyImage
             src={product.img}
             alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className="h-64 w-full object-cover md:h-full md:min-h-[28rem]"
+            wrapperClassName="h-64 w-full md:h-full md:min-h-[28rem]"
           />
           <div className="flex flex-col p-8 sm:p-10">
             {product.tag && (

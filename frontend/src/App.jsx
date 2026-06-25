@@ -29,6 +29,7 @@ import AdminRoute from './components/AdminRoute'
 import EditorRoute from './components/EditorRoute'
 import HRRoute from './components/HRRoute'
 import StaffRoute from './components/StaffRoute'
+import ScrollToTop from './components/ScrollToTop'
 
 function Loading() {
   return (
@@ -40,7 +41,9 @@ function Loading() {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/menu" element={<Menu />} />
       <Route path="/careers" element={<Careers />} />
@@ -115,6 +118,7 @@ export default function App() {
         }
       />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }

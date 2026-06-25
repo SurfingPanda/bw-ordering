@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import MenuImage from '../components/LazyImage'
 import {
   fetchMenuProducts,
   getCachedContent,
@@ -74,7 +75,16 @@ export default function Menu({ previewProducts, previewContent, preview = false 
   const [menuLoading, setMenuLoading] = useState(
     () => !previewProducts && (getCachedProducts() || []).length === 0,
   )
-  const [active, setActive] = useState('All')
+  // Default tab. Lazy-init from the products cache (like `fetchedMenu` above) so
+  // a reload lands directly on "What's New" instead of flashing "All" first and
+  // then jumping once the fetch resolves below. A ?add= deep link targets a
+  // specific category, so defer to the effect in that case.
+  const [active, setActive] = useState(() => {
+    if (searchParams.get('add')) return 'All'
+    return (getCachedProducts() || []).some((p) => p.status === 'new')
+      ? "What's New"
+      : 'All'
+  })
   const [tag, setTag] = useState('all') // in-category filter: all | new | best_seller | bundle
   const [query, setQuery] = useState('')
   // Lazy-init from the persisted cart so it survives /checkout → "Add more
@@ -181,6 +191,9 @@ export default function Menu({ previewProducts, previewContent, preview = false 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menu, active, tag, query])
 
+  // New products power the promo banner on the "What's New" tab.
+  const newProducts = useMemo(() => menu.filter((p) => p.status === 'new'), [menu])
+
   const lines = useMemo(
     () =>
       Object.entries(cart)
@@ -280,6 +293,10 @@ export default function Menu({ previewProducts, previewContent, preview = false 
               />
             </div>
           </div>
+
+          {active === "What's New" && newProducts.length > 0 && (
+            <NewProductsPromo products={newProducts} onAdd={add} />
+          )}
 
           {availableTags.length > 0 && (
             <div className="mb-5 flex flex-wrap gap-2">
@@ -401,9 +418,9 @@ function CategorySidebar({ active, onChange, categories }) {
       {/* logo — sits at the top of the sidebar */}
       <Link
         to="/"
-        className="hidden h-16 shrink-0 items-center justify-center px-4 lg:flex"
+        className="hidden h-24 shrink-0 items-center justify-center px-4 lg:flex"
       >
-        <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-11 w-auto" />
+        <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-20 w-auto" />
       </Link>
 
       {/* categories — fill the remaining height. Scrollbar is hidden (still
@@ -438,9 +455,11 @@ function CategorySidebar({ active, onChange, categories }) {
                   )}
                 </span>
               ) : (
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">
-                  <img src={c.img} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                </span>
+                <MenuImage
+                  src={c.img}
+                  alt=""
+                  wrapperClassName="h-10 w-10 shrink-0 rounded-full bg-white shadow ring-1 ring-black/5"
+                />
               )}
               {c.name}
             </button>
@@ -448,6 +467,89 @@ function CategorySidebar({ active, onChange, categories }) {
         })}
       </nav>
     </aside>
+  )
+}
+
+// Promotional banner atop the "What's New" tab — rotates through the new
+// products like little ads, each with a quick "Add to cart" CTA. Warm brand
+// gradient so it reads as an appetizing bakery promo.
+function NewProductsPromo({ products, onAdd }) {
+  const [i, setI] = useState(0)
+
+  // Auto-advance through the new products; pause is unnecessary for a short list.
+  useEffect(() => {
+    if (products.length <= 1) return
+    const id = setInterval(() => setI((n) => (n + 1) % products.length), 4500)
+    return () => clearInterval(id)
+  }, [products.length])
+
+  const active = i % products.length
+  const p = products[active]
+  if (!p) return null
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-brand-500 to-orange-600 shadow-lg shadow-brand-500/25">
+      <div className="flex flex-col-reverse sm:flex-row">
+        <div className="flex flex-1 flex-col justify-center gap-2 p-6 sm:p-8">
+          <span className="w-fit rounded-full bg-white/25 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+            ✨ Just Launched
+          </span>
+          <h2 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">{p.name}</h2>
+          {p.desc && <p className="line-clamp-2 max-w-md text-sm text-white/90">{p.desc}</p>}
+          <div className="mt-1 flex items-center gap-3">
+            <span className="text-xl font-bold text-white drop-shadow-sm">{peso(p.price)}</span>
+            <button
+              type="button"
+              onClick={() => onAdd(p.id)}
+              className="rounded-full bg-white px-5 py-2 text-sm font-bold text-brand-600 shadow-md transition hover:bg-white/90"
+            >
+              Add to cart
+            </button>
+          </div>
+          {products.length > 1 && (
+            <div className="mt-3 flex gap-1.5">
+              {products.map((prod, idx) => (
+                <button
+                  key={prod.id || idx}
+                  type="button"
+                  aria-label={`Show ${prod.name}`}
+                  onClick={() => setI(idx)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === active ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <PromoImage key={p.id || active} src={p.img} alt={p.name} />
+      </div>
+    </div>
+  )
+}
+
+// Banner image with a warm fallback (and left-edge blend into the panel) so a
+// missing/broken product image never shows a stark gray box.
+function PromoImage({ src, alt }) {
+  const [failed, setFailed] = useState(!src)
+  return (
+    <div className="relative h-40 w-full shrink-0 overflow-hidden bg-gradient-to-br from-brand-500 to-orange-600 sm:h-auto sm:w-72">
+      {!failed && (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      )}
+      {failed && (
+        <div className="flex h-full w-full items-center justify-center text-5xl opacity-90">🧁</div>
+      )}
+      {/* Blend the image's inner edge into the colored panel. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-orange-600/40 to-transparent sm:bg-gradient-to-r sm:from-brand-500/60 sm:to-transparent" />
+    </div>
   )
 }
 
@@ -501,6 +603,14 @@ function MenuHeader({ itemCount }) {
                   className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                 >
                   Edit Site
+                </Link>
+              )}
+              {isCashier && (
+                <Link
+                  to="/admin"
+                  className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Cashier
                 </Link>
               )}
               <div className="relative" ref={menuRef}>
@@ -625,14 +735,13 @@ function MenuCard({ product, qty, onAdd, onDec }) {
         className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <div className="relative overflow-hidden">
-          <img
+          <MenuImage
             src={product.img}
             alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className={`h-56 w-full object-cover transition duration-300 group-hover:scale-105 ${
-              soldOut ? 'opacity-60 grayscale' : ''
+            wrapperClassName={`h-56 w-full transition duration-300 group-hover:scale-105 ${
+              soldOut ? 'opacity-60' : ''
             }`}
+            className={soldOut ? 'grayscale' : ''}
           />
           {product.status && (
             <span
@@ -760,14 +869,13 @@ function ProductMenuModal({ product, qty, onAdd, onDec, onClose }) {
           <CloseIcon className="h-5 w-5" />
         </button>
         <div className="grid md:grid-cols-2">
-          <img
+          <MenuImage
             src={product.img}
             alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className={`h-64 w-full object-cover md:h-full md:min-h-[24rem] ${
-              soldOut ? 'opacity-60 grayscale' : ''
+            wrapperClassName={`h-64 w-full md:h-full md:min-h-[24rem] ${
+              soldOut ? 'opacity-60' : ''
             }`}
+            className={soldOut ? 'grayscale' : ''}
           />
           <div className="flex flex-col p-8">
             {product.status && (
@@ -864,10 +972,16 @@ function Cart({
   checkoutDisabled = false,
 }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [voucher, setVoucher] = useState(null) // { code, ...def }
   const [error, setError] = useState('')
   const [voucherDefs, setVoucherDefs] = useState({})
+  // Drives the "Proceed to Checkout" spinner (both the signed-in and guest
+  // buttons): wrapping the navigation in a transition keeps this cart mounted
+  // (with isPending=true) until the lazy /checkout (or /login) route is ready,
+  // instead of the page vanishing on click.
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     fetchActiveVouchers().then(setVoucherDefs).catch(() => {})
@@ -931,12 +1045,10 @@ function Cart({
           <ul className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
             {lines.map(({ product, qty }) => (
               <li key={product.id} className="flex items-center gap-3">
-                <img
+                <MenuImage
                   src={product.img}
                   alt={product.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                  wrapperClassName="h-12 w-12 shrink-0 rounded-lg"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-navy-800">{product.name}</p>
@@ -975,12 +1087,10 @@ function Cart({
                     key={p.id}
                     className="flex w-28 shrink-0 flex-col rounded-xl border border-slate-100 p-2"
                   >
-                    <img
+                    <MenuImage
                       src={p.img}
                       alt={p.name}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-16 w-full rounded-lg object-cover"
+                      wrapperClassName="h-16 w-full rounded-lg"
                     />
                     <p className="mt-1.5 truncate text-xs font-medium text-navy-800">{p.name}</p>
                     <p className="text-xs font-semibold text-brand-600">{peso(p.price)}</p>
@@ -1074,22 +1184,31 @@ function Cart({
               (user ? (
                 <button
                   type="button"
-                  disabled={checkoutDisabled}
+                  disabled={checkoutDisabled || isPending}
                   onClick={() =>
-                    onCheckout({
-                      items: lines.map(({ product, qty }) => ({
-                        product_id: product.id,
-                        name: product.name,
-                        qty,
-                        img: product.img,
-                        price: product.price,
-                      })),
-                      voucher: voucher?.code || null,
-                    })
+                    startTransition(() =>
+                      onCheckout({
+                        items: lines.map(({ product, qty }) => ({
+                          product_id: product.id,
+                          name: product.name,
+                          qty,
+                          img: product.img,
+                          price: product.price,
+                        })),
+                        voucher: voucher?.code || null,
+                      }),
+                    )
                   }
-                  className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Proceed to Checkout
+                  {isPending ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      Loading…
+                    </>
+                  ) : (
+                    'Proceed to Checkout'
+                  )}
                 </button>
               ) : checkoutDisabled ? (
                 <button
@@ -1101,12 +1220,21 @@ function Cart({
                 </button>
               ) : (
                 <>
-                  <Link
-                    to="/login"
-                    className="mt-4 block w-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => startTransition(() => navigate('/login'))}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Proceed to Checkout
-                  </Link>
+                    {isPending ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        Loading…
+                      </>
+                    ) : (
+                      'Proceed to Checkout'
+                    )}
+                  </button>
                   <p className="mt-2 text-center text-xs text-slate-400">
                     Sign in to complete your order
                   </p>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import api from '../lib/api'
 import { normalizePhone } from '../lib/phone'
@@ -38,6 +38,9 @@ export function AuthProvider({ children }) {
   // True until /me resolves for the current user. Route guards wait on this so
   // a DB-assigned cashier/editor isn't bounced before their role is known.
   const [roleLoading, setRoleLoading] = useState(true)
+  // The user id we've already fetched /me for, so repeat auth events for the
+  // same user don't re-hit the network (see below).
+  const resolvedFor = useRef(null)
 
   // Ask the API for the signed-in user's effective role. The server already
   // merges the env allowlists, so its answer is authoritative once it lands.
@@ -50,17 +53,30 @@ export function AuthProvider({ children }) {
   // every tab switch. The first resolution still gates the guards (so a
   // DB-assigned cashier/editor isn't bounced on a hard refresh); later
   // refreshes update the role silently.
+  //
+  // We also skip the /me round-trip entirely when the same user's role is
+  // already resolved — Supabase re-fires onAuthStateChange on every tab refocus
+  // and hourly token refresh, and re-fetching an unchanged role each time is
+  // pure waste. A genuine user switch (different id) still refetches.
   const refreshRole = async (current) => {
     if (!current) {
+      resolvedFor.current = null
       setDbRole(null)
       setRoleLoading(false)
       return
     }
+    if (resolvedFor.current === current.id) {
+      setRoleLoading(false)
+      return
+    }
+    resolvedFor.current = current.id
     try {
       const { data } = await api.get('/me')
       setDbRole(data?.role || 'customer')
     } catch {
-      // Leave dbRole null and fall back to the env-based guess.
+      // Leave dbRole null and fall back to the env-based guess; allow a retry
+      // on the next auth event by clearing the resolved marker.
+      resolvedFor.current = null
       setDbRole(null)
     } finally {
       setRoleLoading(false)

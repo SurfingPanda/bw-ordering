@@ -11,9 +11,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 
-// Legacy Sanctum auth (unused by the frontend — kept for now).
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Legacy Sanctum auth (unused by the frontend — kept for now). Throttled to
+// blunt brute-force / spam against these public POSTs (10 req/min per IP).
+Route::middleware('throttle:10,1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
 // Store locator.
 Route::get('/stores', [StoreController::class, 'index']);
@@ -35,8 +38,12 @@ Route::get('/site-content', [SiteContentController::class, 'show']);
 Route::get('/vouchers/active', [VoucherController::class, 'active']);
 
 // Careers — applicants are anonymous, so resume upload + submit are public.
-Route::post('/resumes', [ApplicationController::class, 'uploadResume']);
-Route::post('/applications', [ApplicationController::class, 'store']);
+// Rate-limited to curb abuse of the public 8 MB file upload + application spam
+// (10 req/min per IP).
+Route::middleware('throttle:10,1')->group(function () {
+    Route::post('/resumes', [ApplicationController::class, 'uploadResume']);
+    Route::post('/applications', [ApplicationController::class, 'store']);
+});
 // Signed, time-limited resume download (no auth header needed; signature gates).
 Route::get('/resumes/download/{path}', [ApplicationController::class, 'download'])
     ->name('resumes.download')

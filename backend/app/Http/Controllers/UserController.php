@@ -47,8 +47,11 @@ class UserController extends Controller
             ], 503);
         }
 
-        // DB-assigned roles, keyed by lowercased email, fetched once.
-        $dbRoles = UserRole::pluck('role', 'email');
+        // DB-assigned roles, keyed by lowercased email, fetched once so the
+        // per-user role lookup below stays in memory (no N+1 query per user).
+        $dbRoles = UserRole::pluck('role', 'email')
+            ->mapWithKeys(fn ($role, $email) => [strtolower($email) => $role])
+            ->all();
 
         $users = [];
         $page = 1;
@@ -73,11 +76,9 @@ class UserController extends Controller
             foreach ($batch as $u) {
                 $email = $u['email'] ?? null;
                 $meta = $u['user_metadata'] ?? [];
-                $lower = $email ? strtolower($email) : null;
-                // Env allowlist beats the DB; effectiveRole() handles that order.
-                $role = $this->effectiveRole($email)
-                    ?? ($lower ? ($dbRoles[$lower] ?? null) : null)
-                    ?? 'customer';
+                // Env allowlist beats the DB; effectiveRole() handles that order
+                // and reads the DB role from the preloaded map (no extra query).
+                $role = $this->effectiveRole($email, $dbRoles) ?? 'customer';
 
                 $users[] = [
                     'id' => $u['id'] ?? null,

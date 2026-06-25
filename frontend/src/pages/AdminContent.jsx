@@ -85,9 +85,9 @@ export default function AdminContent() {
   const [content, setContent] = useState(null)
   const [products, setProducts] = useState([])
   const [originalIds, setOriginalIds] = useState([])
+  const [productSearch, setProductSearch] = useState('') // filters the Products tab
   const [vouchers, setVouchers] = useState([])
   const [voucherIds, setVoucherIds] = useState([])
-  const [voucherFilter, setVoucherFilter] = useState('all')
   const [stores, setStores] = useState([])
   const [storeIds, setStoreIds] = useState([])
   const [loading, setLoading] = useState(true)
@@ -804,8 +804,46 @@ export default function AdminContent() {
                   <option key={c} value={c} />
                 ))}
               </datalist>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {products.map((p, i) => (
+
+              {/* Search the catalogue (it can get long). Keep the original array
+                  index so edits/removes still target the right product. */}
+              <div className="relative mb-4 max-w-md">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="Search products by name or category…"
+                  className="w-full rounded-full border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              {(() => {
+                const q = productSearch.trim().toLowerCase()
+                const matches = products
+                  .map((p, i) => ({ p, i }))
+                  .filter(
+                    ({ p }) =>
+                      !q ||
+                      (p.name || '').toLowerCase().includes(q) ||
+                      (p.category || '').toLowerCase().includes(q),
+                  )
+                if (q && matches.length === 0) {
+                  return (
+                    <p className="py-8 text-center text-sm text-slate-500">
+                      No products match “{productSearch}”.
+                    </p>
+                  )
+                }
+                return (
+                  <>
+                    {q && (
+                      <p className="mb-3 text-xs text-slate-500">
+                        Showing {matches.length} of {products.length} products
+                      </p>
+                    )}
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {matches.map(({ p, i }) => (
                   <ItemCard
                     key={p.id || p._key}
                     index={i}
@@ -883,9 +921,19 @@ export default function AdminContent() {
                       />
                     </label>
                   </ItemCard>
-                ))}
-              </div>
-              <AddButton onClick={addProduct}>+ Add product</AddButton>
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
+              <AddButton
+                onClick={() => {
+                  addProduct()
+                  setProductSearch('')
+                }}
+              >
+                + Add product
+              </AddButton>
             </Panel>
           )}
 
@@ -1741,6 +1789,24 @@ function AddButton({ children, onClick }) {
     >
       {children}
     </button>
+  )
+}
+
+function SearchIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
   )
 }
 

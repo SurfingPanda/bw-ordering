@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 // When true (provided by the admin live preview), Reveal renders its children
 // fully visible and skips the scroll observer — the scaled-down preview clone
 // isn't in the real viewport, so the observer would otherwise keep it hidden.
+// eslint-disable-next-line react-refresh/only-export-components -- context lives with its sole consumer; fast-refresh impact is negligible
 export const StaticRevealContext = createContext(false)
 
 // Reveal-on-scroll wrapper. Fades + slides its children in when they enter the

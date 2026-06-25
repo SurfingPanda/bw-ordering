@@ -16,7 +16,7 @@ export default function Carousel({
   const [paused, setPaused] = useState(false)
   const count = slides.length
 
-  const go = (next) => setIndex((i) => (next + count) % count)
+  const go = (next) => setIndex(() => (next + count) % count)
 
   useEffect(() => {
     if (paused || count <= 1) return

@@ -13,27 +13,27 @@ export const SEO = {
       'Order freshly baked cakes, breads, and pastries from bw Superbakeshop. Nationwide branches, custom cakes, and delivery.',
   },
   '/menu': {
-    title: 'Order Online — Menu | bw Superbakeshop',
+    title: 'BW Superbakeshop | Order Online',
     description:
       'Browse the full bw Superbakeshop menu — cakes, breads, pastries, drinks and more — and order online for pickup or delivery.',
   },
   '/franchise': {
-    title: 'Partner with us | bw Superbakeshop',
+    title: 'BW Superbakeshop | Partner with us',
     description:
       'Own a bw Superbakeshop. Partner with a trusted bakeshop brand — training, supply chain, and marketing support included.',
   },
   '/careers': {
-    title: 'Careers — Join Our Team | bw Superbakeshop',
+    title: 'BW Superbakeshop | Careers',
     description:
       'Build your career with bw Superbakeshop. Explore open roles in baking, retail, logistics, and more.',
   },
   '/careers/openings': {
-    title: 'Open Positions — Careers | bw Superbakeshop',
+    title: 'BW Superbakeshop | Open Positions',
     description:
       'Browse all open positions at bw Superbakeshop. Filter by department and apply online today.',
   },
   '/stores': {
-    title: 'Store Locator — Find a Branch | bw Superbakeshop',
+    title: 'BW Superbakeshop | Store Locator',
     description:
       'Find the bw Superbakeshop branch nearest you. Branches nationwide with directions, hours, and contact details.',
   },

@@ -28,8 +28,12 @@ abstract class Controller
      * The single effective role for an email, highest-privilege first. Env
      * allowlists win over the DB so the founding admin can never be locked out;
      * otherwise the editable user_roles table decides. Null means a customer.
+     *
+     * Pass `$dbRoles` (a lowercased-email => role map) to resolve the DB role
+     * from memory instead of querying — used by the Users list to avoid an N+1
+     * (one query per user). When omitted, falls back to a single lookup.
      */
-    protected function effectiveRole(?string $email): ?string
+    protected function effectiveRole(?string $email, ?array $dbRoles = null): ?string
     {
         if (! $email) {
             return null;
@@ -42,6 +46,10 @@ abstract class Controller
         }
         if ($this->inEnvList($email, 'hr_emails')) {
             return 'hr';
+        }
+
+        if ($dbRoles !== null) {
+            return $dbRoles[strtolower($email)] ?? null;
         }
 
         return UserRole::roleFor($email); // cashier/editor/hr/admin or null
