@@ -41,13 +41,21 @@ export function AuthProvider({ children }) {
 
   // Ask the API for the signed-in user's effective role. The server already
   // merges the env allowlists, so its answer is authoritative once it lands.
+  //
+  // `roleLoading` is a one-way latch: it starts true and is only ever set to
+  // false here. We deliberately never flip it back to true, because Supabase
+  // fires onAuthStateChange on every tab refocus / token refresh — if those
+  // background refreshes set roleLoading=true, the route guards would flash
+  // their loading screen and remount the admin page ("Loading content…") on
+  // every tab switch. The first resolution still gates the guards (so a
+  // DB-assigned cashier/editor isn't bounced on a hard refresh); later
+  // refreshes update the role silently.
   const refreshRole = async (current) => {
     if (!current) {
       setDbRole(null)
       setRoleLoading(false)
       return
     }
-    setRoleLoading(true)
     try {
       const { data } = await api.get('/me')
       setDbRole(data?.role || 'customer')
