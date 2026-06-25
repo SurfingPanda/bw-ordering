@@ -9,6 +9,10 @@ return [
     'jwt_secret' => env('SUPABASE_JWT_SECRET'),
     'url' => env('SUPABASE_URL'),
     'anon_key' => env('SUPABASE_ANON_KEY'),
+    // service_role key — backend only. Lets the API enumerate auth users and
+    // rename their email via the Supabase Admin API (see UserController). Never
+    // ship this to the browser.
+    'service_role_key' => env('SUPABASE_SERVICE_ROLE_KEY'),
 
     'admin_emails' => array_values(array_filter(array_map(
         'trim',

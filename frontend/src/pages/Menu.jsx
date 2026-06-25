@@ -446,7 +446,7 @@ function CategorySidebar({ active, onChange, categories }) {
 }
 
 function MenuHeader({ itemCount }) {
-  const { user, isAdmin, isEditor, logout } = useAuth()
+  const { user, isAdmin, isEditor, isCashier, logout } = useAuth()
   const navigate = useNavigate()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
@@ -476,6 +476,14 @@ function MenuHeader({ itemCount }) {
                   className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
                 >
                   Edit Site
+                </Link>
+              )}
+              {isCashier && (
+                <Link
+                  to="/admin"
+                  className="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Cashier
                 </Link>
               )}
               <Link

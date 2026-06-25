@@ -20,12 +20,14 @@ const Checkout = lazy(() => import('./pages/Checkout'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminContent = lazy(() => import('./pages/AdminContent'))
 const AdminCareers = lazy(() => import('./pages/AdminCareers'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 
 // Route guards (tiny, keep eager)
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import EditorRoute from './components/EditorRoute'
 import HRRoute from './components/HRRoute'
+import StaffRoute from './components/StaffRoute'
 
 function Loading() {
   return (
@@ -74,8 +76,16 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <AdminRoute>
+          <StaffRoute>
             <Suspense fallback={<Loading />}><AdminDashboard /></Suspense>
+          </StaffRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <AdminRoute>
+            <Suspense fallback={<Loading />}><AdminUsers /></Suspense>
           </AdminRoute>
         }
       />

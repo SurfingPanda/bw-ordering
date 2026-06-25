@@ -188,7 +188,7 @@ class OrderController extends Controller
         $order = Order::findOrFail($id);
 
         $owner = ($order->user_id ?? null) === ($user['id'] ?? null);
-        if (! $owner && ! $this->isAdmin($user['email'] ?? null)) {
+        if (! $owner && ! $this->isStaff($user['email'] ?? null)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
@@ -233,22 +233,22 @@ class OrderController extends Controller
             ->get();
     }
 
-    /** Admin: every order, newest first. */
+    /** Staff (admin or cashier): every order, newest first. */
     public function index(Request $request)
     {
         $user = $this->supabaseUser($request);
-        if (! $this->isAdmin($user['email'] ?? null)) {
+        if (! $this->isStaff($user['email'] ?? null)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
         return Order::orderByDesc('created_at')->get();
     }
 
-    /** Admin: update an order's status. */
+    /** Staff (admin or cashier): update an order's status. */
     public function updateStatus(Request $request, string $id)
     {
         $user = $this->supabaseUser($request);
-        if (! $this->isAdmin($user['email'] ?? null)) {
+        if (! $this->isStaff($user['email'] ?? null)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
@@ -262,11 +262,11 @@ class OrderController extends Controller
         return $order;
     }
 
-    /** Admin: manually set an order's payment status (e.g. cash collected, or a fix). */
+    /** Staff (admin or cashier): manually set an order's payment status (e.g. cash collected). */
     public function updatePaymentStatus(Request $request, string $id)
     {
         $user = $this->supabaseUser($request);
-        if (! $this->isAdmin($user['email'] ?? null)) {
+        if (! $this->isStaff($user['email'] ?? null)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
