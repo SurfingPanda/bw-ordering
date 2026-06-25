@@ -452,7 +452,7 @@ function CategorySidebar({ active, onChange, categories }) {
 }
 
 function MenuHeader({ itemCount }) {
-  const { user, isAdmin, isEditor, logout } = useAuth()
+  const { user, isAdmin, isEditor, isCashier, logout } = useAuth()
   const navigate = useNavigate()
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import api from '../lib/api'
 import { normalizePhone } from '../lib/phone'
 
 const AuthContext = createContext(null)
@@ -31,18 +32,48 @@ function normalize(supaUser) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  // The DB-backed role from GET /me. Env allowlists give an instant first guess
+  // (below); this refines it for runtime-assigned roles like cashier/editor.
+  const [dbRole, setDbRole] = useState(null)
+  // True until /me resolves for the current user. Route guards wait on this so
+  // a DB-assigned cashier/editor isn't bounced before their role is known.
+  const [roleLoading, setRoleLoading] = useState(true)
+
+  // Ask the API for the signed-in user's effective role. The server already
+  // merges the env allowlists, so its answer is authoritative once it lands.
+  const refreshRole = async (current) => {
+    if (!current) {
+      setDbRole(null)
+      setRoleLoading(false)
+      return
+    }
+    setRoleLoading(true)
+    try {
+      const { data } = await api.get('/me')
+      setDbRole(data?.role || 'customer')
+    } catch {
+      // Leave dbRole null and fall back to the env-based guess.
+      setDbRole(null)
+    } finally {
+      setRoleLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Restore any existing session on first load.
     supabase.auth.getSession().then(({ data }) => {
-      setUser(normalize(data.session?.user))
+      const u = normalize(data.session?.user)
+      setUser(u)
       setLoading(false)
+      refreshRole(u)
     })
 
     // Keep React state in sync with Supabase (login, logout, token refresh,
     // and the redirect back from Google OAuth all flow through here).
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(normalize(session?.user))
+      const u = normalize(session?.user)
+      setUser(u)
+      refreshRole(u)
     })
 
     return () => sub.subscription.unsubscribe()
@@ -170,21 +201,36 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
+    setDbRole(null)
   }
 
   const email = (user?.email || '').toLowerCase()
-  const isAdmin = !!user && ADMIN_EMAILS.includes(email)
-  const isEditor = !!user && EDITOR_EMAILS.includes(email)
-  const isHr = !!user && HR_EMAILS.includes(email)
+  const envAdmin = ADMIN_EMAILS.includes(email)
+  const envEditor = EDITOR_EMAILS.includes(email)
+  const envHr = HR_EMAILS.includes(email)
+
+  // Effective role: the DB answer from /me once it lands, otherwise an instant
+  // env-based guess (so admins don't flicker on first paint).
+  const role = !user
+    ? null
+    : dbRole || (envAdmin ? 'admin' : envEditor ? 'editor' : envHr ? 'hr' : 'customer')
+
+  const isAdmin = !!user && (role === 'admin' || envAdmin)
+  const isEditor = !!user && (isAdmin || role === 'editor' || envEditor)
+  const isHr = !!user && (isAdmin || role === 'hr' || envHr)
+  const isCashier = !!user && role === 'cashier'
 
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
+        roleLoading,
+        role,
         isAdmin,
         isEditor,
         isHr,
+        isCashier,
         login,
         loginWithGoogle,
         loginWithFacebook,

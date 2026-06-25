@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SiteContentController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +64,13 @@ Route::middleware('supabase')->group(function () {
 
     Route::get('/applications', [ApplicationController::class, 'index']);
     Route::get('/resumes/url', [ApplicationController::class, 'resumeUrl']);
+
+    // Current user's effective role (any signed-in user).
+    Route::get('/me', [UserController::class, 'me']);
+    // User management — admin only (enforced in the controller).
+    Route::get('/users', [UserController::class, 'index']);
+    Route::patch('/users/role', [UserController::class, 'updateRole']);
+    Route::post('/users/rename', [UserController::class, 'renameEmail']);
 });
 
 // Legacy Sanctum-protected routes.

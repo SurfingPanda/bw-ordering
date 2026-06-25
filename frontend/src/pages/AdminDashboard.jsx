@@ -31,11 +31,13 @@ const PAYMENT_LABEL = {
 }
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin, isCashier } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [view, setView] = useState('reports') // 'reports' | order-status key
+  // Cashiers handle transactions, so they land on the orders queue; admins on
+  // the reports overview. (Role is known by the time this mounts — see StaffRoute.)
+  const [view, setView] = useState(isCashier ? 'pending' : 'reports')
   const [query, setQuery] = useState('')
 
   const load = async () => {
@@ -121,6 +123,7 @@ export default function AdminDashboard() {
         counts={counts}
         revenue={revenue}
         today={today}
+        isAdmin={isAdmin}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -187,7 +190,7 @@ export default function AdminDashboard() {
 /* ------------------------------------------------------------------ */
 /* sidebar                                                             */
 /* ------------------------------------------------------------------ */
-function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
+function Sidebar({ user, onLogout, view, onView, counts, revenue, today, isAdmin }) {
   const [confirmLogout, setConfirmLogout] = useState(false)
   return (
     <aside className="sticky top-0 z-30 flex shrink-0 flex-col bg-navy-900 text-white lg:h-screen lg:w-64">
@@ -198,35 +201,47 @@ function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
 
       <div className="border-b border-white/10 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">
-          Cashier Panel
+          {isAdmin ? 'Admin Panel' : 'Cashier Panel'}
         </p>
         <p className="mt-1 text-xs text-navy-50/60">{today}</p>
       </div>
 
       <nav className="flex gap-2 overflow-x-auto p-3 lg:flex-1 lg:flex-col lg:gap-1 lg:overflow-y-auto">
-        <p className="hidden px-3 pb-1 pt-2 text-[0.65rem] font-semibold uppercase tracking-wider text-navy-50/40 lg:block">
-          Overview
-        </p>
-        <NavItem
-          Icon={ChartIcon}
-          label="Reports"
-          active={view === 'reports'}
-          onClick={() => onView('reports')}
-        />
-        <Link
-          to="/admin/content"
-          className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
-        >
-          <EditIcon className="h-5 w-5 shrink-0" />
-          <span>Site Content</span>
-        </Link>
-        <Link
-          to="/admin/careers"
-          className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
-        >
-          <CareersIcon className="h-5 w-5 shrink-0" />
-          <span>Careers / HR</span>
-        </Link>
+        {/* Overview + management — admins only; cashiers see orders only. */}
+        {isAdmin && (
+          <>
+            <p className="hidden px-3 pb-1 pt-2 text-[0.65rem] font-semibold uppercase tracking-wider text-navy-50/40 lg:block">
+              Overview
+            </p>
+            <NavItem
+              Icon={ChartIcon}
+              label="Reports"
+              active={view === 'reports'}
+              onClick={() => onView('reports')}
+            />
+            <Link
+              to="/admin/users"
+              className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
+            >
+              <UsersIcon className="h-5 w-5 shrink-0" />
+              <span>Users</span>
+            </Link>
+            <Link
+              to="/admin/content"
+              className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
+            >
+              <EditIcon className="h-5 w-5 shrink-0" />
+              <span>Site Content</span>
+            </Link>
+            <Link
+              to="/admin/careers"
+              className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-50/70 transition hover:bg-white/5 hover:text-white lg:w-full"
+            >
+              <CareersIcon className="h-5 w-5 shrink-0" />
+              <span>Careers / HR</span>
+            </Link>
+          </>
+        )}
 
         <p className="hidden px-3 pb-1 pt-4 text-[0.65rem] font-semibold uppercase tracking-wider text-navy-50/40 lg:block">
           Orders
@@ -243,10 +258,12 @@ function Sidebar({ user, onLogout, view, onView, counts, revenue, today }) {
         ))}
       </nav>
 
-      <div className="hidden border-t border-white/10 px-5 py-4 lg:block">
-        <p className="text-xs text-navy-50/60">Revenue (excl. cancelled)</p>
-        <p className="mt-0.5 text-2xl font-bold text-brand-400">{peso(revenue)}</p>
-      </div>
+      {isAdmin && (
+        <div className="hidden border-t border-white/10 px-5 py-4 lg:block">
+          <p className="text-xs text-navy-50/60">Revenue (excl. cancelled)</p>
+          <p className="mt-0.5 text-2xl font-bold text-brand-400">{peso(revenue)}</p>
+        </div>
+      )}
 
       <div className="border-t border-white/10 px-5 py-4">
         <div className="flex items-center gap-3">
@@ -634,6 +651,16 @@ function EditIcon(p) {
     <svg {...base(p)}>
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  )
+}
+function UsersIcon(p) {
+  return (
+    <svg {...base(p)}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   )
 }
