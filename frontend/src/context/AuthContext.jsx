@@ -145,6 +145,14 @@ export function AuthProvider({ children }) {
     return normalize(data.user)
   }
 
+  // Update the display name on the current user (Profile page).
+  const updateProfile = async ({ name }) => {
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: name } })
+    if (error) throw error
+    setUser(normalize(data.user))
+    return normalize(data.user)
+  }
+
   // Change the signed-in user's password. Supabase updates the password for the
   // current session; there's no separate "old password" check on the client, so
   // we just validate the new value matches its confirmation here.
@@ -182,6 +190,7 @@ export function AuthProvider({ children }) {
         loginWithFacebook,
         register,
         updateContactNumber,
+        updateProfile,
         changePassword,
         logout,
       }}
