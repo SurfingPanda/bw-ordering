@@ -374,9 +374,8 @@ export default function AdminContent() {
     <div className="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
       {/* sidebar */}
       <aside className="sticky top-0 z-30 flex shrink-0 flex-col bg-navy-900 text-white lg:h-screen lg:w-64">
-        <div className="flex h-16 items-center gap-2 border-b border-white/10 px-5">
-          <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-9 w-auto" />
-          <span className="font-brand text-lg font-bold text-white">Superbakeshop</span>
+        <div className="flex h-16 items-center justify-center border-b border-white/10 px-5">
+          <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-12 w-auto" />
         </div>
         <div className="border-b border-white/10 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">
