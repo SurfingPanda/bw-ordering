@@ -61,7 +61,7 @@ function pairedSuggestions(lines, menu, limit = 3) {
   return pick.slice(0, limit)
 }
 
-export default function Menu({ previewProducts, preview = false }) {
+export default function Menu({ previewProducts, previewContent, preview = false }) {
   useSeo('/menu', !preview)
   const [searchParams, setSearchParams] = useSearchParams()
   const [fetchedMenu, setFetchedMenu] = useState([])
@@ -85,18 +85,23 @@ export default function Menu({ previewProducts, preview = false }) {
   const [cartOpen, setCartOpen] = useState(false) // mobile cart drawer
 
   // Site content drives the "Proceed to checkout" button state (visible /
-  // disabled / hidden), set in the Site Editor's Buttons section. Seed from the
-  // synchronous cache so first paint is correct, then refresh from the API.
-  const [content, setContent] = useState(() => getCachedContent())
+  // disabled / hidden) and the per-category badge images, set in the Site
+  // Editor. Seed from the synchronous cache so first paint is correct, then
+  // refresh from the API. In the editor preview `previewContent` takes over so
+  // unsaved edits show live (mirrors how `menu` uses `previewProducts`).
+  const [fetchedContent, setFetchedContent] = useState(() => getCachedContent())
   useEffect(() => {
-    getSiteContent().then(setContent).catch(() => {})
-  }, [])
+    if (previewContent) return
+    getSiteContent().then(setFetchedContent).catch(() => {})
+  }, [previewContent])
+  const content = previewContent ?? fetchedContent
   const checkoutVisible = isButtonVisible(content, 'menuCheckout')
   const checkoutDisabled = isButtonDisabled(content, 'menuCheckout')
 
   // Load the menu from the products table (the same source the order-pricing
   // trigger trusts). Once loaded, honor a /menu?add=<name> deep link from the
-  // landing "Best Sellers" by adding that product and filtering to its category.
+  // landing "Best Sellers" by adding that product and filtering to its category;
+  // otherwise default to the "What's New" tab when any new products exist.
   useEffect(() => {
     if (previewProducts) return // preview uses the editor's products, no fetch
     let alive = true
@@ -114,6 +119,8 @@ export default function Menu({ previewProducts, preview = false }) {
           }
           searchParams.delete('add')
           setSearchParams(searchParams, { replace: true })
+        } else if (rows.some((p) => p.status === 'new')) {
+          setActive("What's New")
         }
       })
       .catch(() => alive && setMenuLoading(false))
@@ -176,9 +183,12 @@ export default function Menu({ previewProducts, preview = false }) {
     [cart, menu],
   )
 
-  // Category tabs are derived from the products themselves (first product image
-  // per category is used as the badge), plus an "All" tab.
+  // Category tabs are derived from the products themselves, plus an "All" tab.
+  // Each badge uses the editor-set category image (content.menuCategoryImages)
+  // when present, otherwise falls back to the first product's photo.
+  const categoryImages = content?.menuCategoryImages
   const categories = useMemo(() => {
+    const imgs = categoryImages || {}
     const seen = new Map()
     for (const p of menu) {
       if (p.category && !seen.has(p.category)) seen.set(p.category, p.img)
@@ -191,9 +201,9 @@ export default function Menu({ previewProducts, preview = false }) {
     return [
       ...(hasNew ? [{ name: "What's New", icon: 'new' }] : []),
       ...(hasBest ? [{ name: 'Best Sellers', icon: 'best' }] : []),
-      ...[...seen].map(([name, img]) => ({ name, img })),
+      ...[...seen].map(([name, img]) => ({ name, img: imgs[name] || img })),
     ]
-  }, [menu])
+  }, [menu, categoryImages])
 
   const itemCount = lines.reduce((sum, l) => sum + l.qty, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.product.price * l.qty, 0)

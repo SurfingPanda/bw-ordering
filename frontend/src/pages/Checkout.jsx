@@ -612,13 +612,6 @@ export default function Checkout() {
               </div>
             </div>
           </div>
-
-          {/* trust badges */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-            <Trust icon="🔒" title="Safe & Secure" subtitle="Your details are protected" />
-            <Trust icon="🥖" title="100% Fresh" subtitle="Baked fresh on order" />
-            <Trust icon="💛" title="Quality You Can Trust" subtitle="Since 1966" last />
-          </div>
         </aside>
       </main>
       )}
@@ -696,8 +689,19 @@ function Confirmation({ order, payMethod }) {
   return (
     <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
       <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm sm:p-10">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
-          ✓
+        <div className="animate-pop-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg
+            className="h-8 w-8 text-green-600"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path className="animate-check-draw" d="M5 13l4 4L19 7" />
+          </svg>
         </div>
         <h1 className="mt-5 text-2xl font-bold text-navy-800">Order placed!</h1>
         <p className="mt-2 text-sm text-slate-500">
@@ -821,19 +825,6 @@ function Row({ label, value, green }) {
     </div>
   )
 }
-
-function Trust({ icon, title, subtitle, last }) {
-  return (
-    <div className={`flex items-center gap-3 ${last ? '' : 'border-b border-slate-100 pb-3 mb-3'}`}>
-      <span className="text-lg">{icon}</span>
-      <span>
-        <span className="block text-sm font-semibold text-navy-800">{title}</span>
-        <span className="block text-xs text-slate-500">{subtitle}</span>
-      </span>
-    </div>
-  )
-}
-
 
 function CartIcon({ className }) {
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 // Shared confirmation modal (replaces the native window.confirm). Used by the
 // logout buttons across the app and the Site Editor's reset/logout prompts.
@@ -39,7 +40,12 @@ export default function ConfirmModal({
     }
   }
 
-  return (
+  // Portal to <body> so the fixed overlay is always centered on the viewport,
+  // never trapped inside a transformed/backdrop-filtered ancestor (e.g. the
+  // Menu page's blurred sticky header) which would create a containing block.
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm"
       onClick={() => !busy && onCancel()}
@@ -75,6 +81,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

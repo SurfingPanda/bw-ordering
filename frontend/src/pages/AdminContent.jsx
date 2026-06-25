@@ -310,6 +310,33 @@ export default function AdminContent() {
       menuCategories: updater(c?.menuCategories || []),
     }))
 
+  // Optional per-category images (keyed by category name) for the menu sidebar.
+  const menuCategoryImages = content?.menuCategoryImages || {}
+  const setMenuCategoryImage = (name, url) =>
+    setContent((c) => {
+      const imgs = { ...(c?.menuCategoryImages || {}) }
+      if (url) imgs[name] = url
+      else delete imgs[name]
+      return { ...c, menuCategoryImages: imgs }
+    })
+  // Keep a category's image with it when renaming/merging (don't clobber an
+  // image already on the target) or drop it when the category is deleted.
+  const renameMenuCategoryImage = (from, to) =>
+    setContent((c) => {
+      const imgs = { ...(c?.menuCategoryImages || {}) }
+      if (imgs[from] != null && from !== to) {
+        if (!imgs[to]) imgs[to] = imgs[from]
+        delete imgs[from]
+      }
+      return { ...c, menuCategoryImages: imgs }
+    })
+  const deleteMenuCategoryImage = (name) =>
+    setContent((c) => {
+      const imgs = { ...(c?.menuCategoryImages || {}) }
+      delete imgs[name]
+      return { ...c, menuCategoryImages: imgs }
+    })
+
   // Distinct categories — from products + declared — powers the category
   // combobox so editors reuse names (avoids Bread/Breads-style duplicates).
   const categoryOptions = [
@@ -874,6 +901,10 @@ export default function AdminContent() {
                 categoryOptions={categoryOptions}
                 declared={declaredCategories}
                 setDeclared={setDeclaredCategories}
+                images={menuCategoryImages}
+                onSetImage={setMenuCategoryImage}
+                onRenameImage={renameMenuCategoryImage}
+                onDeleteImage={deleteMenuCategoryImage}
               />
             </Panel>
           )}
@@ -1596,7 +1627,7 @@ function FullPreview({ content, active, products, stores }) {
         ) : active === 'stores' ? (
           <Stores previewStores={stores} preview />
         ) : active === 'products' || active === 'menuCategories' ? (
-          <Menu previewProducts={products} preview />
+          <Menu previewProducts={products} previewContent={content} preview />
         ) : (
           <Landing content={content} preview />
         )}
@@ -1803,7 +1834,17 @@ function ComboRow({ label, value, onChange, listId, placeholder }) {
 // Bulk category management. Categories are derived from products, so renaming
 // (= merging) and deleting (= reassigning) are just edits to product.category.
 // Changes mutate the editor's local products state, persisted on global Save.
-function CategoryManager({ products, setProducts, categoryOptions, declared, setDeclared }) {
+function CategoryManager({
+  products,
+  setProducts,
+  categoryOptions,
+  declared,
+  setDeclared,
+  images = {},
+  onSetImage = () => {},
+  onRenameImage = () => {},
+  onDeleteImage = () => {},
+}) {
   const [newCat, setNewCat] = useState('')
 
   const counts = {}
@@ -1823,11 +1864,13 @@ function CategoryManager({ products, setProducts, categoryOptions, declared, set
     if (!to || to === from) return
     setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to } : p)))
     setDeclared((list) => [...new Set(list.map((c) => (c === from ? to : c)))])
+    onRenameImage(from, to)
   }
 
   const deleteCategory = (from, to) => {
     setProducts((ps) => ps.map((p) => (p.category === from ? { ...p, category: to || null } : p)))
     setDeclared((list) => list.filter((c) => c !== from))
+    onDeleteImage(from)
   }
 
   return (
@@ -1870,6 +1913,8 @@ function CategoryManager({ products, setProducts, categoryOptions, declared, set
               name={name}
               count={counts[name] || 0}
               others={cats.filter((c) => c !== name)}
+              image={images[name] || ''}
+              onImage={(url) => onSetImage(name, url)}
               onRename={renameCategory}
               onDelete={deleteCategory}
             />
@@ -1880,7 +1925,7 @@ function CategoryManager({ products, setProducts, categoryOptions, declared, set
   )
 }
 
-function CategoryRow({ name, count, others, onRename, onDelete }) {
+function CategoryRow({ name, count, others, image, onImage, onRename, onDelete }) {
   const targetOptions = [...new Set([...others, 'Other'])].filter((o) => o !== name)
   const [rename, setRename] = useState(name)
   const [target, setTarget] = useState(targetOptions[0] || 'Other')
@@ -1892,6 +1937,13 @@ function CategoryRow({ name, count, others, onRename, onDelete }) {
         <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
           {count} product{count === 1 ? '' : 's'}
         </span>
+      </div>
+
+      <div className="mt-3">
+        <ImageField label="Category image (optional)" value={image} onChange={onImage} />
+        <p className="mt-1 text-[0.7rem] text-slate-400">
+          Shown as the category badge on the menu. Leave empty to use the first product’s photo. Square works best (~400 × 400 px).
+        </p>
       </div>
 
       <div className="mt-3 flex items-end gap-2">

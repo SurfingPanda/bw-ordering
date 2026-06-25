@@ -115,6 +115,10 @@ export const DEFAULT_CONTENT = {
   // Editor-declared menu categories (lets you create a category before any
   // product uses it). Menu categories are otherwise derived from products.
   menuCategories: [],
+  // Optional per-category images for the menu sidebar badges, keyed by category
+  // name (e.g. { Bread: '/images/…' }). When a category has no entry here the
+  // menu falls back to the first product's photo (src/pages/Menu.jsx).
+  menuCategoryImages: {},
   // Editable left panel of the Login / Register pages (src/components/BrandPanel.jsx).
   authPanel: {
     logo: '/images/logo (1).png',
