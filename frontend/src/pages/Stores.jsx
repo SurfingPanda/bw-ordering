@@ -188,6 +188,19 @@ export default function Stores({ previewStores = null, preview = false }) {
   )
 }
 
+// Shows whether a branch offers delivery, pickup, or both. Defaults to "both"
+// when the field is missing (older rows / API not yet returning it).
+function FulfillmentBadge({ fulfillment }) {
+  const f = fulfillment || 'both'
+  const label =
+    f === 'delivery' ? '🚚 Delivery' : f === 'pickup' ? '🏪 Pickup' : '🚚 Delivery · 🏪 Pickup'
+  return (
+    <span className="w-fit rounded-full bg-navy-50 px-3 py-1 text-xs font-semibold text-navy-700">
+      {label}
+    </span>
+  )
+}
+
 function StoreCard({ store, selected, onSelect }) {
   return (
     <button
@@ -197,9 +210,12 @@ function StoreCard({ store, selected, onSelect }) {
         selected ? 'border-brand-400 ring-2 ring-brand-500/30' : 'border-slate-100'
       }`}
     >
-      <span className="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600">
-        {store.region}
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600">
+          {store.region}
+        </span>
+        <FulfillmentBadge fulfillment={store.fulfillment} />
+      </div>
       <h3 className="mt-3 text-base font-bold text-navy-800">{store.name}</h3>
       <ul className="mt-3 space-y-2 text-sm text-slate-600">
         <li className="flex gap-2">

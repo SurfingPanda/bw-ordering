@@ -24,6 +24,8 @@ class Order extends Model
         'payment_ref',
         'delivery_type',
         'delivery_speed',
+        'fulfillment_store_id',
+        'fulfillment_branch',
         'address',
         'notes',
         'subtotal',

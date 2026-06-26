@@ -392,12 +392,20 @@ function FulfillmentChips({ order }) {
 }
 
 function FulfillmentDetails({ order }) {
-  if (!order.address && !order.notes) return null
+  if (!order.address && !order.fulfillment_branch && !order.notes) return null
   return (
     <div className="mt-3 rounded-lg bg-navy-50/60 p-3 text-xs text-slate-600">
       {order.address && (
         <p>
           <span className="font-semibold text-navy-700">📍 Deliver to:</span> {order.address}
+        </p>
+      )}
+      {order.fulfillment_branch && (
+        <p>
+          <span className="font-semibold text-navy-700">
+            {order.delivery_type === 'pickup' ? '🏪 Pick up at:' : '🏬 Delivered by:'}
+          </span>{' '}
+          {order.fulfillment_branch}
         </p>
       )}
       {order.notes && (

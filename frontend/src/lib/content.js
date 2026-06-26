@@ -167,6 +167,24 @@ export const DEFAULT_CONTENT = {
   // name (e.g. { Bread: '/images/…' }). When a category has no entry here the
   // menu falls back to the first product's photo (src/pages/Menu.jsx).
   menuCategoryImages: {},
+  // Fully editor-controlled promo banner on the menu's "What's New" tab
+  // (src/pages/Menu.jsx MenuPromoBanner). Each slide is a self-contained ad; the
+  // banner rotates through them. `buttonLink` may be an internal path, a full
+  // URL, or a /menu?add=<product name> deep link that adds that product to cart.
+  menuPromo: {
+    enabled: true,
+    slides: [
+      {
+        badge: '✨ Just Launched',
+        title: 'Ube Chiffon Cake',
+        description: 'Light-as-air purple yam chiffon with sweet ube halaya swirl.',
+        image: '',
+        price: '₱720.00',
+        buttonLabel: 'Add to cart',
+        buttonLink: '/menu?add=Ube Chiffon Cake',
+      },
+    ],
+  },
   // Editable left panel of the Login / Register pages (src/components/BrandPanel.jsx).
   authPanel: {
     logo: '/images/logo (1).png',

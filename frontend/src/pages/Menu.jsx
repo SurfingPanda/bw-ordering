@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import MenuImage from '../components/LazyImage'
 import {
+  DEFAULT_CONTENT,
   fetchMenuProducts,
   getCachedContent,
   getCachedProducts,
@@ -85,6 +86,11 @@ export default function Menu({ previewProducts, previewContent, preview = false 
     const cat = searchParams.get('category')
     if (cat) return cat
     if (searchParams.get('add')) return 'All'
+    // In the editor preview, open on What's New so the editable promo banner is
+    // visible while editing it.
+    if (preview && previewContent?.menuPromo?.enabled !== false && previewContent?.menuPromo?.slides?.length) {
+      return "What's New"
+    }
     return (getCachedProducts() || []).some((p) => p.status === 'new')
       ? "What's New"
       : 'All'
@@ -195,8 +201,21 @@ export default function Menu({ previewProducts, previewContent, preview = false 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menu, active, tag, query])
 
-  // New products power the promo banner on the "What's New" tab.
-  const newProducts = useMemo(() => menu.filter((p) => p.status === 'new'), [menu])
+  // Fully editor-controlled promo banner shown atop the "What's New" tab
+  // (content.menuPromo). Replaces the old product-derived banner; a slide is
+  // kept only if it has some content. The banner makes the "What's New" tab
+  // available even with no `new`-status products.
+  const promo = content?.menuPromo || DEFAULT_CONTENT.menuPromo
+  const promoSlides = useMemo(
+    () =>
+      promo?.enabled === false
+        ? []
+        : (promo?.slides || []).filter(
+            (s) => s && (s.title || s.image || s.badge || s.description),
+          ),
+    [promo],
+  )
+  const promoActive = promoSlides.length > 0
 
   const lines = useMemo(
     () =>
@@ -222,11 +241,11 @@ export default function Menu({ previewProducts, previewContent, preview = false 
     const hasNew = menu.some((p) => p.status === 'new')
     const hasBest = menu.some((p) => p.status === 'best_seller')
     return [
-      ...(hasNew ? [{ name: "What's New", icon: 'new' }] : []),
+      ...(hasNew || promoActive ? [{ name: "What's New", icon: 'new' }] : []),
       ...(hasBest ? [{ name: 'Best Sellers', icon: 'best' }] : []),
       ...[...seen].map(([name, img]) => ({ name, img: imgs[name] || img })),
     ]
-  }, [menu, categoryImages])
+  }, [menu, categoryImages, promoActive])
 
   const itemCount = lines.reduce((sum, l) => sum + l.qty, 0)
   const subtotal = lines.reduce((sum, l) => sum + l.product.price * l.qty, 0)
@@ -247,6 +266,32 @@ export default function Menu({ previewProducts, previewContent, preview = false 
     })
 
   const navigate = useNavigate()
+
+  // Promo-banner button: a /menu?add=<name> deep link adds that product to the
+  // cart (we're already on the menu, so navigation wouldn't re-run the add
+  // effect); any other internal path navigates; an external URL opens in a tab.
+  const handlePromoButton = (slide) => {
+    if (preview) return
+    const link = (slide?.buttonLink || '').trim()
+    if (!link) return
+    try {
+      const url = new URL(link, window.location.origin)
+      const addName = url.searchParams.get('add')
+      if (addName) {
+        const product = menu.find((p) => p.name.toLowerCase() === addName.toLowerCase())
+        if (product) {
+          add(product.id)
+          setCartOpen(true)
+          return
+        }
+      }
+      if (url.origin === window.location.origin) navigate(url.pathname + url.search)
+      else window.open(link, '_blank', 'noopener')
+    } catch {
+      navigate(link)
+    }
+  }
+
   // Hand the cart off to the /checkout page via localStorage (survives refresh)
   // and navigate there — the order is actually placed from the checkout page.
   const checkout = (summary) => {
@@ -298,8 +343,8 @@ export default function Menu({ previewProducts, previewContent, preview = false 
             </div>
           </div>
 
-          {active === "What's New" && newProducts.length > 0 && (
-            <NewProductsPromo products={newProducts} onAdd={add} />
+          {active === "What's New" && promoActive && (
+            <MenuPromoBanner slides={promoSlides} onButton={handlePromoButton} />
           )}
 
           {availableTags.length > 0 && (
@@ -325,12 +370,16 @@ export default function Menu({ previewProducts, previewContent, preview = false 
           {menuLoading ? (
             <div className="py-16 text-center text-sm text-slate-500">Loading menu…</div>
           ) : visible.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="text-5xl">🔍</div>
-              <p className="mt-3 text-sm text-slate-500">
-                No treats found{query && ` for “${query}”`}.
-              </p>
-            </div>
+            // On What's New the promo banner is the content, so skip the empty
+            // state when there are simply no new-status products to list.
+            active === "What's New" && promoActive ? null : (
+              <div className="py-16 text-center">
+                <div className="text-5xl">🔍</div>
+                <p className="mt-3 text-sm text-slate-500">
+                  No treats found{query && ` for “${query}”`}.
+                </p>
+              </div>
+            )
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
               {visible.map((p) => (
@@ -474,49 +523,62 @@ function CategorySidebar({ active, onChange, categories }) {
   )
 }
 
-// Promotional banner atop the "What's New" tab — rotates through the new
-// products like little ads, each with a quick "Add to cart" CTA. Warm brand
-// gradient so it reads as an appetizing bakery promo.
-function NewProductsPromo({ products, onAdd }) {
+// Promotional banner atop the "What's New" tab — fully editor-controlled via
+// content.menuPromo (badge/title/description/image/price/button per slide). It
+// rotates through the slides like little ads. Warm brand gradient so it reads as
+// an appetizing bakery promo.
+function MenuPromoBanner({ slides, onButton }) {
   const [i, setI] = useState(0)
 
-  // Auto-advance through the new products; pause is unnecessary for a short list.
+  // Auto-advance through the slides; pause is unnecessary for a short list.
   useEffect(() => {
-    if (products.length <= 1) return
-    const id = setInterval(() => setI((n) => (n + 1) % products.length), 4500)
+    if (slides.length <= 1) return
+    const id = setInterval(() => setI((n) => (n + 1) % slides.length), 4500)
     return () => clearInterval(id)
-  }, [products.length])
+  }, [slides.length])
 
-  const active = i % products.length
-  const p = products[active]
-  if (!p) return null
+  const active = i % slides.length
+  const s = slides[active]
+  if (!s) return null
 
   return (
     <div className="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-brand-500 to-orange-600 shadow-lg shadow-brand-500/25">
       <div className="flex flex-col-reverse sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-2 p-6 sm:p-8">
-          <span className="w-fit rounded-full bg-white/25 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
-            ✨ Just Launched
-          </span>
-          <h2 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">{p.name}</h2>
-          {p.desc && <p className="line-clamp-2 max-w-md text-sm text-white/90">{p.desc}</p>}
-          <div className="mt-1 flex items-center gap-3">
-            <span className="text-xl font-bold text-white drop-shadow-sm">{peso(p.price)}</span>
-            <button
-              type="button"
-              onClick={() => onAdd(p.id)}
-              className="rounded-full bg-white px-5 py-2 text-sm font-bold text-brand-600 shadow-md transition hover:bg-white/90"
-            >
-              Add to cart
-            </button>
-          </div>
-          {products.length > 1 && (
-            <div className="mt-3 flex gap-1.5">
-              {products.map((prod, idx) => (
+          {s.badge && (
+            <span className="w-fit rounded-full bg-white/25 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+              {s.badge}
+            </span>
+          )}
+          {s.title && (
+            <h2 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">{s.title}</h2>
+          )}
+          {s.description && (
+            <p className="line-clamp-2 max-w-md text-sm text-white/90">{s.description}</p>
+          )}
+          {(s.price || s.buttonLabel) && (
+            <div className="mt-1 flex items-center gap-3">
+              {s.price && (
+                <span className="text-xl font-bold text-white drop-shadow-sm">{s.price}</span>
+              )}
+              {s.buttonLabel && (
                 <button
-                  key={prod.id || idx}
                   type="button"
-                  aria-label={`Show ${prod.name}`}
+                  onClick={() => onButton?.(s)}
+                  className="rounded-full bg-white px-5 py-2 text-sm font-bold text-brand-600 shadow-md transition hover:bg-white/90"
+                >
+                  {s.buttonLabel}
+                </button>
+              )}
+            </div>
+          )}
+          {slides.length > 1 && (
+            <div className="mt-3 flex gap-1.5">
+              {slides.map((slide, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  aria-label={`Show ${slide.title || `slide ${idx + 1}`}`}
                   onClick={() => setI(idx)}
                   className={`h-1.5 rounded-full transition-all ${
                     idx === active ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'
@@ -526,7 +588,7 @@ function NewProductsPromo({ products, onAdd }) {
             </div>
           )}
         </div>
-        <PromoImage key={p.id || active} src={p.img} alt={p.name} />
+        <PromoImage key={active} src={s.image} alt={s.title || 'Promo'} />
       </div>
     </div>
   )
