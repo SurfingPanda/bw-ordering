@@ -20,6 +20,7 @@ export async function createOrder(summary) {
     payment_method: summary.payment_method || null,
     delivery_type: summary.delivery_type || null,
     delivery_speed: summary.delivery_speed || null,
+    pickup_store_id: summary.pickup_store_id || null,
     address: summary.address || null,
     phone: summary.phone || null,
     notes: summary.notes || null,

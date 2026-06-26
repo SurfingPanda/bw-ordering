@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useAuth } from '../context/AuthContext'
+import api from '../lib/api'
 import { createOrder, fetchOrder, fetchPaymentConfig, payOrder } from '../lib/orders'
 import { fetchActiveVouchers } from '../lib/vouchers'
 import { fetchMenuProducts, getCachedContent, getSiteContent } from '../lib/content'
@@ -72,6 +73,11 @@ export default function Checkout() {
 
   const [mode, setMode] = useState('delivery') // 'delivery' | 'pickup'
   const [speed, setSpeed] = useState('standard') // 'standard' | 'express'
+  // Branches the customer can pick up from (loaded from the store locator API)
+  // and the one they've selected. `pickupStoreId` is a stores.id (number).
+  const [stores, setStores] = useState([])
+  const [pickupStoreId, setPickupStoreId] = useState(null)
+  const [branchQuery, setBranchQuery] = useState('')
   const [name, setName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.contact_number || '')
   const [email, setEmail] = useState(user?.email || '')
@@ -89,6 +95,8 @@ export default function Checkout() {
       .then((c) => setQrPayload(c?.payment?.qrPayload || ''))
       .catch(() => {})
     fetchPaymentConfig().then((cfg) => setPaymongoEnabled(!!cfg.paymongo)).catch(() => {})
+    // Branches for the Pickup option (same source as the store locator).
+    api.get('/stores').then((res) => setStores(res.data || [])).catch(() => {})
     // Re-verify cart prices/availability against the server before paying.
     fetchMenuProducts()
       .then((rows) => {
@@ -183,6 +191,18 @@ export default function Checkout() {
   const points = Math.floor(discounted / 10)
   const awayFromFree = Math.max(0, FREE_DELIVERY_MIN - subtotal)
 
+  const selectedStore = useMemo(
+    () => stores.find((s) => s.id === pickupStoreId) || null,
+    [stores, pickupStoreId],
+  )
+  const branchMatches = useMemo(() => {
+    const q = branchQuery.trim().toLowerCase()
+    if (!q) return stores
+    return stores.filter((s) =>
+      [s.name, s.address, s.region].some((f) => (f || '').toLowerCase().includes(q)),
+    )
+  }, [stores, branchQuery])
+
   // The merchant's QR Ph payload with this order's amount injected (null when no
   // valid merchant payload is configured → we show a demo QR instead).
   const merchantPayload = useMemo(
@@ -226,6 +246,10 @@ export default function Checkout() {
       setError('Please enter a delivery address.')
       return
     }
+    if (mode === 'pickup' && !pickupStoreId) {
+      setError('Please choose a branch to pick up from.')
+      return
+    }
     setError('')
     setStep('payment')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
@@ -245,6 +269,7 @@ export default function Checkout() {
         payment_method: payMethod,
         delivery_type: mode,
         delivery_speed: mode === 'delivery' ? speed : null,
+        pickup_store_id: mode === 'pickup' ? pickupStoreId : null,
         address: mode === 'delivery' ? address : null,
         phone,
         notes,
@@ -446,13 +471,47 @@ export default function Checkout() {
                 )}
               </>
             ) : (
-              <div className="mt-5 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
-                Pick up your order at your nearest <span className="font-semibold">BW Superbakeshop</span>{' '}
-                branch — no delivery fee. Find a store on the{' '}
-                <Link to="/stores" className="font-semibold text-brand-600 hover:underline">
-                  store locator
-                </Link>
-                .
+              <div className="mt-5">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-navy-800">
+                    <PinIcon className="h-4 w-4 text-brand-500" /> Choose a pickup branch
+                  </label>
+                  <span className="text-xs text-slate-400">No delivery fee</span>
+                </div>
+
+                {stores.length > 5 && (
+                  <input
+                    value={branchQuery}
+                    onChange={(e) => setBranchQuery(e.target.value)}
+                    placeholder="Search by branch name, area, or city"
+                    className="mb-3 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  />
+                )}
+
+                {stores.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+                    No branches available right now. Please try delivery or check the{' '}
+                    <Link to="/stores" className="font-semibold text-brand-600 hover:underline">
+                      store locator
+                    </Link>
+                    .
+                  </p>
+                ) : branchMatches.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+                    No branches match “{branchQuery}”.
+                  </p>
+                ) : (
+                  <div className="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                    {branchMatches.map((s) => (
+                      <BranchCard
+                        key={s.id}
+                        active={pickupStoreId === s.id}
+                        onClick={() => setPickupStoreId(s.id)}
+                        store={s}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </Section>
@@ -649,6 +708,16 @@ export default function Checkout() {
               + Add more items
             </Link>
 
+            {mode === 'pickup' && selectedStore && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-xs">
+                <PinIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-navy-800">Pickup at {selectedStore.name}</span>
+                  <span className="block text-slate-500">{selectedStore.address}</span>
+                </span>
+              </div>
+            )}
+
             {/* voucher */}
             <div className="mt-4 border-t border-slate-100 pt-4">
               <div className="flex gap-2">
@@ -801,6 +870,12 @@ function Confirmation({ order, payMethod }) {
             <dt className="text-slate-500">Status</dt>
             <dd className="font-semibold capitalize text-amber-600">{order?.status || 'pending'}</dd>
           </div>
+          {order?.pickup_branch && (
+            <div className="flex justify-between gap-4">
+              <dt className="shrink-0 text-slate-500">Pickup</dt>
+              <dd className="text-right font-semibold text-navy-800">{order.pickup_branch}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
             <dt className="text-slate-500">Payment</dt>
             <dd className="font-semibold text-navy-800">
@@ -882,6 +957,32 @@ function OptionCard({ active, onClick, title, note, price }) {
         <span className="block text-xs text-slate-500">{note}</span>
       </span>
       <span className="text-sm font-bold text-brand-600">{price}</span>
+    </button>
+  )
+}
+
+function BranchCard({ active, onClick, store }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+        active ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'
+      }`}
+    >
+      <PinIcon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? 'text-brand-500' : 'text-slate-400'}`} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-navy-800">{store.name}</span>
+        <span className="block text-xs text-slate-500">{store.address}</span>
+        {store.hours && <span className="mt-0.5 block text-[0.7rem] text-slate-400">🕑 {store.hours}</span>}
+      </span>
+      <span
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+          active ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300'
+        }`}
+      >
+        {active && <span className="text-[0.6rem]">✓</span>}
+      </span>
     </button>
   )
 }

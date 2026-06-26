@@ -48,6 +48,7 @@ const SECTION_GROUPS = [
     label: 'Shop & Menu',
     items: [
       { key: 'products', label: 'Products', Icon: TagIcon },
+      { key: 'menuPromo', label: 'Menu Promo', Icon: MegaphoneIcon },
       { key: 'menuCategories', label: 'Menu Categories', Icon: GridIcon },
       { key: 'vouchers', label: 'Vouchers', Icon: TicketIcon },
       { key: 'payment', label: 'Payment QR', Icon: QrIcon },
@@ -311,6 +312,32 @@ export default function AdminContent() {
       ...c,
       maintenance: { ...(c.maintenance || DEFAULT_CONTENT.maintenance), ...patch },
     }))
+
+  // Menu promo banner (content.menuPromo) — a fully editor-controlled, rotating
+  // banner on the menu's "What's New" tab. Each slide is an independent ad.
+  const mp = content?.menuPromo || DEFAULT_CONTENT.menuPromo
+  const setMenuPromo = (patch) =>
+    setContent((c) => ({
+      ...c,
+      menuPromo: { ...(c.menuPromo || DEFAULT_CONTENT.menuPromo), ...patch },
+    }))
+  const promoSlides = mp.slides || []
+  const setPromoSlides = (slides) => setMenuPromo({ slides })
+  const updatePromoSlide = (idx, patch) =>
+    setPromoSlides(promoSlides.map((s, i) => (i === idx ? { ...s, ...patch } : s)))
+  const addPromoSlide = () =>
+    setPromoSlides([
+      ...promoSlides,
+      { badge: '✨ New', title: '', description: '', image: '', price: '', buttonLabel: 'Add to cart', buttonLink: '' },
+    ])
+  const removePromoSlide = (idx) => setPromoSlides(promoSlides.filter((_, i) => i !== idx))
+  const movePromoSlide = (idx, dir) => {
+    const next = [...promoSlides]
+    const j = idx + dir
+    if (j < 0 || j >= next.length) return
+    ;[next[idx], next[j]] = [next[j], next[idx]]
+    setPromoSlides(next)
+  }
 
   // Footer content (logo/brand/description/copyright + link columns). Columns
   // each hold a title and a list of { label, url } links.
@@ -1406,6 +1433,81 @@ export default function AdminContent() {
             </Panel>
           )}
 
+          {active === 'menuPromo' && (
+            <Panel
+              title="Menu Promo Banner"
+              subtitle="The promotional banner on the menu’s “What’s New” tab. Add one or more slides — the banner rotates through them. Each slide is fully custom (not tied to a product)."
+            >
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-navy-800">Show promo banner</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {mp.enabled === false
+                      ? 'The banner is hidden on the menu.'
+                      : 'The banner shows on the menu’s “What’s New” tab.'}
+                  </p>
+                </div>
+                <Toggle on={mp.enabled !== false} onChange={(enabled) => setMenuPromo({ enabled })} />
+              </div>
+
+              <div className="space-y-4">
+                {promoSlides.map((s, i) => (
+                  <ItemCard
+                    key={i}
+                    index={i}
+                    total={promoSlides.length}
+                    onMove={(dir) => movePromoSlide(i, dir)}
+                    onRemove={() => removePromoSlide(i)}
+                  >
+                    <TextRow
+                      label="Badge"
+                      value={s.badge}
+                      onChange={(badge) => updatePromoSlide(i, { badge })}
+                    />
+                    <TextRow
+                      label="Title"
+                      value={s.title}
+                      onChange={(title) => updatePromoSlide(i, { title })}
+                    />
+                    <TextAreaRow
+                      label="Description"
+                      value={s.description}
+                      onChange={(description) => updatePromoSlide(i, { description })}
+                    />
+                    <ImageField
+                      label="Image"
+                      wide
+                      value={s.image}
+                      onChange={(image) => updatePromoSlide(i, { image })}
+                    />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <TextRow
+                        label="Price text"
+                        value={s.price}
+                        onChange={(price) => updatePromoSlide(i, { price })}
+                      />
+                      <TextRow
+                        label="Button label"
+                        value={s.buttonLabel}
+                        onChange={(buttonLabel) => updatePromoSlide(i, { buttonLabel })}
+                      />
+                    </div>
+                    <TextRow
+                      label="Button link"
+                      value={s.buttonLink}
+                      onChange={(buttonLink) => updatePromoSlide(i, { buttonLink })}
+                    />
+                    <p className="text-xs text-slate-400">
+                      Tip: use <code>/menu?add=Product Name</code> to add that product to the cart, an
+                      internal path like <code>/franchise</code>, or a full <code>https://</code> URL.
+                    </p>
+                  </ItemCard>
+                ))}
+                <AddButton onClick={addPromoSlide}>+ Add slide</AddButton>
+              </div>
+            </Panel>
+          )}
+
           {active === 'footer' && (
             <div className="space-y-5">
               <Panel
@@ -1760,6 +1862,7 @@ const SECTION_ANCHOR = {
   customCake: '#custom-cake',
   newsletter: '#newsletter',
   products: null,
+  menuPromo: null,
   payment: null,
   stores: null,
   franchise: null,
@@ -1832,7 +1935,7 @@ function FullPreview({ content, active, products, stores }) {
           <Login content={content} preview />
         ) : active === 'stores' ? (
           <Stores previewStores={stores} preview />
-        ) : active === 'products' || active === 'menuCategories' ? (
+        ) : active === 'products' || active === 'menuCategories' || active === 'menuPromo' ? (
           <Menu previewProducts={products} previewContent={content} preview />
         ) : (
           <Landing content={content} preview />
