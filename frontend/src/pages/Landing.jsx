@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Reveal, { StaticRevealContext } from '../components/Reveal'
 import Carousel from '../components/Carousel'
 import LazyImage from '../components/LazyImage'
+import ConfirmModal from '../components/ConfirmModal'
 import { useAuth } from '../context/AuthContext'
 import { DEFAULT_CONTENT, buttonState, getCachedContent, getSiteContent } from '../lib/content'
 
@@ -228,6 +229,7 @@ function AnnouncementBar({ text }) {
 
 function NavBar({ buttons }) {
   const [open, setOpen] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const { user, isAdmin, isEditor, isHr, logout } = useAuth()
   const navigate = useNavigate()
   const signInState = buttonState(buttons, 'navSignIn')
@@ -290,7 +292,7 @@ function NavBar({ buttons }) {
               </Link>
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setConfirmLogout(true)}
                 className="text-sm font-semibold text-navy-700 transition hover:text-brand-600"
               >
                 Sign Out
@@ -370,7 +372,10 @@ function NavBar({ buttons }) {
                   </Link>
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setOpen(false)
+                      setConfirmLogout(true)
+                    }}
                     className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700"
                   >
                     Sign Out
@@ -403,6 +408,17 @@ function NavBar({ buttons }) {
             </div>
           )}
         </div>
+      )}
+
+      {confirmLogout && (
+        <ConfirmModal
+          title="Log out?"
+          message="You’ll be signed out of your account."
+          confirmLabel="Log out"
+          loadingLabel="Logging out"
+          onConfirm={handleLogout}
+          onCancel={() => setConfirmLogout(false)}
+        />
       )}
     </header>
   )

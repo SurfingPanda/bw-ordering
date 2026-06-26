@@ -24,6 +24,10 @@ export default function Profile() {
   const [pwError, setPwError] = useState('')
   const [pwSuccess, setPwSuccess] = useState('')
 
+  // Fall back to initials if the avatar (e.g. a stale/blocked Google photo URL)
+  // fails to load, so we never show a broken-image icon.
+  const [avatarError, setAvatarError] = useState(false)
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-navy-50/40 text-slate-500">
@@ -128,10 +132,12 @@ export default function Profile() {
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
         {/* identity summary */}
         <section className="flex items-center gap-4 rounded-2xl bg-white p-6 shadow-sm">
-          {user.avatar_url ? (
+          {user.avatar_url?.trim() && !avatarError ? (
             <img
               src={user.avatar_url}
               alt={user.name}
+              referrerPolicy="no-referrer"
+              onError={() => setAvatarError(true)}
               className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-500/20"
             />
           ) : (
