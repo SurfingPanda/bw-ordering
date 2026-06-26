@@ -31,6 +31,7 @@ class StoreController extends Controller
             'stores.*.id' => 'nullable',
             'stores.*.name' => 'required|string|max:255',
             'stores.*.region' => 'required|string|max:100',
+            'stores.*.fulfillment' => 'nullable|in:both,pickup,delivery',
             'stores.*.address' => 'required|string|max:500',
             'stores.*.hours' => 'nullable|string|max:255',
             'stores.*.phone' => 'nullable|string|max:100',
@@ -44,6 +45,7 @@ class StoreController extends Controller
             $attrs = [
                 'name' => trim($s['name']),
                 'region' => $s['region'],
+                'fulfillment' => $s['fulfillment'] ?? 'both',
                 'address' => trim($s['address']),
                 'hours' => $s['hours'] ?? null,
                 'phone' => $s['phone'] ?? null,

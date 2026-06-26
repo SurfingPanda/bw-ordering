@@ -36,7 +36,7 @@ class OrderController extends Controller
             'payment_method' => 'nullable|in:qrph,cash,paymongo',
             'delivery_type' => 'nullable|in:delivery,pickup',
             'delivery_speed' => 'nullable|in:standard,express',
-            'pickup_store_id' => 'nullable|integer',
+            'fulfillment_store_id' => 'nullable|integer',
             'address' => 'nullable|string|max:500',
             'phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
@@ -52,23 +52,29 @@ class OrderController extends Controller
             ]);
         }
 
-        // Pickup orders must choose a branch to collect from. Resolve it against
-        // the trusted stores table and denormalize its name + address onto the
-        // order so it stays displayable even if the store later changes.
-        $pickupStoreId = null;
-        $pickupBranch = null;
-        if ($deliveryType === 'pickup') {
-            $store = ! empty($data['pickup_store_id'])
-                ? Store::find($data['pickup_store_id'])
-                : null;
-            if (! $store) {
-                throw ValidationException::withMessages([
-                    'pickup_store_id' => 'Please choose a branch to pick up from.',
-                ]);
-            }
-            $pickupStoreId = $store->id;
-            $pickupBranch = $store->name.' — '.$store->address;
+        // Every order must choose a fulfilling branch: the branch to pick up from,
+        // or the branch that delivers. Resolve it against the trusted stores table,
+        // enforce that the branch actually serves the chosen mode, and denormalize
+        // its name + address onto the order so it stays displayable even if the
+        // store later changes.
+        $store = ! empty($data['fulfillment_store_id'])
+            ? Store::find($data['fulfillment_store_id'])
+            : null;
+        if (! $store) {
+            throw ValidationException::withMessages([
+                'fulfillment_store_id' => $deliveryType === 'pickup'
+                    ? 'Please choose a branch to pick up from.'
+                    : 'Please choose a branch to deliver from.',
+            ]);
         }
+        $serves = $store->fulfillment ?? 'both';
+        if ($serves !== 'both' && $serves !== $deliveryType) {
+            throw ValidationException::withMessages([
+                'fulfillment_store_id' => "“{$store->name}” doesn’t offer {$deliveryType}.",
+            ]);
+        }
+        $fulfillmentStoreId = $store->id;
+        $fulfillmentBranch = $store->name.' — '.$store->address;
         // Manual QRPH is treated as paid up front; cash is collected at pickup;
         // PayMongo stays pending until the gateway confirms (webhook / return check).
         $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
@@ -142,8 +148,8 @@ class OrderController extends Controller
             'payment_status' => $payStatus,
             'delivery_type' => $deliveryType,
             'delivery_speed' => $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'standard'),
-            'pickup_store_id' => $pickupStoreId,
-            'pickup_branch' => $pickupBranch,
+            'fulfillment_store_id' => $fulfillmentStoreId,
+            'fulfillment_branch' => $fulfillmentBranch,
             'address' => $deliveryType === 'pickup' ? null : ($data['address'] ?? null),
             'notes' => $data['notes'] ?? null,
             'subtotal' => round($subtotal, 2),

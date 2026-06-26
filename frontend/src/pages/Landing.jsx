@@ -237,7 +237,7 @@ function NavBar({ buttons }) {
   const signInOff = signInState === 'disabled'
   const orderOff = orderState === 'disabled'
   const links = [
-    { label: 'Home', href: '#home' },
+    { label: 'Store', to: '/stores' },
     { label: 'Menu', to: '/menu' },
     { label: 'Partner with us', to: '/franchise' },
   ]

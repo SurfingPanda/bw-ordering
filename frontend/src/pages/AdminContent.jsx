@@ -171,6 +171,7 @@ export default function AdminContent() {
           id: s.id,
           name: s.name || '',
           region: s.region || '',
+          fulfillment: s.fulfillment || 'both',
           address: s.address || '',
           hours: s.hours || '',
           phone: s.phone || '',
@@ -269,6 +270,7 @@ export default function AdminContent() {
         _key: crypto.randomUUID(),
         name: '',
         region: 'Metro Manila',
+        fulfillment: 'both',
         address: '',
         hours: 'Mon–Sun, 7:00 AM – 9:00 PM',
         phone: '',
@@ -1220,6 +1222,16 @@ export default function AdminContent() {
                         ['Luzon', 'Luzon'],
                         ['Visayas', 'Visayas'],
                         ['Mindanao', 'Mindanao'],
+                      ]}
+                    />
+                    <SelectRow
+                      label="Accepts"
+                      value={s.fulfillment || 'both'}
+                      onChange={(fulfillment) => updateStore(i, { fulfillment })}
+                      options={[
+                        ['both', 'Delivery & Pickup'],
+                        ['delivery', 'Delivery only'],
+                        ['pickup', 'Pickup only'],
                       ]}
                     />
                     <TextAreaRow
