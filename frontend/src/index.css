@@ -175,37 +175,6 @@ body {
   animation: bake-glow 3.2s ease-in-out infinite;
 }
 
-/* A single wisp of steam rising off the logo. It sways left↔right (--sway) in an
-   S-curve, stretches taller and thins out as it climbs, then dissolves. Each wisp
-   is staggered (delay/duration) so the stream reads as continuous, organic vapor. */
-@keyframes steam-rise {
-  0% {
-    transform: translate(-50%, 0) translateX(0) scaleY(0.4) scaleX(0.9);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.55;
-  }
-  35% {
-    transform: translate(-50%, -26px) translateX(var(--sway, 12px)) scaleY(0.8)
-      scaleX(0.8);
-  }
-  65% {
-    transform: translate(-50%, -64px) translateX(calc(var(--sway, 12px) * -1))
-      scaleY(1.1) scaleX(0.6);
-    opacity: 0.35;
-  }
-  100% {
-    transform: translate(-50%, -104px) translateX(var(--sway, 12px)) scaleY(1.4)
-      scaleX(0.4);
-    opacity: 0;
-  }
-}
-
-.animate-steam {
-  animation: steam-rise var(--steam-dur, 3.6s) ease-in-out infinite;
-}
-
 /* Soft playful tilt for the 🚧 barrier on the same page. */
 @keyframes wiggle {
   0%,
@@ -232,12 +201,8 @@ body {
   .animate-bg-pan,
   .animate-drift,
   .animate-drift-slow,
-  .animate-bakery-float,
-  .animate-steam {
+  .animate-bakery-float {
     animation: none;
-  }
-  .animate-steam {
-    opacity: 0;
   }
   /* Without the draw animation, leave the tick fully visible. */
   .animate-check-draw {

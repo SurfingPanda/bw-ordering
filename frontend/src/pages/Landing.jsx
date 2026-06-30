@@ -139,17 +139,6 @@ const FLOATING_TREATS = [
   { emoji: '🥖', cls: 'right-[6%] top-[55%] text-4xl', delay: '0.3s', dur: '6.8s' },
 ]
 
-// Wisps of steam curling up off the logo, as if it's fresh out of the oven.
-// Each is a tall, soft pill that sways side to side (--sway) and stretches as it
-// rises (steam-rise keyframe). Staggered delay/duration keeps the stream organic.
-const STEAM = [
-  { left: '38%', sway: '14px', delay: '0s', dur: '3.4s', size: 'h-10 w-2.5' },
-  { left: '47%', sway: '-18px', delay: '0.9s', dur: '4s', size: 'h-12 w-3' },
-  { left: '55%', sway: '16px', delay: '1.8s', dur: '3.6s', size: 'h-9 w-2' },
-  { left: '62%', sway: '-12px', delay: '0.5s', dur: '3.8s', size: 'h-11 w-2.5' },
-  { left: '50%', sway: '10px', delay: '2.4s', dur: '4.4s', size: 'h-14 w-3.5' },
-]
-
 // Neutral full-screen splash shown for the brief moment before we know whether
 // the landing page is live or in maintenance — keeps us from flashing the
 // landing page first. Matches the maintenance screen's navy backdrop.
@@ -200,25 +189,19 @@ function UnderConstruction({ data, social }) {
       <div className="relative z-10 flex flex-col items-center">
       <div className="animate-pop-in">
         <div className="relative animate-float">
+          {/* steam rising off the logo as it bakes (transparent animated webp —
+              the gif's black backdrop was keyed out into real alpha) */}
+          <img
+            src="/images/smoke.webp"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-[50%] left-1/2 w-44 -translate-x-1/2 select-none sm:w-52"
+          />
           <img
             src="/images/logo (1).png"
             alt="bw Superbakeshop"
-            className="h-44 w-auto animate-bake sm:h-56"
+            className="relative h-44 w-auto animate-bake sm:h-56"
           />
-          {/* steam curling up off the logo as it bakes */}
-          {STEAM.map((s, i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              style={{
-                left: s.left,
-                '--sway': s.sway,
-                animationDelay: s.delay,
-                animationDuration: s.dur,
-              }}
-              className={`pointer-events-none absolute top-2 origin-bottom rounded-full bg-gradient-to-t from-white/0 via-white/50 to-white/70 blur-[5px] animate-steam ${s.size}`}
-            />
-          ))}
         </div>
       </div>
       <span
