@@ -307,6 +307,17 @@ export function getCachedContent() {
   }
 }
 
+// True when we have real saved content cached (vs. falling back to defaults).
+// Used to decide whether the first paint can be trusted or must wait for the
+// network — so we don't flash the landing page when the site is in maintenance.
+export function hasCachedContent() {
+  try {
+    return localStorage.getItem(CACHE_KEY) != null
+  } catch {
+    return false
+  }
+}
+
 // Read the saved landing content (merged over defaults). Returns defaults on any
 // error or when nothing has been saved yet. Successful reads update the cache.
 // The CMS blob lives in the Laravel API (MySQL) now — Supabase is auth-only.

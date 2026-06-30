@@ -6,7 +6,13 @@ import Carousel from '../components/Carousel'
 import LazyImage from '../components/LazyImage'
 import ConfirmModal from '../components/ConfirmModal'
 import { useAuth } from '../context/AuthContext'
-import { DEFAULT_CONTENT, buttonState, getCachedContent, getSiteContent } from '../lib/content'
+import {
+  DEFAULT_CONTENT,
+  buttonState,
+  getCachedContent,
+  getSiteContent,
+  hasCachedContent,
+} from '../lib/content'
 
 // Disabled CTA styling + an onClick that swallows the click (and stops it from
 // bubbling to any clickable parent, e.g. the promo banner). Spread onto a Link
@@ -58,15 +64,37 @@ export default function Landing({ content: controlledContent, preview = false })
   useSeo('/', !preview)
   const isControlled = controlledContent != null
   const [fetched, setFetched] = useState(getCachedContent)
+  // Whether the first paint can be trusted: true when controlled (live preview),
+  // or when we have cached content to seed from. When neither holds (a cold load
+  // with no cache) we wait for the network before committing to landing vs.
+  // maintenance, so the landing page never flashes in front of a maintenance one.
+  const [loaded, setLoaded] = useState(() => isControlled || hasCachedContent())
 
   useEffect(() => {
     if (isControlled) return
-    getSiteContent().then(setFetched)
+    getSiteContent().then((c) => {
+      setFetched(c)
+      setLoaded(true)
+    })
   }, [isControlled])
+
+  // Reveal the page once React has rendered (clears the pre-paint guard set by
+  // the inline script in index.html, so the correct screen shows without a flash).
+  useEffect(() => {
+    document.documentElement.classList.remove('maint-pending')
+  }, [])
 
   const content = isControlled ? controlledContent : fetched
 
   const buttons = content.buttons
+
+  // In dev there's no prerendered HTML to seed the first paint, so a cold load
+  // with no cache would briefly render the landing page before the fetched
+  // content (possibly maintenance) arrives. Hold a neutral splash until we know.
+  // Prod relies on the prerendered HTML + the pre-paint guard in index.html.
+  if (!isControlled && !preview && !loaded && import.meta.env.DEV) {
+    return <MaintenanceSplash />
+  }
 
   // When the editor disables the landing page, replace it with an "under
   // construction" screen (still shown in the editor preview so the toggle is
@@ -121,6 +149,22 @@ const STEAM = [
   { left: '62%', sway: '-12px', delay: '0.5s', dur: '3.8s', size: 'h-11 w-2.5' },
   { left: '50%', sway: '10px', delay: '2.4s', dur: '4.4s', size: 'h-14 w-3.5' },
 ]
+
+// Neutral full-screen splash shown for the brief moment before we know whether
+// the landing page is live or in maintenance — keeps us from flashing the
+// landing page first. Matches the maintenance screen's navy backdrop.
+function MaintenanceSplash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-navy-900">
+      <img
+        src="/images/logo (1).png"
+        alt=""
+        aria-hidden="true"
+        className="h-20 w-auto animate-pulse opacity-80"
+      />
+    </div>
+  )
+}
 
 // Shown in place of the landing page when maintenance mode is enabled.
 function UnderConstruction({ data, social }) {
