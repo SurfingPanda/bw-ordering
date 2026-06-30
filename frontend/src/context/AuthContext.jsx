@@ -208,6 +208,17 @@ export function AuthProvider({ children }) {
     return normalize(data.user)
   }
 
+  // Send a password-reset email. Supabase mails a recovery link that returns the
+  // browser to /reset-password with a short-lived recovery session, where the
+  // user sets a new password (via changePassword). To avoid leaking which emails
+  // are registered, we surface success regardless of whether the address exists.
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
   // Change the signed-in user's password. Supabase updates the password for the
   // current session; there's no separate "old password" check on the client, so
   // we just validate the new value matches its confirmation here.
@@ -261,6 +272,7 @@ export function AuthProvider({ children }) {
         register,
         updateContactNumber,
         updateProfile,
+        resetPassword,
         changePassword,
         logout,
       }}

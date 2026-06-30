@@ -25,8 +25,14 @@ export default function Login({ content }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Shown once after a successful registration redirect.
-  const [notice] = useState(location.state?.registered ? 'Account created! Please sign in.' : '')
+  // Shown once after a successful registration or password-reset redirect.
+  const [notice] = useState(
+    location.state?.registered
+      ? 'Account created! Please sign in.'
+      : location.state?.reset
+        ? 'Password updated! Please sign in with your new password.'
+        : '',
+  )
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -144,9 +150,9 @@ export default function Login({ content }) {
                   />
                   Remember me
                 </label>
-                <a href="#" className="font-medium text-brand-600 hover:text-brand-500">
+                <Link to="/forgot-password" className="font-medium text-brand-600 hover:text-brand-500">
                   Forgot Password?
-                </a>
+                </Link>
               </div>
 
               <button
