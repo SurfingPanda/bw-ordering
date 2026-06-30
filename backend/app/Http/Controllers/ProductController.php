@@ -5,19 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
     /**
      * Public menu / editor list: every non-archived product. Returns rows in
      * the same snake_case shape the frontend's normalizeProduct() expects.
+     *
+     * Cached server-side (busted on sync) and marked publicly cacheable so the
+     * browser / Hostinger CDN can serve it from edge. Editors send a Bearer
+     * token and skip the cache header, so their saves are visible immediately.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Product::whereNull('archived_at')
-            ->orderBy('category')
-            ->orderBy('name')
-            ->get();
+        $products = Cache::remember('products.index', now()->addMinutes(10), fn () =>
+            Product::whereNull('archived_at')
+                ->orderBy('category')
+                ->orderBy('name')
+                ->get());
+
+        $res = response()->json($products);
+
+        if (! $request->bearerToken()) {
+            $res->header('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+        }
+
+        return $res;
     }
 
     /**
@@ -79,6 +93,8 @@ class ProductController extends Controller
                 ->update(['archived_at' => Carbon::now()]);
         }
 
-        return $this->index();
+        Cache::forget('products.index');
+
+        return $this->index($request);
     }
 }

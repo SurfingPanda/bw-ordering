@@ -35,6 +35,9 @@ node_modules/
 /frontend/dist-server/
 /frontend/public/images
 
+# Deployment artifacts / env-specific config
+/frontend/public/.htaccess
+
 # Logs
 *.log
 
