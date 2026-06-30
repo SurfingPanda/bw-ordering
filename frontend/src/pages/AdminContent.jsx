@@ -98,6 +98,9 @@ export default function AdminContent() {
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  // Off-canvas sidebar drawer for mobile (< lg). On lg+ the sidebar is always
+  // visible, so this only governs the small-screen overlay.
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const profileRef = useRef(null)
   const [message, setMessage] = useState('')
   const [active, setActive] = useState('announcement')
@@ -125,6 +128,18 @@ export default function AdminContent() {
       document.removeEventListener('keydown', onKey)
     }
   }, [profileMenuOpen])
+
+  // While the mobile drawer is open, close it on Escape and lock body scroll.
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const onKey = (e) => e.key === 'Escape' && setSidebarOpen(false)
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
 
   useEffect(() => {
     Promise.all([
@@ -440,10 +455,31 @@ export default function AdminContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
-      {/* sidebar */}
-      <aside className="sticky top-0 z-30 flex shrink-0 flex-col bg-navy-900 text-white lg:h-screen lg:w-64">
-        <div className="flex h-24 items-center justify-center border-b border-white/10 px-5">
+      {/* backdrop behind the mobile drawer */}
+      {sidebarOpen && (
+        <div
+          aria-hidden="true"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+        />
+      )}
+
+      {/* sidebar — off-canvas drawer on mobile, static on lg+ */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85%] shrink-0 transform flex-col bg-navy-900 text-white shadow-2xl transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:max-w-none lg:translate-x-0 lg:shadow-none`}
+      >
+        <div className="relative flex h-24 items-center justify-center border-b border-white/10 px-5">
           <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-20 w-auto" />
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-navy-50/70 transition hover:bg-white/10 hover:text-white lg:hidden"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
         </div>
         <div className="border-b border-white/10 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">
@@ -452,7 +488,7 @@ export default function AdminContent() {
           <p className="mt-1 text-xs text-navy-50/60">Manage your landing page</p>
         </div>
 
-        <nav className="flex flex-col gap-1 overflow-y-auto p-3 lg:flex-1">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
           {SECTION_GROUPS.map((group) => {
             const open = openGroups.has(group.key)
             const groupActive = group.items.some((it) => it.key === active)
@@ -477,7 +513,10 @@ export default function AdminContent() {
                       return (
                         <button
                           key={s.key}
-                          onClick={() => setActive(s.key)}
+                          onClick={() => {
+                            setActive(s.key)
+                            setSidebarOpen(false)
+                          }}
                           className={`flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
                             on
                               ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30'
@@ -573,7 +612,15 @@ export default function AdminContent() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
           <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
+                className="-ml-1 shrink-0 rounded-lg p-2 text-navy-700 transition hover:bg-navy-50 lg:hidden"
+              >
+                <MenuIcon className="h-6 w-6" />
+              </button>
               <h1 className="truncate text-lg font-bold text-navy-800">{activeLabel}</h1>
             </div>
             <div className="flex items-center gap-3">
@@ -2573,6 +2620,23 @@ function ChevronRightIcon(p) {
   return (
     <svg {...iconBase(p)}>
       <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+function MenuIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  )
+}
+function CloseIcon(p) {
+  return (
+    <svg {...iconBase(p)}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 }
