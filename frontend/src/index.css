@@ -154,96 +154,56 @@ body {
   animation: bakery-float 6s ease-in-out infinite;
 }
 
-/* "Under construction" hammer gag (src/pages/Landing.jsx UnderConstruction):
-   the 🔨 swings down and strikes the logo, which squashes on impact. The two
-   keyframe sets share the same 1.2s period so the squash lands with the blow. */
-@keyframes hammer-swing {
+/* "Under construction" baking gag (src/pages/Landing.jsx UnderConstruction):
+   the logo sits there warm and fresh while wisps of steam curl up off it. The
+   logo breathes with a soft warm glow; the steam rises, swells, and fades. */
+@keyframes bake-glow {
   0%,
-  35% {
-    transform: rotate(-58deg);
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 6px rgba(255, 176, 87, 0.25));
   }
   50% {
-    transform: rotate(14deg);
+    transform: scale(1.03);
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 24px rgba(255, 176, 87, 0.55));
+  }
+}
+
+.animate-bake {
+  animation: bake-glow 3.2s ease-in-out infinite;
+}
+
+/* A single wisp of steam rising off the logo. It sways left↔right (--sway) in an
+   S-curve, stretches taller and thins out as it climbs, then dissolves. Each wisp
+   is staggered (delay/duration) so the stream reads as continuous, organic vapor. */
+@keyframes steam-rise {
+  0% {
+    transform: translate(-50%, 0) translateX(0) scaleY(0.4) scaleX(0.9);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  35% {
+    transform: translate(-50%, -26px) translateX(var(--sway, 12px)) scaleY(0.8)
+      scaleX(0.8);
   }
   65% {
-    transform: rotate(-58deg);
+    transform: translate(-50%, -64px) translateX(calc(var(--sway, 12px) * -1))
+      scaleY(1.1) scaleX(0.6);
+    opacity: 0.35;
   }
   100% {
-    transform: rotate(-58deg);
-  }
-}
-
-.animate-hammer {
-  animation: hammer-swing 1.2s cubic-bezier(0.5, 0, 0.4, 1) infinite;
-  transform-origin: bottom center;
-}
-
-@keyframes logo-hit {
-  0%,
-  48% {
-    transform: translateY(0) scale(1, 1);
-  }
-  54% {
-    transform: translateY(6px) scale(1.08, 0.9);
-  }
-  62% {
-    transform: translateY(0) scale(0.96, 1.05);
-  }
-  72%,
-  100% {
-    transform: translateY(0) scale(1, 1);
-  }
-}
-
-.animate-logo-hit {
-  animation: logo-hit 1.2s ease-out infinite;
-  transform-origin: bottom center;
-}
-
-/* Impact spark that flashes at the moment of the hammer strike. */
-@keyframes impact-spark {
-  0%,
-  48% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  54% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-  68% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-  100% {
+    transform: translate(-50%, -104px) translateX(var(--sway, 12px)) scaleY(1.4)
+      scaleX(0.4);
     opacity: 0;
   }
 }
 
-.animate-spark {
-  animation: impact-spark 1.2s ease-out infinite;
-}
-
-/* Crumbs/chips flung off the logo on each hammer strike. Direction is set per
-   piece via --dx/--dy; timing matches the 1.2s strike cycle. */
-@keyframes debris {
-  0%,
-  48% {
-    transform: translate(0, 0) scale(0);
-    opacity: 0;
-  }
-  54% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--dx, 0), var(--dy, -40px)) scale(0.3);
-    opacity: 0;
-  }
-}
-
-.animate-debris {
-  animation: debris 1.2s ease-out infinite;
+.animate-steam {
+  animation: steam-rise var(--steam-dur, 3.6s) ease-in-out infinite;
 }
 
 /* Soft playful tilt for the 🚧 barrier on the same page. */
@@ -268,20 +228,15 @@ body {
   .animate-check-draw,
   .animate-float,
   .animate-wiggle,
-  .animate-hammer,
-  .animate-logo-hit,
-  .animate-spark,
+  .animate-bake,
   .animate-bg-pan,
   .animate-drift,
   .animate-drift-slow,
   .animate-bakery-float,
-  .animate-debris {
+  .animate-steam {
     animation: none;
   }
-  .animate-debris {
-    opacity: 0;
-  }
-  .animate-spark {
+  .animate-steam {
     opacity: 0;
   }
   /* Without the draw animation, leave the tick fully visible. */

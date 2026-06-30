@@ -11,6 +11,29 @@
       rel="stylesheet"
     />
     <title>BW Superbakeshop</title>
+    <!-- Pre-paint maintenance guard: if the cached site content says the landing
+         page ("/") is in maintenance, hide the prerendered landing HTML behind a
+         neutral splash before it paints, so React can swap in the "We'll be right
+         back" screen without flashing the live landing page first. Reveal is done
+         once React mounts (src/pages/Landing.jsx). -->
+    <script>
+      try {
+        if (location.pathname === '/') {
+          var c = JSON.parse(localStorage.getItem('bw_site_content') || 'null')
+          if (c && c.maintenance && c.maintenance.enabled) {
+            document.documentElement.classList.add('maint-pending')
+          }
+        }
+      } catch (e) {}
+    </script>
+    <style>
+      html.maint-pending {
+        background-color: #0b1f3d;
+      }
+      html.maint-pending #root {
+        visibility: hidden;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
