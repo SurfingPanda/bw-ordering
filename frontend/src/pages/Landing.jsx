@@ -111,14 +111,15 @@ const FLOATING_TREATS = [
   { emoji: '🥖', cls: 'right-[6%] top-[55%] text-4xl', delay: '0.3s', dur: '6.8s' },
 ]
 
-// Crumbs/chips flung off the logo on each hammer strike. --dx/--dy set the
-// fling direction; the keyframe times it to the 1.2s strike cycle.
-const DEBRIS = [
-  { cls: 'bg-brand-400', dx: '-46px', dy: '-54px' },
-  { cls: 'bg-amber-200', dx: '42px', dy: '-58px' },
-  { cls: 'bg-white', dx: '-60px', dy: '-28px' },
-  { cls: 'bg-brand-200', dx: '58px', dy: '-24px' },
-  { cls: 'bg-amber-300', dx: '0px', dy: '-68px' },
+// Wisps of steam curling up off the logo, as if it's fresh out of the oven.
+// Each is a tall, soft pill that sways side to side (--sway) and stretches as it
+// rises (steam-rise keyframe). Staggered delay/duration keeps the stream organic.
+const STEAM = [
+  { left: '38%', sway: '14px', delay: '0s', dur: '3.4s', size: 'h-10 w-2.5' },
+  { left: '47%', sway: '-18px', delay: '0.9s', dur: '4s', size: 'h-12 w-3' },
+  { left: '55%', sway: '16px', delay: '1.8s', dur: '3.6s', size: 'h-9 w-2' },
+  { left: '62%', sway: '-12px', delay: '0.5s', dur: '3.8s', size: 'h-11 w-2.5' },
+  { left: '50%', sway: '10px', delay: '2.4s', dur: '4.4s', size: 'h-14 w-3.5' },
 ]
 
 // Shown in place of the landing page when maintenance mode is enabled.
@@ -158,31 +159,22 @@ function UnderConstruction({ data, social }) {
           <img
             src="/images/logo (1).png"
             alt="bw Superbakeshop"
-            className="h-44 w-auto drop-shadow-2xl animate-logo-hit sm:h-56"
+            className="h-44 w-auto animate-bake sm:h-56"
           />
-          {/* spark flashes where the hammer lands */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-1 -translate-x-1/2 text-4xl animate-spark"
-          >
-            💥
-          </span>
-          {/* crumbs flung off on each strike */}
-          {DEBRIS.map((p, i) => (
+          {/* steam curling up off the logo as it bakes */}
+          {STEAM.map((s, i) => (
             <span
               key={i}
               aria-hidden="true"
-              style={{ '--dx': p.dx, '--dy': p.dy }}
-              className={`pointer-events-none absolute left-1/2 top-2 h-2 w-2 -translate-x-1/2 rounded-full animate-debris ${p.cls}`}
+              style={{
+                left: s.left,
+                '--sway': s.sway,
+                animationDelay: s.delay,
+                animationDuration: s.dur,
+              }}
+              className={`pointer-events-none absolute top-2 origin-bottom rounded-full bg-gradient-to-t from-white/0 via-white/50 to-white/70 blur-[5px] animate-steam ${s.size}`}
             />
           ))}
-          {/* hammer swings down onto the logo */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 text-5xl animate-hammer sm:text-6xl"
-          >
-            🔨
-          </span>
         </div>
       </div>
       <span
