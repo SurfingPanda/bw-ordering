@@ -27,7 +27,7 @@ export default function BrandPanel({ content: controlled }) {
       </div>
 
       {/* brand lock-up */}
-      <div className="relative z-10 flex flex-col items-center px-10 pt-12 text-center text-white">
+      <div className="relative z-10 flex flex-col items-center px-10 pb-10 pt-12 text-center text-white">
         <img
           src={ap.logo}
           alt="BW Superbakeshop"
