@@ -251,11 +251,8 @@ function NavBar({ buttons }) {
   const [confirmLogout, setConfirmLogout] = useState(false)
   const { user, isAdmin, isEditor, isHr, logout } = useAuth()
   const navigate = useNavigate()
-  const signInState = buttonState(buttons, 'navSignIn')
   const orderState = buttonState(buttons, 'navOrder')
-  const showSignIn = signInState !== 'off'
   const showOrder = orderState !== 'off'
-  const signInOff = signInState === 'disabled'
   const orderOff = orderState === 'disabled'
   const links = [
     { label: 'Store', to: '/stores' },
@@ -301,7 +298,7 @@ function NavBar({ buttons }) {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          {user ? (
+          {user && (
             <>
               <Link
                 to={accountRoute}
@@ -317,18 +314,6 @@ function NavBar({ buttons }) {
                 Sign Out
               </button>
             </>
-          ) : (
-            showSignIn && (
-              <Link
-                to="/login"
-                aria-disabled={signInOff}
-                tabIndex={signInOff ? -1 : undefined}
-                onClick={signInOff ? swallowClick : undefined}
-                className={`text-sm font-semibold text-navy-700 transition hover:text-brand-600 ${signInOff ? DISABLED_BTN_CLS : ''}`}
-              >
-                Sign In
-              </Link>
-            )
           )}
           {showOrder && (
             <Link
@@ -378,9 +363,9 @@ function NavBar({ buttons }) {
               </li>
             ))}
           </ul>
-          {(user || showSignIn || showOrder) && (
+          {(user || showOrder) && (
             <div className="mt-3 flex gap-3">
-              {user ? (
+              {user && (
                 <>
                   <Link
                     to={accountRoute}
@@ -400,18 +385,6 @@ function NavBar({ buttons }) {
                     Sign Out
                   </button>
                 </>
-              ) : (
-                showSignIn && (
-                  <Link
-                    to="/login"
-                    aria-disabled={signInOff}
-                    tabIndex={signInOff ? -1 : undefined}
-                    onClick={signInOff ? swallowClick : undefined}
-                    className={`flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 ${signInOff ? DISABLED_BTN_CLS : ''}`}
-                  >
-                    Sign In
-                  </Link>
-                )
               )}
               {showOrder && (
                 <Link

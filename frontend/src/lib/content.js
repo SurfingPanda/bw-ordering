@@ -5,7 +5,6 @@ import api from './api'
 // working), 'disabled' (visible but clicking does nothing), or 'off' (hidden
 // from the live site).
 export const LANDING_BUTTONS = [
-  { key: 'navSignIn', label: 'Sign In', group: 'Navigation bar' },
   { key: 'navOrder', label: 'Order Now', group: 'Navigation bar' },
   { key: 'bestSellersMenu', label: 'See full menu', group: 'Best Sellers' },
   { key: 'promoOrder', label: 'Order a custom cake', group: 'Promo banner' },

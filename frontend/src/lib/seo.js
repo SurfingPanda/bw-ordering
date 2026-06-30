@@ -56,7 +56,7 @@ const esc = (s) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
-const LOGO = `${SITE_URL}/images/logo%20(1).png`
+const LOGO = `${SITE_URL}/favicon-192x192.png`
 const SAME_AS = ['https://www.facebook.com/bwsuperbakeshop']
 const BREADCRUMB_LABEL = {
   '/menu': 'Menu',
