@@ -4,15 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class StoreController extends Controller
 {
     /**
      * List all store branches for the locator. Public.
+     *
+     * Cached server-side (busted on sync) and publicly cacheable so the browser
+     * / Hostinger CDN can serve it from edge. Editors (Bearer token) skip the
+     * cache header and always get fresh data.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Store::orderBy('region')->orderBy('name')->get();
+        $stores = Cache::remember('stores.index', now()->addMinutes(10), fn () =>
+            Store::orderBy('region')->orderBy('name')->get());
+
+        $res = response()->json($stores);
+
+        if (! $request->bearerToken()) {
+            $res->header('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+        }
+
+        return $res;
     }
 
     /**
@@ -65,6 +79,8 @@ class StoreController extends Controller
         if (! empty($removed)) {
             Store::whereIn('id', array_values($removed))->delete();
         }
+
+        Cache::forget('stores.index');
 
         return Store::orderBy('region')->orderBy('name')->get();
     }
