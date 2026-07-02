@@ -418,15 +418,12 @@ function NavBar({ buttons }) {
 
 function Logo() {
   return (
-    <Link to="/" className="flex min-w-0 items-center gap-2">
+    <Link to="/" className="flex min-w-0 items-center">
       <img
-        src="/images/logo (1).png"
+        src="/favicon-192x192.png"
         alt="bw Superbakeshop"
-        className="h-9 w-auto shrink-0 sm:h-11"
+        className="h-16 w-auto shrink-0 sm:h-20"
       />
-      <span className="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">
-        Superbakeshop
-      </span>
     </Link>
   )
 }

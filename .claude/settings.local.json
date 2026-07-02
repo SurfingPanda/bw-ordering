@@ -57,7 +57,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/products)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers/active)",
       "Bash(netstat -ano)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(python -c \"from PIL import Image; im=Image.open\\('Screenshot_1.png'\\); print\\(im.size, im.mode\\)\")"
     ]
   }
 }

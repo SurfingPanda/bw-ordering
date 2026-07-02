@@ -259,11 +259,8 @@ function StoresHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex min-w-0 items-center gap-2">
-          <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-9 w-auto shrink-0 sm:h-11" />
-          <span className="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">
-            Superbakeshop
-          </span>
+        <Link to="/" className="flex min-w-0 items-center">
+          <img src="/favicon-192x192.png" alt="bw Superbakeshop" className="h-16 w-auto shrink-0 sm:h-20" />
         </Link>
         <div className="flex items-center gap-4">
           <Link
