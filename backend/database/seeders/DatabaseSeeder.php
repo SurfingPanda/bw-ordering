@@ -19,7 +19,10 @@ class DatabaseSeeder extends Seeder
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
-                'password' => bcrypt('password'),
+                // Pass plaintext; the User model's `hashed` cast hashes it with the
+                // configured driver (argon2id). Pre-hashing with bcrypt() makes the
+                // cast's Hash::verifyConfiguration() reject the non-argon2id hash.
+                'password' => 'password',
             ]
         );
 
