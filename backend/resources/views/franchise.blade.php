@@ -2,6 +2,9 @@
      Content comes from the CMS blob's `franchise` key (Site Editor → Franchise). --}}
 @php
     $hero = $fr['hero'];
+    // Site Editor per-section toggles (franchise.visible.*); absent = shown.
+    $frVisible = (array) ($fr['visible'] ?? []);
+    $showSection = fn (string $key): bool => (bool) ($frVisible[$key] ?? true);
     $email = $fr['email'] ?? 'franchise@bwsuperbakeshop.com';
     $inquireBody = "Name:\nContact number:\nPreferred location / city:\nPackage of interest:\nMessage:\n";
     $href = 'mailto:'.$email.'?subject=Franchise%20Inquiry&body='.rawurlencode($inquireBody);
@@ -25,8 +28,7 @@
         <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
             <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-9 w-auto shrink-0 sm:h-11">
-                    <span class="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">Superbakeshop</span>
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-12 w-auto shrink-0 sm:h-14">
                 </a>
                 <div class="flex items-center gap-4">
                     <a href="/" class="text-sm font-medium text-navy-700 transition hover:text-brand-600">← Back to home</a>
@@ -38,6 +40,7 @@
         </header>
 
         {{-- hero --}}
+        @if($showSection('hero'))
         <section class="relative overflow-hidden bg-navy-900">
             <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
@@ -49,14 +52,16 @@
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Inquire about a franchise
                     </a>
-                    <a href="#packages" class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                    <!-- <a href="#packages" class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
                         View packages
-                    </a>
+                    </a> -->
                 </div>
             </div>
         </section>
+        @endif
 
         {{-- perks --}}
+        @if($showSection('perks'))
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center">
                 <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Why franchise with us</span>
@@ -73,8 +78,10 @@
                 @endforeach
             </div>
         </section>
+        @endif
 
         {{-- steps --}}
+        @if($showSection('steps'))
         <section class="bg-navy-50/60 py-16">
             <div class="mx-auto max-w-5xl px-4 sm:px-6">
                 <div class="mx-auto max-w-2xl text-center">
@@ -93,8 +100,10 @@
                 </div>
             </div>
         </section>
+        @endif
 
         {{-- packages --}}
+        @if($showSection('packages'))
         <section id="packages" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center">
                 <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Franchise packages</span>
@@ -123,6 +132,7 @@
                 @endforeach
             </div>
         </section>
+        @endif
 
         {{-- CTA --}}
         <section class="mx-auto max-w-6xl px-4 pb-16 sm:px-6">

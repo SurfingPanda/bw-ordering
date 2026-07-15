@@ -132,18 +132,19 @@
     </div>
 @else
     <div class="min-h-screen bg-white text-navy-800">
-        {{-- Announcement bar --}}
-        <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
-            <p class="px-4 py-2">{{ $content['announcement'] }}</p>
-        </div>
+        {{-- Announcement bar (Site Editor toggle; absent = shown) --}}
+        @if($content['announcementVisible'] ?? true)
+            <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
+                <p class="px-4 py-2">{{ $content['announcement'] }}</p>
+            </div>
+        @endif
 
         {{-- Nav --}}
         <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
             @php $orderState = $btn('navOrder'); @endphp
             <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-9 w-auto shrink-0 sm:h-11">
-                    <span class="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">Superbakeshop</span>
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-12 w-auto shrink-0 sm:h-14">
                 </a>
 
                 <ul class="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
@@ -223,8 +224,8 @@
             </div>
         </section>
 
-        {{-- What's New (hidden when the editor hasn't curated any cards) --}}
-        @if(!empty($content['whatsNewProducts']))
+        {{-- What's New — products with status "new" (hidden when there are none) --}}
+        @if(!empty($whatsNewProducts))
             <section id="whats-new" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
                 <div class="mx-auto max-w-2xl text-center" data-reveal>
                     <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
@@ -234,7 +235,7 @@
                     @endif
                 </div>
                 <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
-                    @foreach($content['whatsNewProducts'] as $p)
+                    @foreach($whatsNewProducts as $p)
                         <div data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
                             @include('partials.product-card', ['product' => $p])
                         </div>

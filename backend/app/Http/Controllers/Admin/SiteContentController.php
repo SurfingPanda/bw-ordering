@@ -45,12 +45,13 @@ class SiteContentController extends Controller
      * Top-level content-blob keys this form's sections manage. Everything
      * else already stored in the blob is preserved untouched on save — e.g.
      * `menuCategories`/`menuCategoryImages` (owned by the Menu
-     * Categories mini-form below), and the SPA-era `bestSellers`/`categories`
-     * card lists (dead keys now: the Blade landing derives both from the
-     * products table, so this form neither edits nor overwrites them).
+     * Categories mini-form below), and the SPA-era `bestSellers`/
+     * `categories`/`whatsNewProducts` card lists (dead keys now: the Blade
+     * landing derives all three from the products table, so this form
+     * neither edits nor overwrites them).
      */
     private const MANAGED_KEYS = [
-        'maintenance', 'announcement', 'banners', 'whatsNew', 'whatsNewProducts',
+        'maintenance', 'announcement', 'announcementVisible', 'banners', 'whatsNew',
         'customCake', 'customCakeForm', 'newsletter', 'franchise',
         'footer', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
@@ -225,12 +226,12 @@ class SiteContentController extends Controller
         }
 
         $updates['announcement'] = (string) ($updates['announcement'] ?? '');
+        $updates['announcementVisible'] = $request->boolean('announcementVisible');
 
         // List sections — reindex (repeater rows may submit non-sequential
         // keys after add/remove) and turn per-item "one per line" textareas
         // back into arrays.
         $updates['banners'] = array_values((array) ($updates['banners'] ?? []));
-        $updates['whatsNewProducts'] = $this->normalizeCards($updates['whatsNewProducts'] ?? []);
 
         $updates['whatsNew'] = (array) ($updates['whatsNew'] ?? []);
         $updates['customCake'] = (array) ($updates['customCake'] ?? []);
@@ -267,6 +268,8 @@ class SiteContentController extends Controller
 
         $fr = (array) ($updates['franchise'] ?? []);
         $fr['hero'] = (array) ($fr['hero'] ?? []);
+        // Per-section show/hide toggles ("0"/"1" via hidden+checkbox pairs).
+        $fr['visible'] = array_map(fn ($v) => (bool) $v, (array) ($fr['visible'] ?? []));
         $fr['perks'] = array_values((array) ($fr['perks'] ?? []));
         $fr['steps'] = array_values((array) ($fr['steps'] ?? []));
         $fr['packages'] = array_values(array_map(function ($pkg) {
@@ -289,17 +292,6 @@ class SiteContentController extends Controller
         $updates['footer'] = $fo;
 
         return $updates;
-    }
-
-    private function normalizeCards($items): array
-    {
-        return array_values(array_map(function ($item) {
-            $item = (array) $item;
-            $item['allergens'] = $this->linesToArray($item['allergens'] ?? '');
-            $item['calories'] = ($item['calories'] ?? '') === '' ? null : (int) $item['calories'];
-
-            return $item;
-        }, (array) $items));
     }
 
     private function linesToArray($text): array
@@ -339,6 +331,29 @@ class SiteContentController extends Controller
         Cache::forget('site-content');
 
         return redirect()->route('admin.content', ['section' => 'menuCategories'])->with('status', 'Categories saved.');
+    }
+
+    /**
+     * Quick-add a category to the declared list (the Products toolbar's ＋
+     * button) — read-merge-write like every other blob update.
+     */
+    public function addCategory(Request $request)
+    {
+        $this->authorizeEditor($request);
+
+        $name = trim((string) $request->input('name', ''));
+        if ($name === '') {
+            return back()->withErrors(['name' => 'Enter a category name.']);
+        }
+
+        $current = SiteContent::find(1)?->data ?? [];
+        $current['menuCategories'] = collect($current['menuCategories'] ?? [])
+            ->push($name)->unique()->values()->all();
+
+        SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
+        Cache::forget('site-content');
+
+        return back()->with('status', "Added category \"{$name}\".");
     }
 
     public function renameCategory(Request $request, string $category)
@@ -386,6 +401,9 @@ class SiteContentController extends Controller
         Cache::forget('site-content');
         Cache::forget('products.index');
 
-        return redirect()->route('admin.content', ['section' => 'menuCategories'])->with('status', "Deleted \"{$category}\".");
+        // back(): reachable from both the Menu Categories tab and the
+        // Products toolbar's 🗑 button — return to whichever sent it.
+        return back(fallback: route('admin.content', ['section' => 'menuCategories']))
+            ->with('status', "Deleted \"{$category}\".");
     }
 }

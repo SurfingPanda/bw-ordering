@@ -16,10 +16,7 @@
         <div>
             <div class="flex items-center gap-2">
                 @if(!empty($f['logo']))
-                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-12 w-auto">
-                @endif
-                @if(!empty($f['brand']))
-                    <span class="font-brand text-2xl font-bold text-white">{{ $f['brand'] }}</span>
+                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-16 w-auto">
                 @endif
             </div>
             <p class="mt-4 max-w-xs text-sm text-navy-50/70">{{ $f['description'] }}</p>

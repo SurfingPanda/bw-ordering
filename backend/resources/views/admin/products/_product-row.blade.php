@@ -16,7 +16,18 @@
             <div data-product-thumb-empty class="h-full w-full items-center justify-center text-center text-[0.5rem] leading-tight text-slate-400 {{ empty($product['image_path']) ? 'flex' : 'hidden' }}">no image</div>
         </div>
         <div class="min-w-0 flex-1">
-            <p data-product-name class="truncate text-sm font-semibold text-navy-800">{{ ($product['name'] ?? '') !== '' ? $product['name'] : 'New product' }}</p>
+            <p class="flex items-center gap-2">
+                <span data-product-name class="truncate text-sm font-semibold text-navy-800">{{ ($product['name'] ?? '') !== '' ? $product['name'] : 'New product' }}</span>
+                {{-- Status badge — label/colors must match STATUS_BADGES in products/index.blade.php --}}
+                @php($statusBadges = [
+                    'new' => ['New', 'bg-emerald-100 text-emerald-700'],
+                    'best_seller' => ['Best seller', 'bg-amber-100 text-amber-700'],
+                    'bundle' => ['Bundle', 'bg-blue-100 text-blue-700'],
+                    'sold_out' => ['Sold out', 'bg-red-100 text-red-700'],
+                ])
+                @php($badge = $statusBadges[$product['status'] ?? ''] ?? null)
+                <span data-product-status class="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide {{ $badge ? $badge[1] : 'hidden' }}">{{ $badge[0] ?? '' }}</span>
+            </p>
             <p data-product-meta class="truncate text-xs text-slate-500">{{ collect([$product['category'] ?? null, ($product['price'] ?? '') !== '' ? '₱' . $product['price'] : null])->filter()->implode(' · ') }}</p>
         </div>
         <button type="button" data-edit class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600">Edit</button>
@@ -49,7 +60,15 @@
                     <div class="grid grid-cols-2 gap-2">
                         <label class="block">
                             <span class="mb-1 block text-xs font-medium text-slate-500">Category</span>
-                            <input type="text" list="bw-categories" name="products[{{ $i }}][category]" value="{{ $product['category'] ?? '' }}" placeholder="Pick or type new…" class="{{ $input }}">
+                            {{-- Strict picker: new categories are created with the ＋
+                                 button in the Products toolbar, not by typing here. --}}
+                            @php($cat = $product['category'] ?? '')
+                            <select name="products[{{ $i }}][category]" class="{{ $input }} bg-white">
+                                <option value="">No category</option>
+                                @foreach($categoryOptions ?? [] as $c)
+                                    <option value="{{ $c }}" @selected($cat === $c)>{{ $c }}</option>
+                                @endforeach
+                            </select>
                         </label>
                         <label class="block">
                             <span class="mb-1 block text-xs font-medium text-slate-500">Status</span>

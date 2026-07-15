@@ -105,6 +105,7 @@ Route::middleware('supabase.session')->group(function () {
     // preview iframe (?preview=1) reflects unsaved edits. Does not touch the DB.
     Route::post('/admin/content/preview', [AdminSiteContentController::class, 'preview'])->name('admin.content.preview');
     Route::post('/admin/content/categories', [AdminSiteContentController::class, 'saveCategories'])->name('admin.content.categories');
+    Route::post('/admin/content/categories/add', [AdminSiteContentController::class, 'addCategory'])->name('admin.content.categories.add');
     Route::post('/admin/content/categories/{category}/rename', [AdminSiteContentController::class, 'renameCategory'])->name('admin.content.categories.rename');
     Route::post('/admin/content/categories/{category}/delete', [AdminSiteContentController::class, 'deleteCategory'])->name('admin.content.categories.delete');
 

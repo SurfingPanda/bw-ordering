@@ -35,8 +35,21 @@
 
         {{-- ============ Announcement ============ --}}
         <section data-panel="announcement" class="{{ $panel }}">
-            <h2 class="text-lg font-bold text-navy-800">Announcement Bar</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The thin orange strip shown at the very top of every page.</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">Announcement Bar</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The thin orange strip shown at the very top of every page.</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="announcementVisible" value="0">
+                        <input type="checkbox" name="announcementVisible" value="1" class="peer sr-only" @checked($content['announcementVisible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
             <textarea name="announcement" id="announcement-input" rows="2"
                 class="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">{{ $content['announcement'] ?? '' }}</textarea>
             <p class="mb-1 mt-3 text-xs font-medium text-slate-500">Live preview</p>
@@ -63,7 +76,7 @@
         {{-- ============ What's New ============ --}}
         <section data-panel="whatsNew" class="{{ $panel }}">
             <h2 class="text-lg font-bold text-navy-800">What's New</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">Heading + the product cards shown in the “What’s New?” section. A card’s “+” adds it to the cart by name, so match a real menu product name. Best image size: 800 × 600 px (landscape, ~4:3) — square works too; images are center-cropped to fill the card.</p>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">Heading of the “What’s New?” section. The product cards come from the live catalogue automatically — set a product’s Status to “New” in the Products section to feature it here.</p>
             <div class="space-y-3">
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
@@ -77,16 +90,6 @@
                     <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
                     <textarea name="whatsNew[subtitle]" rows="3" class="{{ $input }}">{{ $content['whatsNew']['subtitle'] ?? '' }}</textarea>
                 </label>
-            </div>
-            <p class="mb-3 mt-6 text-sm font-semibold text-navy-800">Products</p>
-            <div data-repeater>
-                <div data-rows class="grid gap-4 sm:grid-cols-2">
-                    @foreach(array_values((array) ($content['whatsNewProducts'] ?? [])) as $i => $item)
-                        @include('admin.content._card-row')
-                    @endforeach
-                </div>
-                <template>@include('admin.content._card-row', ['i' => '__IDX__', 'item' => ['name' => 'New item', 'price' => '₱0', 'tag' => 'New']])</template>
-                <button type="button" data-add class="{{ $addBtn }}">+ Add product</button>
             </div>
         </section>
 
@@ -280,10 +283,24 @@
         {{-- ============ Franchise ============ --}}
         <section data-panel="franchise" class="hidden space-y-5">
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <h2 class="text-lg font-bold text-navy-800">Franchise — Hero</h2>
-                <p class="mb-5 mt-0.5 text-sm text-slate-500">The top of the /franchise page.</p>
                 @php($fr = (array) ($content['franchise'] ?? []))
                 @php($frHero = (array) ($fr['hero'] ?? []))
+                @php($frVis = (array) ($fr['visible'] ?? []))
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Hero</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The top of the /franchise page.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][hero]" value="0">
+                            <input type="checkbox" name="franchise[visible][hero]" value="1" class="peer sr-only" @checked($frVis['hero'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
                 <div class="space-y-3">
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
@@ -305,8 +322,21 @@
             </div>
 
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <h2 class="text-lg font-bold text-navy-800">Franchise — Perks</h2>
-                <p class="mb-5 mt-0.5 text-sm text-slate-500">The “Why franchise with us” cards.</p>
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Perks</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The “Why franchise with us” cards.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][perks]" value="0">
+                            <input type="checkbox" name="franchise[visible][perks]" value="1" class="peer sr-only" @checked($frVis['perks'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
                 <div data-repeater>
                     <div data-rows class="space-y-2">
                         @foreach(array_values((array) ($fr['perks'] ?? [])) as $i => $item)
@@ -319,8 +349,21 @@
             </div>
 
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <h2 class="text-lg font-bold text-navy-800">Franchise — Steps</h2>
-                <p class="mb-5 mt-0.5 text-sm text-slate-500">The “How it works” path.</p>
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Steps</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The “How it works” path.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][steps]" value="0">
+                            <input type="checkbox" name="franchise[visible][steps]" value="1" class="peer sr-only" @checked($frVis['steps'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
                 <div data-repeater>
                     <div data-rows class="space-y-2">
                         @foreach(array_values((array) ($fr['steps'] ?? [])) as $i => $item)
@@ -333,8 +376,21 @@
             </div>
 
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <h2 class="text-lg font-bold text-navy-800">Franchise — Packages</h2>
-                <p class="mb-5 mt-0.5 text-sm text-slate-500">The franchise package cards.</p>
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Packages</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The franchise package cards.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][packages]" value="0">
+                            <input type="checkbox" name="franchise[visible][packages]" value="1" class="peer sr-only" @checked($frVis['packages'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
                 <div data-repeater>
                     <div data-rows class="space-y-2">
                         @foreach(array_values((array) ($fr['packages'] ?? [])) as $i => $item)
@@ -355,10 +411,6 @@
                 @php($fo = (array) ($content['footer'] ?? []))
                 <div class="space-y-4">
                     @include('admin.content._image-field', ['name' => 'footer[logo]', 'value' => $fo['logo'] ?? '', 'fieldLabel' => 'Logo'])
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-medium text-slate-500">Brand name</span>
-                        <input type="text" name="footer[brand]" value="{{ $fo['brand'] ?? '' }}" class="{{ $input }}">
-                    </label>
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Description</span>
                         <textarea name="footer[description]" rows="3" class="{{ $input }}">{{ $fo['description'] ?? '' }}</textarea>

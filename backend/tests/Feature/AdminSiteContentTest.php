@@ -96,6 +96,30 @@ class AdminSiteContentTest extends TestCase
         $this->assertTrue($pkg['featured']);
     }
 
+    public function test_franchise_section_toggles_persist_and_hide_the_section(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->put(route('admin.content.update'), [
+                'franchise' => [
+                    'hero' => ['title' => 'Partner with us'],
+                    // hidden+checkbox pair: only the hidden "0" arrives when
+                    // the toggle is off; "1" when it's on.
+                    'visible' => ['hero' => '0', 'perks' => '1'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $visible = SiteContent::find(1)->data['franchise']['visible'];
+        $this->assertFalse($visible['hero']);
+        $this->assertTrue($visible['perks']);
+
+        $page = $this->get('/franchise');
+        $page->assertOk()
+            // Hero is hidden; perks (default content) still render.
+            ->assertDontSee('Partner with a trusted, decades-old brand')
+            ->assertSee('Why franchise with us');
+    }
+
     public function test_save_categories_persists_declared_list_and_images(): void
     {
         $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
@@ -108,6 +132,26 @@ class AdminSiteContentTest extends TestCase
         $data = SiteContent::find(1)->data;
         $this->assertSame(['Cakes', 'Seasonal'], $data['menuCategories']);
         $this->assertSame(['Cakes' => '/images/cakes.png'], $data['menuCategoryImages']);
+    }
+
+    public function test_quick_add_category_appends_to_the_declared_list(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => ['menuCategories' => ['Bread']]]);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories.add'), ['name' => ' Sandwiches '])
+            ->assertRedirect();
+
+        $this->assertSame(['Bread', 'Sandwiches'], SiteContent::find(1)->data['menuCategories']);
+
+        // Duplicates are ignored, blanks rejected.
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories.add'), ['name' => 'Sandwiches']);
+        $this->assertSame(['Bread', 'Sandwiches'], SiteContent::find(1)->data['menuCategories']);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories.add'), ['name' => '  '])
+            ->assertSessionHasErrors('name');
     }
 
     public function test_renaming_a_category_moves_its_products(): void

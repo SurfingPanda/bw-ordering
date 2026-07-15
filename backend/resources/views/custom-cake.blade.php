@@ -17,8 +17,7 @@
 <header class="sticky top-0 z-20 border-b border-slate-100 bg-white">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="/" class="flex min-w-0 items-center gap-2">
-            <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-9 w-auto shrink-0 sm:h-11">
-            <span class="truncate font-brand text-lg font-bold text-brand-500 sm:text-2xl">Superbakeshop</span>
+            <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-12 w-auto shrink-0 sm:h-14">
         </a>
         <a href="/" class="text-sm font-medium text-navy-700 transition hover:text-brand-600">← Back to home</a>
     </div>

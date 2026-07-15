@@ -36,10 +36,6 @@ class LandingController extends Controller
             'title' => "What's New?",
             'subtitle' => "The latest additions to our bakeshop — try them while they're still warm.",
         ],
-        'whatsNewProducts' => [
-            ['name' => 'Ube Chiffon Cake', 'price' => '₱720', 'tag' => 'New', 'img' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80'],
-            ['name' => 'Red Velvet Slice', 'price' => '₱150', 'tag' => 'New', 'img' => 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80'],
-        ],
         'buttons' => [
             'navOrder' => true,
             'bestSellersMenu' => true,
@@ -124,6 +120,7 @@ class LandingController extends Controller
             'user' => $user,
             'accountRoute' => $this->accountRoute($user['email'] ?? null),
             'bestSellers' => [],
+            'whatsNewProducts' => [],
             'categories' => [],
         ];
 
@@ -148,6 +145,11 @@ class LandingController extends Controller
 
         $viewData['content'] = $content;
         $viewData['bestSellers'] = $products->where('status', 'best_seller')->values()
+            ->map(fn (Product $p) => $this->presentProduct($p))->all();
+        // What's New is likewise products-table-sourced: every product whose
+        // status is "new" (set in the admin Products editor), not a
+        // CMS-curated card list.
+        $viewData['whatsNewProducts'] = $products->where('status', 'new')->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         $viewData['categories'] = $this->categoriesFrom($products, $content['menuCategoryImages'] ?? []);
 
