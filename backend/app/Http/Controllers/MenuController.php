@@ -43,6 +43,10 @@ class MenuController extends Controller
             // mirrors Menu.jsx's MenuPromoBanner and CategorySidebar.
             'menuPromo' => $content['menuPromo'] ?? ['enabled' => true, 'slides' => []],
             'categoryImages' => $content['menuCategoryImages'] ?? [],
+            // Declared categories (Site Editor → Menu Categories) so the
+            // sidebar also lists ones no product uses yet — same as the
+            // landing grid (see LandingController::categoriesFrom).
+            'declaredCategories' => array_values(array_filter((array) ($content['menuCategories'] ?? []))),
             // Badge on the account dropdown's "My Orders" — active = the same
             // pending/preparing set the My Orders page's Active tab uses.
             'activeOrders' => ($user['id'] ?? null)

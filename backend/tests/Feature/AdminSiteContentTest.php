@@ -134,26 +134,6 @@ class AdminSiteContentTest extends TestCase
         $this->assertSame(['Cakes' => '/images/cakes.png'], $data['menuCategoryImages']);
     }
 
-    public function test_quick_add_category_appends_to_the_declared_list(): void
-    {
-        SiteContent::create(['id' => 1, 'data' => ['menuCategories' => ['Bread']]]);
-
-        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
-            ->post(route('admin.content.categories.add'), ['name' => ' Sandwiches '])
-            ->assertRedirect();
-
-        $this->assertSame(['Bread', 'Sandwiches'], SiteContent::find(1)->data['menuCategories']);
-
-        // Duplicates are ignored, blanks rejected.
-        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
-            ->post(route('admin.content.categories.add'), ['name' => 'Sandwiches']);
-        $this->assertSame(['Bread', 'Sandwiches'], SiteContent::find(1)->data['menuCategories']);
-
-        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
-            ->post(route('admin.content.categories.add'), ['name' => '  '])
-            ->assertSessionHasErrors('name');
-    }
-
     public function test_renaming_a_category_moves_its_products(): void
     {
         Product::factory()->create(['category' => 'Bread']);

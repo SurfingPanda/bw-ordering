@@ -51,8 +51,8 @@ class SiteContentController extends Controller
      * neither edits nor overwrites them).
      */
     private const MANAGED_KEYS = [
-        'maintenance', 'announcement', 'announcementVisible', 'banners', 'whatsNew',
-        'customCake', 'customCakeForm', 'newsletter', 'franchise',
+        'maintenance', 'announcement', 'announcementVisible', 'banners', 'bannersVisible',
+        'whatsNew', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator',
         'footer', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
 
@@ -232,9 +232,17 @@ class SiteContentController extends Controller
         // keys after add/remove) and turn per-item "one per line" textareas
         // back into arrays.
         $updates['banners'] = array_values((array) ($updates['banners'] ?? []));
+        $updates['bannersVisible'] = $request->boolean('bannersVisible');
 
+        // Per-section "Show on page" toggles ("0"/"1" hidden+checkbox pairs).
         $updates['whatsNew'] = (array) ($updates['whatsNew'] ?? []);
+        $updates['whatsNew']['visible'] = $request->boolean('whatsNew.visible');
         $updates['customCake'] = (array) ($updates['customCake'] ?? []);
+        $updates['customCake']['visible'] = $request->boolean('customCake.visible');
+        $updates['newsletter'] = (array) ($updates['newsletter'] ?? []);
+        $updates['newsletter']['visible'] = $request->boolean('newsletter.visible');
+        $updates['storeLocator'] = (array) ($updates['storeLocator'] ?? []);
+        $updates['storeLocator']['visible'] = $request->boolean('storeLocator.visible');
 
         // Custom Cake Page wizard: repeater rows → clean arrays (blank rows
         // drop out; a bad hex falls back to a neutral cream).
@@ -326,34 +334,13 @@ class SiteContentController extends Controller
 
         $current['menuCategories'] = $declared;
         $current['menuCategoryImages'] = $images;
+        // The tab-header "Show on landing" toggle for the category grid.
+        $current['categoriesVisible'] = $request->boolean('categoriesVisible');
 
         SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
         Cache::forget('site-content');
 
         return redirect()->route('admin.content', ['section' => 'menuCategories'])->with('status', 'Categories saved.');
-    }
-
-    /**
-     * Quick-add a category to the declared list (the Products toolbar's ＋
-     * button) — read-merge-write like every other blob update.
-     */
-    public function addCategory(Request $request)
-    {
-        $this->authorizeEditor($request);
-
-        $name = trim((string) $request->input('name', ''));
-        if ($name === '') {
-            return back()->withErrors(['name' => 'Enter a category name.']);
-        }
-
-        $current = SiteContent::find(1)?->data ?? [];
-        $current['menuCategories'] = collect($current['menuCategories'] ?? [])
-            ->push($name)->unique()->values()->all();
-
-        SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
-        Cache::forget('site-content');
-
-        return back()->with('status', "Added category \"{$name}\".");
     }
 
     public function renameCategory(Request $request, string $category)

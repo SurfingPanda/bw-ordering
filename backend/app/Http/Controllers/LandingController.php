@@ -54,6 +54,12 @@ class LandingController extends Controller
             'bannerLink' => '/menu',
             'buttonLink' => '/custom-cake',
         ],
+        'storeLocator' => [
+            'title' => '60+ stores, always near you',
+            'subtitle' => 'Find your nearest branch or simply order online for delivery and pickup.',
+            'placeholder' => 'Enter your city or area',
+            'visible' => true,
+        ],
         'newsletter' => [
             'title' => 'Get sweet deals in your inbox 🍰',
             'subtitle' => 'Subscribe for exclusive promos, new treats, and special occasion offers.',
@@ -129,6 +135,7 @@ class LandingController extends Controller
         }
 
         $content['customCake'] = array_merge(self::DEFAULT_CONTENT['customCake'], $content['customCake'] ?? []);
+        $content['storeLocator'] = array_merge(self::DEFAULT_CONTENT['storeLocator'], $content['storeLocator'] ?? []);
         $content['newsletter'] = array_merge(self::DEFAULT_CONTENT['newsletter'], $content['newsletter'] ?? []);
         $content['footer'] = array_merge(self::DEFAULT_CONTENT['footer'], $content['footer'] ?? []);
 
@@ -151,7 +158,11 @@ class LandingController extends Controller
         // CMS-curated card list.
         $viewData['whatsNewProducts'] = $products->where('status', 'new')->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
-        $viewData['categories'] = $this->categoriesFrom($products, $content['menuCategoryImages'] ?? []);
+        $viewData['categories'] = $this->categoriesFrom(
+            $products,
+            $content['menuCategoryImages'] ?? [],
+            (array) ($content['menuCategories'] ?? []),
+        );
 
         return view('landing', $viewData);
     }
@@ -173,20 +184,32 @@ class LandingController extends Controller
     }
 
     /**
-     * One card per distinct product category, image = an editor override from
-     * the Site Editor (content.menuCategoryImages) or, failing that, the first
-     * product photo in that category — same fallback the Menu page's sidebar
-     * badges use.
+     * One card per distinct product category. The image comes only from the
+     * Site Editor's Menu Categories tab (content.menuCategoryImages) — no
+     * product-photo fallback, so that tab is the single source of what shows
+     * here and on the /menu sidebar. Declared-but-still-empty categories
+     * (content.menuCategories) are appended after the in-use ones so a
+     * just-added category shows up before its first product exists.
      */
-    private function categoriesFrom($products, array $categoryImages): array
+    private function categoriesFrom($products, array $categoryImages, array $declared = []): array
     {
         $categories = [];
         foreach ($products as $p) {
-            $cat = $p->category ?: 'Other';
-            if (! isset($categories[$cat])) {
+            // Products without a category (e.g. left behind by a category
+            // delete) get no card — the /menu sidebar skips them too.
+            $cat = $p->category;
+            if ($cat && ! isset($categories[$cat])) {
                 $categories[$cat] = [
                     'name' => $cat,
-                    'img' => $categoryImages[$cat] ?? $p->image_path ?? '',
+                    'img' => $categoryImages[$cat] ?? '',
+                ];
+            }
+        }
+        foreach ($declared as $cat) {
+            if ($cat !== '' && ! isset($categories[$cat])) {
+                $categories[$cat] = [
+                    'name' => $cat,
+                    'img' => $categoryImages[$cat] ?? '',
                 ];
             }
         }

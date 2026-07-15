@@ -60,8 +60,21 @@
 
         {{-- ============ Promo Banners ============ --}}
         <section data-panel="banners" class="{{ $panel }}">
-            <h2 class="text-lg font-bold text-navy-800">Promotional Banners</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The big rotating carousel. Best image size: 1920 × 800 px (2.4:1).</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">Promotional Banners</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The big rotating carousel. Best image size: 1920 × 800 px (2.4:1).</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="bannersVisible" value="0">
+                        <input type="checkbox" name="bannersVisible" value="1" class="peer sr-only" @checked($content['bannersVisible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
             <div data-repeater>
                 <div data-rows class="grid gap-4 xl:grid-cols-2">
                     @foreach(array_values((array) ($content['banners'] ?? [])) as $i => $item)
@@ -75,8 +88,21 @@
 
         {{-- ============ What's New ============ --}}
         <section data-panel="whatsNew" class="{{ $panel }}">
-            <h2 class="text-lg font-bold text-navy-800">What's New</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">Heading of the “What’s New?” section. The product cards come from the live catalogue automatically — set a product’s Status to “New” in the Products section to feature it here.</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">What's New</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">Heading of the “What’s New?” section. The product cards come from the live catalogue automatically — set a product’s Status to “New” in the Products section to feature it here.</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="whatsNew[visible]" value="0">
+                        <input type="checkbox" name="whatsNew[visible]" value="1" class="peer sr-only" @checked($content['whatsNew']['visible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
             <div class="space-y-3">
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
@@ -95,9 +121,22 @@
 
         {{-- ============ Custom Cake ============ --}}
         <section data-panel="customCake" class="{{ $panel }}">
-            <h2 class="text-lg font-bold text-navy-800">Custom Cake Banner</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The big orange promo banner on the landing page. Clicking the banner opens the menu; the “Order a custom cake” button is shown/hidden in the Buttons section (promoOrder). Cake image: a transparent PNG works best, around 1200 × 900 px.</p>
             @php($cc = (array) ($content['customCake'] ?? []))
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">Custom Cake Banner</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The big orange promo banner on the landing page. Clicking the banner opens the menu; the “Order a custom cake” button is shown/hidden in the Buttons section (promoOrder). Cake image: a transparent PNG works best, around 1200 × 900 px.</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="customCake[visible]" value="0">
+                        <input type="checkbox" name="customCake[visible]" value="1" class="peer sr-only" @checked($cc['visible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
             <div class="space-y-3">
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
@@ -253,11 +292,58 @@
             </div>
         </section>
 
+        {{-- ============ Store Locator ============ --}}
+        <section data-panel="storeLocator" class="{{ $panel }}">
+            @php($sl = (array) ($content['storeLocator'] ?? []))
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">Store Locator</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The dark “stores near you” strip on the landing page. The “Find a store” button itself is shown/hidden in the Buttons section (storeLocatorFind).</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="storeLocator[visible]" value="0">
+                        <input type="checkbox" name="storeLocator[visible]" value="1" class="peer sr-only" @checked($sl['visible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
+            <div class="space-y-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                    <input type="text" name="storeLocator[title]" value="{{ $sl['title'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                    <textarea name="storeLocator[subtitle]" rows="3" class="{{ $input }}">{{ $sl['subtitle'] ?? '' }}</textarea>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Search placeholder</span>
+                    <input type="text" name="storeLocator[placeholder]" value="{{ $sl['placeholder'] ?? '' }}" class="{{ $input }}">
+                </label>
+            </div>
+        </section>
+
         {{-- ============ Sweet Deals (newsletter) ============ --}}
         <section data-panel="newsletter" class="{{ $panel }}">
-            <h2 class="text-lg font-bold text-navy-800">Sweet Deals (Newsletter)</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The “Get sweet deals in your inbox” newsletter section near the bottom of the landing page. The Subscribe button is shown/hidden in the Buttons section (newsletterSubscribe).</p>
             @php($nl = (array) ($content['newsletter'] ?? []))
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-navy-800">Sweet Deals (Newsletter)</h2>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The “Get sweet deals in your inbox” newsletter section near the bottom of the landing page. The Subscribe button is shown/hidden in the Buttons section (newsletterSubscribe).</p>
+                </div>
+                <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                    <span class="text-xs font-medium text-slate-500">Show on page</span>
+                    <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                        <input type="hidden" name="newsletter[visible]" value="0">
+                        <input type="checkbox" name="newsletter[visible]" value="1" class="peer sr-only" @checked($nl['visible'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
             <div class="space-y-3">
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
@@ -584,8 +670,22 @@
 
     {{-- ============ Menu Categories (own forms — products table + blob) ============ --}}
     <section data-panel="menuCategories" class="{{ $panel }}">
-        <h2 class="text-lg font-bold text-navy-800">Menu Categories</h2>
-        <p class="mb-5 mt-0.5 text-sm text-slate-500">Categories are derived from products. Rename to merge two categories into one, or delete a category and move its products elsewhere — those apply immediately. Images and newly added categories are saved with “Save categories”.</p>
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-bold text-navy-800">Menu Categories</h2>
+                <p class="mb-5 mt-0.5 text-sm text-slate-500">Categories are derived from products. Rename to merge two categories into one, or delete a category and move its products elsewhere — those apply immediately. Images, newly added categories, and the visibility toggle are saved with the “Save changes” button above.</p>
+            </div>
+            {{-- Hides the landing "Shop by category" grid; saved via the header Save changes. --}}
+            <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                <span class="text-xs font-medium text-slate-500">Show on landing</span>
+                <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                    <input type="hidden" name="categoriesVisible" value="0" form="categories-form">
+                    <input type="checkbox" name="categoriesVisible" value="1" form="categories-form" class="peer sr-only" @checked($content['categoriesVisible'] ?? true)>
+                    <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                    <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                </span>
+            </label>
+        </div>
 
         <datalist id="bw-categories">
             @foreach($categories as $cat)
@@ -627,9 +727,9 @@
                             </div>
 
                             <div class="mt-3">
-                                @include('admin.content._image-field', ['name' => "menuCategoryImages[$cat]", 'value' => $categoryImages[$cat] ?? '', 'fieldLabel' => 'Category image (optional)'])
+                                @include('admin.content._image-field', ['name' => "menuCategoryImages[$cat]", 'value' => $categoryImages[$cat] ?? '', 'fieldLabel' => 'Category image'])
                                 <p class="mt-1 text-[0.7rem] text-slate-400">
-                                    Shown as the category badge on the menu. Leave empty to use the first product’s photo. Square works best (~400 × 400 px).
+                                    The badge shown on the menu sidebar and the landing category grid — this is the only source; without one the category shows “no image”. Square works best (~400 × 400 px).
                                 </p>
                             </div>
 
@@ -666,9 +766,9 @@
                 </div>
             @endif
 
-            <button type="submit" class="mt-5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                Save categories
-            </button>
+            {{-- Saved via the header "Save changes" button — editing anything in
+                 this form points the header pair at #categories-form (see the
+                 categories-form dirty watcher in the scripts section). --}}
         </form>
 
         {{-- Per-category rename/delete targets (controls above attach via form=""). --}}
@@ -778,6 +878,37 @@
         // Maintenance headline/message only matter while maintenance mode is on.
         document.getElementById('maintenance-toggle').addEventListener('change', (e) => {
             document.getElementById('maintenance-fields').classList.toggle('hidden', !e.target.checked)
+        })
+
+        // ---- Menu Categories saves via the header pair too -------------------
+        // The categories tab is its own form (images/added names/visibility →
+        // POST admin.content.categories). Editing it reveals the same header
+        // Save/Reset used by the main form and points Save at #categories-form;
+        // editing the main form points it back. Last-touched form wins, which
+        // matches "the save button saves what I'm editing".
+        document.addEventListener('DOMContentLoaded', () => {
+            const save = document.querySelector('[data-save-button]')
+            const reset = document.querySelector('[data-reset-button]')
+            const categoriesForm = document.getElementById('categories-form')
+            if (!save || !categoriesForm) return
+
+            const categoriesDirty = (e) => {
+                if (e && e.target.closest('[data-no-dirty]')) return
+                save.setAttribute('form', 'categories-form')
+                save.classList.remove('hidden')
+                reset.classList.remove('hidden')
+            }
+            categoriesForm.addEventListener('input', categoriesDirty)
+            categoriesForm.addEventListener('change', categoriesDirty)
+            // Controls attached from outside the form (the tab-header
+            // "Show on landing" toggle uses form="categories-form").
+            document.querySelectorAll('[form="categories-form"]').forEach((el) => {
+                if (el.type === 'checkbox' || el.tagName === 'INPUT') el.addEventListener('change', categoriesDirty)
+            })
+
+            const mainDirty = () => save.setAttribute('form', 'content-form')
+            contentForm.addEventListener('input', mainDirty)
+            contentForm.addEventListener('change', mainDirty)
         })
     </script>
     @include('admin.content._form-scripts')

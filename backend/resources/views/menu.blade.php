@@ -18,6 +18,7 @@
     <script id="menu-products-data" type="application/json">{!! $products->toJson() !!}</script>
     <script id="menu-promo-data" type="application/json">{!! json_encode($menuPromo) !!}</script>
     <script id="menu-category-images-data" type="application/json">{!! json_encode($categoryImages) !!}</script>
+    <script id="menu-declared-categories-data" type="application/json">{!! json_encode($declaredCategories) !!}</script>
 
     <div class="flex min-h-screen flex-col lg:flex-row">
         {{-- categories sidebar --}}
@@ -183,6 +184,7 @@
         const PRODUCTS = JSON.parse(document.getElementById('menu-products-data').textContent || '[]');
         const MENU_PROMO = JSON.parse(document.getElementById('menu-promo-data').textContent || '{}');
         const CATEGORY_IMAGES = JSON.parse(document.getElementById('menu-category-images-data').textContent || '{}');
+        const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
 
         // Editor-controlled "What's New" promo slides (content.menuPromo) —
@@ -217,19 +219,23 @@
         // ---- categories ----
         // Smart tabs ("What's New"/"Best Sellers") show only when matching
         // products (or, for What's New, an active promo) exist; real
-        // categories use an editor-set badge image (content.menuCategoryImages)
-        // when present, else the first product photo in that category. Also
+        // categories use the editor-set badge image only (Site Editor →
+        // Menu Categories is the single source — no product-photo fallback,
+        // so what editors see there is exactly what renders here). Also
         // keeps a plain "All" tab (not present in the original nav) so the
         // full catalogue stays reachable — see Menu.jsx's `categories` memo.
         function categories() {
-            const seen = new Map();
-            PRODUCTS.forEach(p => { if (p.category && !seen.has(p.category)) seen.set(p.category, p.image_path); });
+            const seen = new Set();
+            PRODUCTS.forEach(p => { if (p.category) seen.add(p.category); });
+            // Declared-but-still-empty categories (Site Editor) list too, so
+            // a just-added category shows before its first product exists.
+            DECLARED_CATEGORIES.forEach(name => seen.add(name));
             const hasNew = PRODUCTS.some(p => p.status === 'new');
             const hasBest = PRODUCTS.some(p => p.status === 'best_seller');
             const cats = [{ name: 'All' }];
             if (hasNew || PROMO_ACTIVE) cats.push({ name: "What's New", icon: 'new' });
             if (hasBest) cats.push({ name: 'Best Sellers', icon: 'best' });
-            seen.forEach((img, name) => cats.push({ name, img: CATEGORY_IMAGES[name] || img }));
+            seen.forEach(name => cats.push({ name, img: CATEGORY_IMAGES[name] || '' }));
             return cats;
         }
 

@@ -158,9 +158,6 @@
                         <a href="{{ $accountRoute }}" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
-                        <button type="button" onclick="showLogoutConfirm()" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">
-                            Sign Out
-                        </button>
                     @else
                         <a href="{{ route('login') }}" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">Sign In</a>
                     @endif
@@ -192,9 +189,6 @@
                         <a href="{{ $accountRoute }}" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
-                        <button type="button" onclick="showLogoutConfirm()" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">
-                            Sign Out
-                        </button>
                     @else
                         <a href="{{ route('login') }}" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">Sign In</a>
                     @endif
@@ -208,7 +202,8 @@
             </div>
         </header>
 
-        {{-- Hero --}}
+        {{-- Hero (Site Editor toggle; absent = shown) --}}
+        @if($content['bannersVisible'] ?? true)
         <section id="home" class="bg-navy-900">
             <div id="hero-carousel" class="group relative">
                 {{-- skip banners the editor hasn't given an image yet — an empty
@@ -223,9 +218,11 @@
                 @endforeach
             </div>
         </section>
+        @endif
 
-        {{-- What's New — products with status "new" (hidden when there are none) --}}
-        @if(!empty($whatsNewProducts))
+        {{-- What's New — products with status "new" (hidden when there are
+             none, or via the Site Editor toggle) --}}
+        @if(($content['whatsNew']['visible'] ?? true) && !empty($whatsNewProducts))
             <section id="whats-new" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
                 <div class="mx-auto max-w-2xl text-center" data-reveal>
                     <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
@@ -278,7 +275,9 @@
             </div>
         </section>
 
-        {{-- Categories: distinct product categories (see LandingController) --}}
+        {{-- Categories: distinct product categories (see LandingController;
+             Site Editor toggle saved by the Menu Categories tab) --}}
+        @if($content['categoriesVisible'] ?? true)
         <section id="categories" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center" data-reveal>
                 <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Shop by category</span>
@@ -288,7 +287,7 @@
             <div class="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
                 @foreach($categories as $c)
                     <div data-reveal data-reveal-delay="{{ $loop->index * 80 }}">
-                    <a href="#best-sellers" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
+                    <a href="/menu?category={{ urlencode($c['name']) }}" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
                         <span class="h-28 w-28 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-100 transition group-hover:ring-brand-200">
                             @if(!empty($c['img']))
                                 <img src="{{ $c['img'] }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-300 group-hover:scale-110">
@@ -302,6 +301,7 @@
                 @endforeach
             </div>
         </section>
+        @endif
 
         {{-- Custom cake promo banner --}}
         @php
@@ -312,6 +312,7 @@
                 : 'window.location.href='.json_encode($bannerLink);
             $promoState = $btn('promoOrder');
         @endphp
+        @if($cc['visible'] ?? true)
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6" data-reveal>
             <div id="custom-cake" role="button" tabindex="0"
                 onclick="{{ $bannerJs }}"
@@ -345,9 +346,12 @@
                 </div>
             </div>
         </section>
+        @endif
 
-        {{-- Store locator teaser (static — the real MapLibre locator lives on /stores) --}}
-        @php $storeState = $btn('storeLocatorFind'); @endphp
+        {{-- Store locator teaser (Site Editor → Store Locator; the real
+             MapLibre locator lives on /stores) --}}
+        @php $sl = $content['storeLocator']; $storeState = $btn('storeLocatorFind'); @endphp
+        @if($sl['visible'] ?? true)
         <section id="stores" class="bg-navy-900 py-16">
             <div class="mx-auto max-w-3xl px-4 text-center sm:px-6" data-reveal>
                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
@@ -358,12 +362,14 @@
                         <path d="M9 20v-5h6v5" />
                     </svg>
                 </span>
-                <h2 class="mt-5 text-3xl font-bold text-white sm:text-4xl">60+ stores, always near you</h2>
-                <p class="mt-3 text-sm text-navy-50/80">Find your nearest branch or simply order online for delivery and pickup.</p>
+                <h2 class="mt-5 text-3xl font-bold text-white sm:text-4xl">{{ $sl['title'] ?? '' }}</h2>
+                @if(!empty($sl['subtitle']))
+                    <p class="mt-3 text-sm text-navy-50/80">{{ $sl['subtitle'] }}</p>
+                @endif
                 @if($storeState !== 'off')
                     @php $storeOff = $storeState === 'disabled'; @endphp
                     <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row {{ $storeOff ? 'cursor-not-allowed opacity-60' : '' }}">
-                        <input type="text" placeholder="Enter your city or area" @if($storeOff) disabled @endif
+                        <input type="text" placeholder="{{ $sl['placeholder'] ?? 'Enter your city or area' }}" @if($storeOff) disabled @endif
                             class="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed sm:w-72">
                         <a href="/stores" @if($storeOff) aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
                             class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
@@ -373,9 +379,11 @@
                 @endif
             </div>
         </section>
+        @endif
 
         {{-- Newsletter — a no-op form in the original SPA too (preventDefault only, no submission) --}}
         @php $n = $content['newsletter']; $newsState = $btn('newsletterSubscribe'); @endphp
+        @if($n['visible'] ?? true)
         <section id="newsletter" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12" data-reveal>
                 <h2 class="text-2xl font-bold text-navy-800 sm:text-3xl">{{ $n['title'] }}</h2>
@@ -395,6 +403,7 @@
                 @endif
             </div>
         </section>
+        @endif
 
         {{-- Footer --}}
         @include('partials.site-footer', ['f' => $content['footer'], 'social' => $content['social'] ?? []])
@@ -434,37 +443,8 @@
         </div>
     </div>
 
-    @if($user)
-        {{-- Sign-out confirmation (replaces the old React ConfirmModal with a plain hidden dialog) --}}
-        <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
-        <div id="logout-confirm-modal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" onclick="hideLogoutConfirm(event)" role="dialog" aria-modal="true" aria-label="Log out?">
-            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onclick="event.stopPropagation()">
-                <h3 class="text-lg font-bold text-navy-800">Log out?</h3>
-                <p class="mt-2 text-sm leading-relaxed text-slate-500">You'll be signed out of your account.</p>
-                <div class="mt-6 flex justify-end gap-3">
-                    <button type="button" onclick="hideLogoutConfirm()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="document.getElementById('logout-form').submit()" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                        Log out
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <script>
     (function () {
-        window.showLogoutConfirm = function () {
-            var el = document.getElementById('logout-confirm-modal');
-            if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
-        };
-        window.hideLogoutConfirm = function (e) {
-            if (e && e.target !== e.currentTarget) return;
-            var el = document.getElementById('logout-confirm-modal');
-            if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
-        };
-
         // Hero carousel: auto cross-fade, pause on hover, honors reduced motion
         // (mirrors the old dependency-free Carousel component, arrows/dots off).
         var carousel = document.getElementById('hero-carousel');
@@ -560,8 +540,6 @@
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
             if (modal && !modal.classList.contains('hidden')) window.closeProductModal();
-            var lc = document.getElementById('logout-confirm-modal');
-            if (lc && !lc.classList.contains('hidden')) window.hideLogoutConfirm();
         });
 
         // Reveal-on-scroll (port of the SPA's Reveal.jsx): fade + slide

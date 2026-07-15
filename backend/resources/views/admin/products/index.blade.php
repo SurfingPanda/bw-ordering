@@ -70,14 +70,14 @@
                             <option value="{{ $c }}">{{ $c }}</option>
                         @endforeach
                     </select>
-                    {{-- opens the Categories modal (add/delete the declared list;
-                         delete reassigns that category's products to none) --}}
-                    <button type="button" id="category-manage" data-no-dirty title="Edit categories" aria-label="Edit categories"
+                    {{-- categories are managed in one place: the Menu
+                         Categories tab (add, photo, rename/merge, delete) --}}
+                    <a href="{{ route('admin.content', ['section' => 'menuCategories']) }}" title="Edit categories" aria-label="Edit categories"
                         class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-navy-700 transition hover:border-brand-400 hover:text-brand-600">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
                         </svg>
-                    </button>
+                    </a>
                 </div>
             </div>
             <p id="product-search-count" class="mb-3 hidden text-xs text-slate-500"></p>
@@ -96,52 +96,6 @@
             </div>
         </div>
     </form>
-
-    {{-- Categories manager — opened by the toolbar's Edit button. Add or
-         delete categories in one place. Outside #products-form so its inputs
-         never submit with (or dirty) the products grid. Add/delete each POST
-         and reload, so the list is always server-rendered fresh. --}}
-    <div id="category-manage-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-navy-900/50" data-cat-modal-close></div>
-        <div class="relative flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-5 shadow-xl">
-            <div class="mb-1 flex items-center justify-between">
-                <h3 class="text-base font-bold text-navy-800">Categories</h3>
-                <button type="button" data-cat-modal-close aria-label="Close" class="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-navy-700">✕</button>
-            </div>
-            <p class="mb-3 text-sm text-slate-500">Add or delete the categories used in the product dropdowns and /menu filters.</p>
-            <div class="mb-3 flex gap-2">
-                <input type="text" id="category-add-name" maxlength="50" placeholder="New category name…" class="{{ $input }}">
-                <button type="button" id="category-add-confirm" class="shrink-0 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700">Add</button>
-            </div>
-            <ul class="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
-                @forelse($categoryOptions as $c)
-                    <li class="flex items-center justify-between gap-2 py-2">
-                        <span class="truncate text-sm font-medium text-navy-800">{{ $c }}</span>
-                        <button type="button" data-category-remove="{{ $c }}" title="Delete {{ $c }}" aria-label="Delete {{ $c }}"
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50">
-                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                        </button>
-                    </li>
-                @empty
-                    <li class="py-2 text-sm text-slate-500">No categories yet — add one above.</li>
-                @endforelse
-            </ul>
-        </div>
-    </div>
-
-    <div id="category-delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-navy-900/50" data-cat-modal-close></div>
-        <div class="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <h3 class="text-base font-bold text-navy-800">Delete category</h3>
-            <p class="mb-4 mt-0.5 text-sm text-slate-500">Delete <span data-category-name class="font-semibold text-navy-800"></span>? Its products keep existing but lose the category.</p>
-            <div class="flex justify-end gap-2">
-                <button type="button" data-cat-modal-close class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-navy-700 transition hover:bg-slate-50">Cancel</button>
-                <button type="button" id="category-delete-confirm" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">Delete</button>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @section('scripts')
@@ -222,7 +176,6 @@
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return
             productsForm.querySelectorAll('[data-modal]:not(.hidden)').forEach(closeModal)
-            closeCategoryModals()
         })
 
         // ---- search + status/category filters -------------------------------
@@ -266,78 +219,6 @@
         categoryFilter.addEventListener('change', applyProductSearch)
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') e.preventDefault() // don't submit the form
-        })
-
-        // ---- quick category add / delete ------------------------------------
-        // Both post via a detached form (this page's markup already lives
-        // inside #products-form; forms can't nest). Delete uses the existing
-        // Menu Categories endpoint, so its products are reassigned safely.
-        function postTo(action, fields) {
-            const form = document.createElement('form')
-            form.method = 'POST'
-            form.action = action
-            Object.entries(fields).forEach(([name, value]) => {
-                const input = document.createElement('input')
-                input.type = 'hidden'
-                input.name = name
-                input.value = value
-                form.appendChild(input)
-            })
-            document.body.appendChild(form)
-            form.submit()
-        }
-
-        const categoryManageModal = document.getElementById('category-manage-modal')
-        const categoryAddName = document.getElementById('category-add-name')
-        const categoryDeleteModal = document.getElementById('category-delete-modal')
-        const categoryModals = [categoryManageModal, categoryDeleteModal]
-        let categoryToDelete = ''
-
-        function showCategoryModal(modal) {
-            closeCategoryModals()
-            modal.classList.remove('hidden')
-            modal.classList.add('flex')
-        }
-
-        function closeCategoryModals() {
-            categoryModals.forEach((m) => { m.classList.add('hidden'); m.classList.remove('flex') })
-        }
-
-        document.getElementById('category-manage').addEventListener('click', () => {
-            categoryAddName.value = ''
-            showCategoryModal(categoryManageModal)
-            categoryAddName.focus()
-        })
-
-        function confirmAddCategory() {
-            const name = categoryAddName.value.trim()
-            if (!name) { categoryAddName.focus(); return }
-            postTo('{{ route('admin.content.categories.add') }}', {
-                _token: '{{ csrf_token() }}',
-                name,
-            })
-        }
-        document.getElementById('category-add-confirm').addEventListener('click', confirmAddCategory)
-        categoryAddName.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); confirmAddCategory() }
-        })
-
-        document.getElementById('category-delete-confirm').addEventListener('click', () => {
-            if (!categoryToDelete) return
-            postTo('{{ url('admin/content/categories') }}/' + encodeURIComponent(categoryToDelete) + '/delete', {
-                _token: '{{ csrf_token() }}',
-            })
-        })
-
-        document.addEventListener('click', (e) => {
-            const remove = e.target.closest('[data-category-remove]')
-            if (remove) {
-                categoryToDelete = remove.dataset.categoryRemove
-                categoryDeleteModal.querySelector('[data-category-name]').textContent = categoryToDelete
-                showCategoryModal(categoryDeleteModal)
-                return
-            }
-            if (e.target.closest('[data-cat-modal-close]')) closeCategoryModals()
         })
 
         // Keep the summary line in sync while editing in the popup.
