@@ -19,11 +19,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $products = Cache::remember('products.index', now()->addMinutes(10), fn () =>
-            Product::whereNull('archived_at')
-                ->orderBy('category')
-                ->orderBy('name')
-                ->get());
+        $products = $this->cachedList();
 
         $res = response()->json($products);
 
@@ -32,6 +28,20 @@ class ProductController extends Controller
         }
 
         return $res;
+    }
+
+    /**
+     * The same cached, non-archived product list used by index() above —
+     * shared with the Blade menu/checkout/my-orders pages (MenuController,
+     * CheckoutController, MyOrdersController) so they read from the exact
+     * same cache key and get busted by sync() below the same way.
+     */
+    public function cachedList()
+    {
+        return Cache::remember('products.index', now()->addMinutes(10), fn () => Product::whereNull('archived_at')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get());
     }
 
     /**

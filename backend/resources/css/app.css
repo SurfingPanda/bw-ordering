@@ -6,6 +6,103 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --font-script: 'Pacifico', cursive;
+    --font-brand: 'Fredoka', ui-sans-serif, system-ui, sans-serif;
+
+    --color-navy-50: #eef3fb;
+    --color-navy-100: #dde7f5;
+    --color-navy-700: #173a6a;
+    --color-navy-800: #102a4f;
+    --color-navy-900: #0b1f3d;
+
+    --color-brand-50: #fef4e9;
+    --color-brand-100: #fde4cc;
+    --color-brand-200: #fbcd9f;
+    --color-brand-400: #f59b3f;
+    --color-brand-500: #ef7d1a;
+    --color-brand-600: #e06f10;
+}
+
+/* ---- "Under construction" (maintenance) page animations — ported from the
+   old SPA's index.css (see git show 083bc1f:frontend/src/index.css). ---- */
+
+@keyframes pop-in {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Gentle continuous bob so the logo feels alive. */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* Animated backdrop: the base gradient slowly pans while two soft
+   brand-colored glows drift behind the content. */
+@keyframes bg-pan {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+.animate-bg-pan {
+    background: linear-gradient(125deg, #0b1f3d 0%, #102a4f 38%, #0e2547 62%, #0b1f3d 100%);
+    background-size: 220% 220%;
+    animation: bg-pan 14s ease-in-out infinite;
+}
+
+@keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(45px, -30px) scale(1.12); }
+    66% { transform: translate(-30px, 25px) scale(0.94); }
+}
+.animate-drift { animation: drift 16s ease-in-out infinite; }
+
+@keyframes drift-slow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-55px, 35px) scale(1.18); }
+}
+.animate-drift-slow { animation: drift-slow 20s ease-in-out infinite; }
+
+/* Bakery treats that gently float in the backdrop. Per-item duration/delay
+   are set inline for variety. */
+@keyframes bakery-float {
+    0%, 100% { transform: translateY(0) rotate(-8deg); }
+    50% { transform: translateY(-26px) rotate(8deg); }
+}
+.animate-bakery-float { animation: bakery-float 6s ease-in-out infinite; }
+
+/* Baking gag: the logo breathes with a soft warm glow while steam curls up. */
+@keyframes bake-glow {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 6px rgba(255, 176, 87, 0.25));
+    }
+    50% {
+        transform: scale(1.03);
+        filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 24px rgba(255, 176, 87, 0.55));
+    }
+}
+.animate-bake { animation: bake-glow 3.2s ease-in-out infinite; }
+
+/* Soft playful tilt for the 🚧 barrier. */
+@keyframes wiggle {
+    0%, 100% { transform: rotate(-6deg); }
+    50% { transform: rotate(6deg); }
+}
+.animate-wiggle { animation: wiggle 1.8s ease-in-out infinite; transform-origin: bottom center; }
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-pop-in,
+    .animate-float,
+    .animate-wiggle,
+    .animate-bake,
+    .animate-bg-pan,
+    .animate-drift,
+    .animate-drift-slow,
+    .animate-bakery-float {
+        animation: none;
+    }
 }

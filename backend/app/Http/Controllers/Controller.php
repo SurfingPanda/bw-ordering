@@ -13,6 +13,41 @@ abstract class Controller
         return $request->attributes->get('supabase_user');
     }
 
+    /**
+     * Same as supabaseUser(), but for public Blade pages that are not gated by
+     * the `supabase.session` middleware (e.g. /menu) — reads whatever session
+     * the login flow may have already established, without redirecting a
+     * guest to /login. Falls back to the request attribute first so it also
+     * works transparently on routes that *are* behind the middleware.
+     */
+    protected function optionalSupabaseUser(Request $request): ?array
+    {
+        return $request->attributes->get('supabase_user') ?? $request->session()->get('supabase_user');
+    }
+
+    /**
+     * The Site Editor's live-preview draft for a public page, or null.
+     *
+     * When an editor loads a previewable page with `?preview=1`, return the
+     * unsaved CMS blob they staged via Admin\SiteContentController::preview()
+     * (kept in their own session) so the preview iframe reflects edits before
+     * they're saved. Returns null for real visitors: it requires both the
+     * preview flag and an editor session, so normal page loads are untouched.
+     */
+    protected function previewDraft(Request $request): ?array
+    {
+        if (! $request->boolean('preview')) {
+            return null;
+        }
+        $email = $this->optionalSupabaseUser($request)['email'] ?? null;
+        if (! $this->isEditor($email)) {
+            return null;
+        }
+        $draft = $request->session()->get('content_draft');
+
+        return is_array($draft) ? $draft : null;
+    }
+
     /** True if this email is hard-coded into an env allowlist (the bootstrap layer). */
     private function inEnvList(?string $email, string $key): bool
     {
@@ -44,9 +79,6 @@ abstract class Controller
         if ($this->inEnvList($email, 'editor_emails')) {
             return 'editor';
         }
-        if ($this->inEnvList($email, 'hr_emails')) {
-            return 'hr';
-        }
 
         if ($dbRoles !== null) {
             return $dbRoles[strtolower($email)] ?? null;
@@ -73,13 +105,6 @@ abstract class Controller
         return $role === 'admin' || $role === 'editor';
     }
 
-    protected function isHr(?string $email): bool
-    {
-        $role = $this->effectiveRole($email);
-
-        return $role === 'admin' || $role === 'hr';
-    }
-
     protected function isCashier(?string $email): bool
     {
         return $this->effectiveRole($email) === 'cashier';
@@ -89,5 +114,39 @@ abstract class Controller
     protected function isStaff(?string $email): bool
     {
         return $this->isAdmin($email) || $this->isCashier($email);
+    }
+
+    /**
+     * Admin sections each role can open by default. Admins can grant extra
+     * sections per account from Users & Roles (user_roles.permissions);
+     * canAccess() combines both. Section keys match UserRole::SECTIONS.
+     */
+    public const ROLE_SECTIONS = [
+        'editor' => ['content', 'products', 'stores', 'vouchers'],
+        'cashier' => ['orders', 'custom-cakes'],
+    ];
+
+    /** True if this account may open the given admin section. */
+    protected function canAccess(?string $email, string $section): bool
+    {
+        $role = $this->effectiveRole($email);
+        if ($role === 'admin') {
+            return true;
+        }
+        if (in_array($section, self::ROLE_SECTIONS[$role] ?? [], true)) {
+            return true;
+        }
+
+        return $email !== null && in_array($section, UserRole::grantsFor($email), true);
+    }
+
+    /** Which items of the Site Editor sidebar's Admin group to show. */
+    protected function editorNavAccess(?string $email): array
+    {
+        return [
+            'users' => $this->isAdmin($email),
+            'orders' => $this->canAccess($email, 'orders'),
+            'customCakes' => $this->canAccess($email, 'custom-cakes'),
+        ];
     }
 }

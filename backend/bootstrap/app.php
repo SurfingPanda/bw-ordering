@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'supabase' => \App\Http\Middleware\SupabaseAuth::class,
+            'supabase.session' => \App\Http\Middleware\EnsureSupabaseSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

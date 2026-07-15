@@ -17,8 +17,7 @@ class StoreController extends Controller
      */
     public function index(Request $request)
     {
-        $stores = Cache::remember('stores.index', now()->addMinutes(10), fn () =>
-            Store::orderBy('region')->orderBy('name')->get());
+        $stores = $this->cachedList();
 
         $res = response()->json($stores);
 
@@ -27,6 +26,16 @@ class StoreController extends Controller
         }
 
         return $res;
+    }
+
+    /**
+     * The same cached store list used by index() above — shared with the
+     * Blade checkout page's branch picker (CheckoutController) so it reads
+     * from the exact same cache key and is busted by sync() below the same way.
+     */
+    public function cachedList()
+    {
+        return Cache::remember('stores.index', now()->addMinutes(10), fn () => Store::orderBy('region')->orderBy('name')->get());
     }
 
     /**

@@ -1,0 +1,145 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Product;
+use App\Models\SiteContent;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
+
+class AdminSiteContentTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function asUser(string $email): array
+    {
+        return [
+            'supabase_user' => ['id' => 'test-id', 'email' => $email, 'name' => 'Test User'],
+            'supabase_token_expires_at' => now()->addHour()->timestamp,
+        ];
+    }
+
+    public function test_non_editor_is_forbidden(): void
+    {
+        $this->withSession($this->asUser('customer@example.com'))
+            ->get(route('admin.content'))
+            ->assertForbidden();
+    }
+
+    public function test_editor_sees_the_form_prefilled_with_saved_content(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => ['announcement' => 'Fresh pandesal at 6am!']]);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->get(route('admin.content'))
+            ->assertOk()
+            ->assertSee('Fresh pandesal at 6am!')
+            ->assertSee('Save changes');
+    }
+
+    public function test_a_fresh_site_prefills_the_form_with_the_public_page_defaults(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->get(route('admin.content'))
+            ->assertOk()
+            // From LandingController::DEFAULT_CONTENT — the same copy the
+            // public landing renders before anything is saved.
+            ->assertSee('Free delivery on orders over');
+    }
+
+    public function test_saving_merges_managed_keys_and_preserves_unmanaged_ones(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => [
+            'announcement' => 'old',
+            'someFutureSection' => ['hero' => ['title' => 'Bake your career with us']],
+            'bestSellers' => [['name' => 'SPA-era card']],
+        ]]);
+        Cache::put('site-content', 'stale', 600);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->put(route('admin.content.update'), [
+                'section' => 'announcement',
+                'announcement' => 'New announcement',
+                'banners' => [3 => ['img' => '/images/a.png', 'alt' => 'A']],
+                'maintenance' => ['enabled' => '1', 'title' => 'BRB', 'message' => 'Down for a bit'],
+            ])
+            ->assertRedirect(route('admin.content', ['section' => 'announcement']))
+            ->assertSessionHas('status', 'Content saved.');
+
+        $data = SiteContent::find(1)->data;
+        $this->assertSame('New announcement', $data['announcement']);
+        // Repeater rows are reindexed sequentially.
+        $this->assertSame([['img' => '/images/a.png', 'alt' => 'A']], $data['banners']);
+        $this->assertTrue($data['maintenance']['enabled']);
+        // Keys this form doesn't manage survive a save untouched.
+        $this->assertSame('Bake your career with us', $data['someFutureSection']['hero']['title']);
+        $this->assertSame('SPA-era card', $data['bestSellers'][0]['name']);
+        $this->assertNull(Cache::get('site-content'));
+    }
+
+    public function test_package_features_textarea_becomes_an_array(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->put(route('admin.content.update'), [
+                'franchise' => [
+                    'hero' => ['title' => 'Partner with us'],
+                    'packages' => [
+                        ['name' => 'Kiosk', 'features' => "25 sqm\n\nCore menu\n", 'featured' => '1'],
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $pkg = SiteContent::find(1)->data['franchise']['packages'][0];
+        $this->assertSame(['25 sqm', 'Core menu'], $pkg['features']);
+        $this->assertTrue($pkg['featured']);
+    }
+
+    public function test_save_categories_persists_declared_list_and_images(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories'), [
+                'menuCategories' => ['Cakes', ' Seasonal ', ''],
+                'menuCategoryImages' => ['Cakes' => '/images/cakes.png', 'Seasonal' => '  '],
+            ])
+            ->assertRedirect(route('admin.content', ['section' => 'menuCategories']));
+
+        $data = SiteContent::find(1)->data;
+        $this->assertSame(['Cakes', 'Seasonal'], $data['menuCategories']);
+        $this->assertSame(['Cakes' => '/images/cakes.png'], $data['menuCategoryImages']);
+    }
+
+    public function test_renaming_a_category_moves_its_products(): void
+    {
+        Product::factory()->create(['category' => 'Bread']);
+        SiteContent::create(['id' => 1, 'data' => [
+            'menuCategories' => ['Bread'],
+            'menuCategoryImages' => ['Bread' => '/images/bread.png'],
+        ]]);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories.rename', 'Bread'), [
+                'rename_to' => ['Bread' => 'Breads'],
+            ])
+            ->assertRedirect(route('admin.content', ['section' => 'menuCategories']));
+
+        $this->assertSame(1, Product::where('category', 'Breads')->count());
+        $data = SiteContent::find(1)->data;
+        $this->assertSame(['Breads'], $data['menuCategories']);
+        $this->assertSame(['Breads' => '/images/bread.png'], $data['menuCategoryImages']);
+    }
+
+    public function test_deleting_a_category_reassigns_its_products(): void
+    {
+        Product::factory()->create(['category' => 'Bread']);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->post(route('admin.content.categories.delete', 'Bread'), [
+                'delete_to' => ['Bread' => 'Pastries'],
+            ])
+            ->assertRedirect(route('admin.content', ['section' => 'menuCategories']));
+
+        $this->assertSame(1, Product::where('category', 'Pastries')->count());
+    }
+}

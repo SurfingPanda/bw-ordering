@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -37,18 +36,6 @@ Route::get('/site-content', [SiteContentController::class, 'show']);
 // still re-validates server-side).
 Route::get('/vouchers/active', [VoucherController::class, 'active']);
 
-// Careers — applicants are anonymous, so resume upload + submit are public.
-// Rate-limited to curb abuse of the public 8 MB file upload + application spam
-// (10 req/min per IP).
-Route::middleware('throttle:10,1')->group(function () {
-    Route::post('/resumes', [ApplicationController::class, 'uploadResume']);
-    Route::post('/applications', [ApplicationController::class, 'store']);
-});
-// Signed, time-limited resume download (no auth header needed; signature gates).
-Route::get('/resumes/download/{path}', [ApplicationController::class, 'download'])
-    ->name('resumes.download')
-    ->middleware('signed');
-
 // Authenticated via the Supabase access token (see SupabaseAuth middleware).
 Route::middleware('supabase')->group(function () {
     Route::post('/products/sync', [ProductController::class, 'sync']);
@@ -68,9 +55,6 @@ Route::middleware('supabase')->group(function () {
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
     Route::patch('/orders/{id}/payment-status', [OrderController::class, 'updatePaymentStatus']);
-
-    Route::get('/applications', [ApplicationController::class, 'index']);
-    Route::get('/resumes/url', [ApplicationController::class, 'resumeUrl']);
 
     // Current user's effective role (any signed-in user).
     Route::get('/me', [UserController::class, 'me']);

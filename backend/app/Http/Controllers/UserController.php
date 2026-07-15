@@ -25,7 +25,6 @@ class UserController extends Controller
             'role' => $this->effectiveRole($email) ?? 'customer',
             'is_admin' => $this->isAdmin($email),
             'is_editor' => $this->isEditor($email),
-            'is_hr' => $this->isHr($email),
             'is_cashier' => $this->isCashier($email),
         ]);
     }
@@ -39,12 +38,29 @@ class UserController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $result = $this->allUsers();
+        if (isset($result['error'])) {
+            return response()->json(['message' => $result['error']], $result['status']);
+        }
+
+        return response()->json($result['users']);
+    }
+
+    /**
+     * Every Supabase account with its effective role — shared by the JSON
+     * index() above and the Blade admin Users page
+     * (Admin\UserController). Returns ['users' => [...]] on success or
+     * ['error' => message, 'status' => http-ish code] on failure.
+     */
+    public function allUsers(): array
+    {
         $url = rtrim((string) config('supabase.url'), '/');
         $key = (string) config('supabase.service_role_key');
         if (! $url || ! $key) {
-            return response()->json([
-                'message' => 'User listing is unavailable: set SUPABASE_SERVICE_ROLE_KEY in the backend .env.',
-            ], 503);
+            return [
+                'error' => 'User listing is unavailable: set SUPABASE_SERVICE_ROLE_KEY in the backend .env.',
+                'status' => 503,
+            ];
         }
 
         // DB-assigned roles, keyed by lowercased email, fetched once so the
@@ -65,11 +81,11 @@ class UserController extends Controller
                     'per_page' => 200,
                 ]);
             } catch (\Throwable $e) {
-                return response()->json(['message' => 'Could not reach Supabase: '.$e->getMessage()], 502);
+                return ['error' => 'Could not reach Supabase: '.$e->getMessage(), 'status' => 502];
             }
 
             if ($resp->failed()) {
-                return response()->json(['message' => 'Supabase rejected the request (check the service_role key).'], 502);
+                return ['error' => 'Supabase rejected the request (check the service_role key).', 'status' => 502];
             }
 
             $batch = $resp->json('users') ?? [];
@@ -95,7 +111,7 @@ class UserController extends Controller
             // Supabase returns up to per_page rows; stop when a short page arrives.
         } while (count($batch) === 200 && $page <= 50);
 
-        return response()->json($users);
+        return ['users' => $users];
     }
 
     /**
@@ -108,7 +124,7 @@ class UserController extends Controller
 
         $data = $request->validate([
             'email' => 'required|email',
-            'role' => 'required|in:admin,editor,cashier,hr,customer',
+            'role' => 'required|in:admin,editor,cashier,customer',
         ]);
 
         $email = strtolower($data['email']);
