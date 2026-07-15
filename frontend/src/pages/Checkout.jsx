@@ -1,0 +1,1082 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import QRCode from 'qrcode'
+import { useAuth } from '../context/AuthContext'
+import api from '../lib/api'
+import { createOrder, fetchOrder, fetchPaymentConfig, payOrder } from '../lib/orders'
+import { fetchActiveVouchers } from '../lib/vouchers'
+import { fetchMenuProducts, getCachedContent, getSiteContent } from '../lib/content'
+import { buildQrphPayload } from '../lib/qrph'
+
+// Multi-section checkout page reached from the Menu cart ("Proceed to
+// Checkout"). The cart summary is handed over via localStorage (key
+// `bw_checkout`) so it survives a refresh. Totals shown here are a preview;
+// the server recomputes the authoritative totals on createOrder.
+
+const peso = (n) =>
+  `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const VAT_RATE = 0.12
+const DELIVERY_FEE = 79
+const EXPRESS_FEE = 149
+const FREE_DELIVERY_MIN = 1000
+
+const STEPS = ['Cart', 'Delivery', 'Details', 'Payment', 'Confirmation']
+
+function readCheckout() {
+  if (typeof localStorage === 'undefined') return null
+  try {
+    return JSON.parse(localStorage.getItem('bw_checkout') || 'null')
+  } catch {
+    return null
+  }
+}
+
+export default function Checkout() {
+  const { user } = useAuth()
+
+  const [payload] = useState(readCheckout)
+  // Live products fetched on mount so we can re-verify the cart against the
+  // server before the customer pays — prices may have changed since the cart
+  // was filled from the (cached) menu. `null` until loaded.
+  const [liveProducts, setLiveProducts] = useState(null)
+
+  // Reconcile the handed-over cart with live server data: update any changed
+  // prices (so the shown total matches what the server will charge) and flag
+  // items that are no longer available or sold out (the server rejects those).
+  const { items, priceChanges, unavailable } = useMemo(() => {
+    const base = payload?.items || []
+    if (!liveProducts) return { items: base, priceChanges: [], unavailable: [] }
+    const priceChanges = []
+    const unavailable = []
+    const reconciled = base.map((i) => {
+      const live = liveProducts[i.product_id]
+      if (!live) {
+        unavailable.push({ name: i.name, reason: 'no longer available' })
+        return i
+      }
+      if (live.status === 'sold_out') {
+        unavailable.push({ name: i.name, reason: 'sold out' })
+        return i
+      }
+      const livePrice = Number(live.price)
+      if (Number.isFinite(livePrice) && livePrice !== Number(i.price)) {
+        priceChanges.push({ name: i.name, from: Number(i.price), to: livePrice })
+        return { ...i, price: livePrice }
+      }
+      return i
+    })
+    return { items: reconciled, priceChanges, unavailable }
+  }, [payload, liveProducts])
+
+  const hasBlockingIssue = unavailable.length > 0
+
+  const [mode, setMode] = useState('delivery') // 'delivery' | 'pickup'
+  const [speed, setSpeed] = useState('standard') // 'standard' | 'express'
+  // Branches (loaded from the store locator API) and the one the customer picked
+  // to fulfill the order — the branch they pick up from, or the branch that
+  // delivers. `branchStoreId` is a stores.id (number). The list is filtered by
+  // mode below so only branches serving the chosen mode are offered.
+  const [stores, setStores] = useState([])
+  const [branchStoreId, setBranchStoreId] = useState(null)
+  const [branchQuery, setBranchQuery] = useState('')
+  const [name, setName] = useState(user?.name || '')
+  const [phone, setPhone] = useState(user?.contact_number || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [address, setAddress] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const [code, setCode] = useState('')
+  const [voucher, setVoucher] = useState(payload?.voucher ? { code: payload.voucher } : null)
+  const [voucherError, setVoucherError] = useState('')
+  const [voucherDefs, setVoucherDefs] = useState({})
+
+  useEffect(() => {
+    fetchActiveVouchers().then(setVoucherDefs).catch(() => {})
+    getSiteContent()
+      .then((c) => setQrPayload(c?.payment?.qrPayload || ''))
+      .catch(() => {})
+    fetchPaymentConfig().then((cfg) => setPaymongoEnabled(!!cfg.paymongo)).catch(() => {})
+    // Branches for the Pickup option (same source as the store locator).
+    api.get('/stores').then((res) => setStores(res.data || [])).catch(() => {})
+    // Re-verify cart prices/availability against the server before paying.
+    fetchMenuProducts()
+      .then((rows) => {
+        const map = {}
+        rows.forEach((p) => {
+          map[p.id] = p
+        })
+        setLiveProducts(map)
+      })
+      .catch(() => {})
+  }, [])
+
+  // Handle the redirect back from the PayMongo hosted checkout
+  // (/checkout?payment=success|cancelled&order=<id>).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('payment')
+    const orderId = params.get('order')
+    if (!status || !orderId) return
+
+    // Clean the query string so a refresh doesn't re-trigger this.
+    window.history.replaceState({}, '', '/checkout')
+
+    if (status === 'cancelled') {
+      setError('Payment was cancelled. You can try again.')
+      setStep('payment')
+      return
+    }
+
+    setVerifying(true)
+    fetchOrder(orderId)
+      .then((order) => {
+        if (order?.payment_status === 'paid') {
+          try {
+            localStorage.removeItem('bw_checkout')
+            localStorage.removeItem('bw_cart')
+          } catch {
+            // best-effort
+          }
+          setPayMethod(order.payment_method || 'paymongo')
+          setPlacedOrder(order)
+          setStep('done')
+          window.scrollTo({ top: 0 })
+        } else {
+          setError('We couldn’t confirm your payment yet. If you were charged, it will update shortly.')
+          setStep('payment')
+        }
+      })
+      .catch(() => setError('We couldn’t verify your payment. Please check My Orders.'))
+      .finally(() => setVerifying(false))
+  }, [])
+
+  const [placing, setPlacing] = useState(false)
+  const [error, setError] = useState('')
+
+  // Wizard step: 'form' (Delivery + Details) → 'payment' → 'done' (Confirmation).
+  const [step, setStep] = useState('form')
+  const [payMethod, setPayMethod] = useState('qrph') // qrph | cash | paymongo (cash = pickup only)
+  const [paymongoEnabled, setPaymongoEnabled] = useState(false)
+  // True while we verify a payment after returning from the PayMongo hosted page.
+  // Seeded from the URL so the empty-cart guard doesn't flash on return.
+  const [verifying, setVerifying] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('payment') === 'success'
+  })
+  const [qrUrl, setQrUrl] = useState('')
+  // Merchant QR Ph payload set in the Site Editor (Payment QR). Seed from the
+  // localStorage cache for instant paint, then refresh from the API.
+  const [qrPayload, setQrPayload] = useState(() => getCachedContent()?.payment?.qrPayload || '')
+  const [placedOrder, setPlacedOrder] = useState(null)
+  const stepIndex = step === 'payment' ? 3 : step === 'done' ? 4 : 1
+
+  const subtotal = useMemo(
+    () => items.reduce((s, i) => s + Number(i.price || 0) * i.qty, 0),
+    [items],
+  )
+
+  const def = voucher ? voucherDefs[voucher.code] : null
+  let discount = 0
+  if (def?.type === 'percent') discount = (subtotal * def.value) / 100
+  else if (def?.type === 'amount') discount = Math.min(def.value, subtotal)
+
+  const discounted = subtotal - discount
+  const freeDelivery = subtotal >= FREE_DELIVERY_MIN || def?.type === 'freedel'
+  let delivery = 0
+  if (mode === 'delivery') {
+    delivery = speed === 'express' ? EXPRESS_FEE : freeDelivery ? 0 : DELIVERY_FEE
+  }
+  const vat = discounted * VAT_RATE
+  const total = discounted + vat + delivery
+  const points = Math.floor(discounted / 10)
+  const awayFromFree = Math.max(0, FREE_DELIVERY_MIN - subtotal)
+
+  const selectedStore = useMemo(
+    () => stores.find((s) => s.id === branchStoreId) || null,
+    [stores, branchStoreId],
+  )
+  // Only branches that serve the current mode ('both' serves either).
+  const servingStores = useMemo(
+    () => stores.filter((s) => (s.fulfillment || 'both') === 'both' || (s.fulfillment || 'both') === mode),
+    [stores, mode],
+  )
+  const branchMatches = useMemo(() => {
+    const q = branchQuery.trim().toLowerCase()
+    if (!q) return servingStores
+    return servingStores.filter((s) =>
+      [s.name, s.address, s.region].some((f) => (f || '').toLowerCase().includes(q)),
+    )
+  }, [servingStores, branchQuery])
+
+  // If the selected branch no longer serves the chosen mode (e.g. after switching
+  // delivery↔pickup), clear the selection so a stale branch can't be submitted.
+  useEffect(() => {
+    if (branchStoreId && !servingStores.some((s) => s.id === branchStoreId)) {
+      setBranchStoreId(null)
+    }
+  }, [servingStores, branchStoreId])
+
+  // The merchant's QR Ph payload with this order's amount injected (null when no
+  // valid merchant payload is configured → we show a demo QR instead).
+  const merchantPayload = useMemo(
+    () => (qrPayload ? buildQrphPayload(qrPayload, total) : null),
+    [qrPayload, total],
+  )
+
+  // Render the QRPH code for the amount due — the merchant's dynamic QR Ph when
+  // configured, otherwise a generated demo QR.
+  useEffect(() => {
+    if (step !== 'payment' || payMethod !== 'qrph') return
+    const payload = merchantPayload || `QRPH|BW Superbakeshop|PHP ${total.toFixed(2)}`
+    QRCode.toDataURL(payload, { width: 220, margin: 1 })
+      .then(setQrUrl)
+      .catch(() => setQrUrl(''))
+  }, [step, payMethod, total, merchantPayload])
+
+  const applyVoucher = () => {
+    const key = code.trim().toUpperCase()
+    if (!key) return
+    if (!voucherDefs[key]) {
+      setVoucher(null)
+      setVoucherError('Invalid voucher code')
+      return
+    }
+    setVoucher({ code: key })
+    setVoucherError('')
+    setCode('')
+  }
+
+  const goToPayment = () => {
+    if (hasBlockingIssue) {
+      setError('Some items in your cart are no longer available. Please update your cart.')
+      return
+    }
+    if (!name.trim() || !phone.trim() || !email.trim()) {
+      setError('Please fill in your name, mobile number, and email.')
+      return
+    }
+    if (mode === 'delivery' && !address.trim()) {
+      setError('Please enter a delivery address.')
+      return
+    }
+    if (!branchStoreId) {
+      setError(mode === 'pickup' ? 'Please choose a branch to pick up from.' : 'Please choose a branch to deliver from.')
+      return
+    }
+    setError('')
+    setStep('payment')
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+  }
+
+  const placeOrder = async () => {
+    if (hasBlockingIssue) {
+      setError('Some items in your cart are no longer available. Please update your cart.')
+      return
+    }
+    setError('')
+    setPlacing(true)
+    try {
+      const order = await createOrder({
+        items: items.map((i) => ({ product_id: i.product_id, name: i.name, qty: i.qty })),
+        voucher: voucher?.code || null,
+        payment_method: payMethod,
+        delivery_type: mode,
+        delivery_speed: mode === 'delivery' ? speed : null,
+        fulfillment_store_id: branchStoreId,
+        address: mode === 'delivery' ? address : null,
+        phone,
+        notes,
+      })
+
+      // PayMongo: hand off to the hosted checkout. Keep the cart until payment is
+      // confirmed on return, so a cancel can be retried.
+      if (payMethod === 'paymongo') {
+        const url = await payOrder(order.id)
+        if (url) {
+          window.location.href = url
+          return
+        }
+        throw new Error('Could not start the online payment. Please try again.')
+      }
+
+      try {
+        localStorage.removeItem('bw_checkout')
+        localStorage.removeItem('bw_cart')
+      } catch {
+        // best-effort
+      }
+      setPlacedOrder(order)
+      setStep('done')
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+    } catch (err) {
+      setError(err.message || "Sorry, we couldn't place your order.")
+    } finally {
+      setPlacing(false)
+    }
+  }
+
+  // Returning from PayMongo (verifying or showing the confirmation) — don't show
+  // the empty-cart screen even though the cart may already be cleared.
+  const inPaymentReturn = verifying || (step === 'done' && placedOrder)
+
+  if (verifying) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy-50/40 px-4 text-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <p className="text-sm font-medium text-slate-500">Confirming your payment…</p>
+      </div>
+    )
+  }
+
+  if (!items.length && !inPaymentReturn) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy-50/40 px-4 text-center">
+        <p className="text-lg font-semibold text-navy-800">Your cart is empty.</p>
+        <p className="text-sm text-slate-500">Add some treats before checking out.</p>
+        <Link
+          to="/menu"
+          className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+        >
+          Browse the menu
+        </Link>
+      </div>
+    )
+  }
+
+  const itemCount = items.reduce((s, i) => s + i.qty, 0)
+
+  return (
+    <div className="min-h-screen bg-navy-50/40 text-navy-800">
+      {/* stepper bar */}
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <Link to="/" className="shrink-0">
+              <img src="/images/logo (1).png" alt="bw Superbakeshop" className="h-9 w-auto" />
+            </Link>
+            <Stepper current={stepIndex} />
+          </div>
+          {step !== 'done' && (
+            <Link
+              to="/menu"
+              className="flex shrink-0 items-center gap-2 rounded-full bg-navy-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-600"
+            >
+              <CartIcon className="h-4 w-4" />
+              Cart ({itemCount})
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {step === 'done' ? (
+        <Confirmation order={placedOrder} payMethod={payMethod} />
+      ) : (
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_22rem]">
+        {/* ---- left column ---- */}
+        <div className="space-y-6">
+          {/* Cart re-verified against live server prices/availability. */}
+          {priceChanges.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p className="font-semibold">Prices updated</p>
+              <ul className="mt-1 list-disc pl-5 text-amber-700">
+                {priceChanges.map((c) => (
+                  <li key={c.name}>
+                    {c.name}: {peso(c.from)} → <span className="font-semibold">{peso(c.to)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-xs text-amber-600">
+                Your total reflects the latest prices.
+              </p>
+            </div>
+          )}
+          {unavailable.length > 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <p className="font-semibold">Some items are no longer available</p>
+              <ul className="mt-1 list-disc pl-5">
+                {unavailable.map((u) => (
+                  <li key={u.name}>
+                    {u.name} — {u.reason}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/menu" className="mt-1 inline-block text-xs font-semibold underline">
+                Update your cart
+              </Link>
+            </div>
+          )}
+
+          {step === 'form' && (
+          <>
+          {/* 1. Delivery or Pickup */}
+          <Section step="1" title="Delivery or Pickup">
+            <div className="grid grid-cols-2 gap-3">
+              <ModeCard
+                active={mode === 'delivery'}
+                onClick={() => {
+                  setMode('delivery')
+                  setPayMethod((m) => (m === 'cash' ? 'qrph' : m))
+                }}
+                icon="🚚"
+                title="Delivery"
+                subtitle="We'll deliver to your door"
+              />
+              <ModeCard
+                active={mode === 'pickup'}
+                onClick={() => setMode('pickup')}
+                icon="🏪"
+                title="Pickup"
+                subtitle="Pick up at a BW branch"
+              />
+            </div>
+
+            {mode === 'delivery' ? (
+              <>
+                <div className="mt-5">
+                  <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-navy-800">
+                    <PinIcon className="h-4 w-4 text-brand-500" /> Delivery address
+                  </label>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    rows={2}
+                    placeholder="House / unit no., street, barangay, city"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                  />
+                </div>
+
+                <BranchPicker
+                  mode="delivery"
+                  label="Choose a branch to deliver from"
+                  servingStores={servingStores}
+                  matches={branchMatches}
+                  query={branchQuery}
+                  setQuery={setBranchQuery}
+                  value={branchStoreId}
+                  onChange={setBranchStoreId}
+                />
+
+                <p className="mt-5 mb-2 text-sm font-semibold text-navy-800">Delivery option</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <OptionCard
+                    active={speed === 'standard'}
+                    onClick={() => setSpeed('standard')}
+                    title="Standard Delivery"
+                    note="30–45 mins"
+                    price={freeDelivery ? 'FREE' : peso(DELIVERY_FEE)}
+                  />
+                  <OptionCard
+                    active={speed === 'express'}
+                    onClick={() => setSpeed('express')}
+                    title="Express Delivery"
+                    note="15–25 mins"
+                    price={peso(EXPRESS_FEE)}
+                  />
+                </div>
+
+                {awayFromFree > 0 ? (
+                  <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3">
+                    <p className="text-xs font-medium text-green-700">
+                      🎉 You&apos;re only {peso(awayFromFree)} away from FREE delivery!
+                    </p>
+                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-green-100">
+                      <div
+                        className="h-full rounded-full bg-green-500"
+                        style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_MIN) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3">
+                    <p className="text-xs font-medium text-green-700">
+                      🎉 You&apos;ve unlocked FREE standard delivery!
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <BranchPicker
+                mode="pickup"
+                label="Choose a pickup branch"
+                hint="No delivery fee"
+                servingStores={servingStores}
+                matches={branchMatches}
+                query={branchQuery}
+                setQuery={setBranchQuery}
+                value={branchStoreId}
+                onChange={setBranchStoreId}
+              />
+            )}
+          </Section>
+
+          {/* 2. Customer Details */}
+          <Section step="2" title="Customer Details">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldInput label="Full Name" value={name} onChange={setName} placeholder="Juan Dela Cruz" />
+              <FieldInput
+                label="Mobile Number"
+                value={phone}
+                onChange={setPhone}
+                placeholder="0917 123 4567"
+                type="tel"
+              />
+              <div className="sm:col-span-2">
+                <FieldInput
+                  label="Email Address"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="you@email.com"
+                  type="email"
+                />
+              </div>
+            </div>
+          </Section>
+
+          {/* 3. Order Notes */}
+          <Section step="3" title="Order Notes (Optional)">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Any special requests? (e.g. message on the cake, allergies, gate code)"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            />
+          </Section>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={goToPayment}
+            disabled={hasBlockingIssue}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Continue to Payment
+            <ArrowIcon className="h-4 w-4" />
+          </button>
+          <Link to="/menu" className="block text-center text-sm font-medium text-slate-500 hover:text-brand-600">
+            ← Back to Cart
+          </Link>
+          </>
+          )}
+
+          {step === 'payment' && (
+          <>
+          {/* 4. Payment */}
+          <Section step="4" title="Payment Method">
+            <div className="space-y-3">
+              {paymongoEnabled && (
+                <PayCard
+                  active={payMethod === 'paymongo'}
+                  onClick={() => setPayMethod('paymongo')}
+                  icon="💳"
+                  title="Pay online (GCash / Card / Maya)"
+                  subtitle="Secure checkout powered by PayMongo"
+                />
+              )}
+              <PayCard
+                active={payMethod === 'qrph'}
+                onClick={() => setPayMethod('qrph')}
+                icon="🔳"
+                title="QRPH"
+                subtitle="Scan with any bank or e-wallet app"
+              />
+              {mode === 'pickup' && (
+                <PayCard
+                  active={payMethod === 'cash'}
+                  onClick={() => setPayMethod('cash')}
+                  icon="💵"
+                  title="Cash on Pickup"
+                  subtitle="Pay with cash when you pick up your order"
+                />
+              )}
+            </div>
+
+            {payMethod === 'qrph' && (
+              <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
+                {qrUrl ? (
+                  <img src={qrUrl} alt="QRPH payment code" loading="lazy" decoding="async" className="h-48 w-48 rounded-lg" />
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-slate-300">
+                    Generating…
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-navy-800">Scan to pay {peso(total)}</p>
+                <p className="text-xs text-slate-500">
+                  Open your bank or e-wallet app, scan this QRPH code to pay, then place your order.
+                  {!merchantPayload && (
+                    <>
+                      <br />
+                      <span className="text-slate-400">(Demo QR — no real charge is made.)</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {payMethod === 'cash' && (
+              <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
+                💵 Pay with cash when you pick up your order at the store. Please bring the exact
+                amount if possible.
+              </p>
+            )}
+
+            {payMethod === 'paymongo' && (
+              <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
+                💳 You’ll be redirected to PayMongo’s secure checkout to pay {peso(total)} with
+                GCash, a card, or Maya, then brought back here once it’s done.
+              </p>
+            )}
+          </Section>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={placeOrder}
+            disabled={placing || hasBlockingIssue}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {placing
+              ? 'Placing order…'
+              : payMethod === 'qrph'
+                ? `I've Paid · ${peso(total)}`
+                : payMethod === 'paymongo'
+                  ? `Pay online · ${peso(total)}`
+                  : `Place Order · ${peso(total)}`}
+            {!placing && <ArrowIcon className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setStep('form')}
+            className="block w-full text-center text-sm font-medium text-slate-500 hover:text-brand-600"
+          >
+            ← Back to details
+          </button>
+          </>
+          )}
+        </div>
+
+        {/* ---- right column: order summary ---- */}
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-navy-800">Order Summary</h2>
+              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-600">
+                {itemCount} item{itemCount === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <ul className="mt-4 space-y-3">
+              {items.map((i) => (
+                <li key={i.product_id} className="flex items-center gap-3">
+                  <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                    {i.img && <img src={i.img} alt={i.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-navy-800 px-1 text-[0.6rem] font-bold text-white">
+                      {i.qty}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy-800">
+                    {i.name}
+                  </span>
+                  <span className="text-sm font-semibold text-navy-800">
+                    {peso(Number(i.price || 0) * i.qty)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              to="/menu"
+              className="mt-3 inline-block text-xs font-semibold text-brand-600 hover:underline"
+            >
+              + Add more items
+            </Link>
+
+            {selectedStore && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-xs">
+                <PinIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-navy-800">
+                    {mode === 'pickup' ? 'Pickup at' : 'Delivered by'} {selectedStore.name}
+                  </span>
+                  <span className="block text-slate-500">{selectedStore.address}</span>
+                </span>
+              </div>
+            )}
+
+            {/* voucher */}
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <div className="flex gap-2">
+                <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Voucher code"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={applyVoucher}
+                  className="shrink-0 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
+                >
+                  Apply
+                </button>
+              </div>
+              {voucherError && <p className="mt-1 text-xs text-red-600">{voucherError}</p>}
+              {voucher && !voucherError && (
+                <p className="mt-1 text-xs font-medium text-green-600">
+                  🎟️ {voucher.code} applied
+                  <button onClick={() => setVoucher(null)} className="ml-2 text-slate-400 hover:text-slate-600">
+                    remove
+                  </button>
+                </p>
+              )}
+            </div>
+
+            {/* totals */}
+            <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-4 text-sm">
+              <Row label="Subtotal" value={peso(subtotal)} />
+              {discount > 0 && <Row label="Discount" value={`−${peso(discount)}`} green />}
+              <Row
+                label={mode === 'pickup' ? 'Pickup' : 'Delivery Fee'}
+                value={delivery === 0 ? 'FREE' : peso(delivery)}
+                green={delivery === 0}
+              />
+              <Row label="VAT (12%)" value={peso(vat)} />
+              <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-navy-800">
+                <span>Total</span>
+                <span>{peso(total)}</span>
+              </div>
+              <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                ⭐ Earn {points} point{points === 1 ? '' : 's'} with this order!
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* pieces                                                             */
+/* ------------------------------------------------------------------ */
+
+function Stepper({ current }) {
+  return (
+    <ol className="flex items-center gap-1 overflow-x-auto text-xs">
+      {STEPS.map((label, i) => {
+        const done = i < current
+        const active = i === current
+        return (
+          <li key={label} className="flex shrink-0 items-center gap-1">
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-[0.65rem] font-bold ${
+                active
+                  ? 'bg-brand-500 text-white'
+                  : done
+                    ? 'bg-green-500 text-white'
+                    : 'bg-slate-200 text-slate-500'
+              }`}
+            >
+              {done ? '✓' : i + 1}
+            </span>
+            <span
+              className={`hidden font-semibold sm:inline ${
+                active ? 'text-navy-800' : 'text-slate-400'
+              }`}
+            >
+              {label}
+            </span>
+            {i < STEPS.length - 1 && <span className="mx-1 h-px w-4 bg-slate-200 sm:w-6" />}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function PayCard({ active, onClick, icon, title, subtitle }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
+        active ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'
+      }`}
+    >
+      <span className="text-2xl">{icon}</span>
+      <span className="flex-1">
+        <span className="block text-sm font-semibold text-navy-800">{title}</span>
+        <span className="block text-xs text-slate-500">{subtitle}</span>
+      </span>
+      <span
+        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+          active ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300'
+        }`}
+      >
+        {active && <span className="text-[0.6rem]">✓</span>}
+      </span>
+    </button>
+  )
+}
+
+const PAY_LABEL = { qrph: 'QRPH', cash: 'Cash on Pickup', cod: 'Cash on Delivery', gcash: 'GCash' }
+
+function Confirmation({ order, payMethod }) {
+  const ref = order ? String(order.id).slice(0, 8).toUpperCase() : '—'
+  return (
+    <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
+      <div className="rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm sm:p-10">
+        <div className="animate-pop-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg
+            className="h-8 w-8 text-green-600"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path className="animate-check-draw" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 className="mt-5 text-2xl font-bold text-navy-800">Order placed!</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Thank you — we&apos;ve received your order and our bakers are on it. 🧡
+        </p>
+
+        <dl className="mx-auto mt-6 max-w-xs space-y-2 rounded-2xl bg-navy-50/60 p-5 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-slate-500">Order #</dt>
+            <dd className="font-semibold text-navy-800">{ref}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-slate-500">Status</dt>
+            <dd className="font-semibold capitalize text-amber-600">{order?.status || 'pending'}</dd>
+          </div>
+          {order?.fulfillment_branch && (
+            <div className="flex justify-between gap-4">
+              <dt className="shrink-0 text-slate-500">
+                {order.delivery_type === 'pickup' ? 'Pickup' : 'Branch'}
+              </dt>
+              <dd className="text-right font-semibold text-navy-800">{order.fulfillment_branch}</dd>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <dt className="text-slate-500">Payment</dt>
+            <dd className="font-semibold text-navy-800">
+              {PAY_LABEL[payMethod] || 'Cash'}
+              <span className={order?.payment_status === 'paid' ? 'text-green-600' : 'text-amber-600'}>
+                {' · '}
+                {order?.payment_status === 'paid' ? 'Paid' : 'Pay on pickup'}
+              </span>
+            </dd>
+          </div>
+          <div className="flex justify-between border-t border-slate-200 pt-2 text-base">
+            <dt className="font-bold text-navy-800">Total</dt>
+            <dd className="font-bold text-brand-600">{peso(order?.total)}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            to="/my-orders"
+            className="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"
+          >
+            View my orders
+          </Link>
+          <Link
+            to="/menu"
+            className="rounded-full border border-slate-300 px-7 py-3 text-sm font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
+          >
+            Order more
+          </Link>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+function Section({ step, title, children }) {
+  return (
+    <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-navy-800">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-xs text-white">
+          {step}
+        </span>
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+function ModeCard({ active, onClick, icon, title, subtitle }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition ${
+        active
+          ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20'
+          : 'border-slate-200 hover:border-brand-200'
+      }`}
+    >
+      <span className="text-2xl">{icon}</span>
+      <span className="text-sm font-semibold text-navy-800">{title}</span>
+      <span className="text-xs text-slate-500">{subtitle}</span>
+    </button>
+  )
+}
+
+function OptionCard({ active, onClick, title, note, price }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center justify-between rounded-xl border p-3 text-left transition ${
+        active ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'
+      }`}
+    >
+      <span>
+        <span className="block text-sm font-semibold text-navy-800">{title}</span>
+        <span className="block text-xs text-slate-500">{note}</span>
+      </span>
+      <span className="text-sm font-bold text-brand-600">{price}</span>
+    </button>
+  )
+}
+
+function BranchPicker({ mode, label, hint, servingStores, matches, query, setQuery, value, onChange }) {
+  return (
+    <div className="mt-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm font-semibold text-navy-800">
+          <PinIcon className="h-4 w-4 text-brand-500" /> {label}
+        </label>
+        {hint && <span className="text-xs text-slate-400">{hint}</span>}
+      </div>
+
+      {servingStores.length > 5 && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by branch name, area, or city"
+          className="mb-3 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+        />
+      )}
+
+      {servingStores.length === 0 ? (
+        <p className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+          No branches offer {mode} right now. Please try{' '}
+          {mode === 'pickup' ? 'delivery' : 'pickup'} or check the{' '}
+          <Link to="/stores" className="font-semibold text-brand-600 hover:underline">
+            store locator
+          </Link>
+          .
+        </p>
+      ) : matches.length === 0 ? (
+        <p className="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+          No branches match “{query}”.
+        </p>
+      ) : (
+        <div className="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+          {matches.map((s) => (
+            <BranchCard key={s.id} active={value === s.id} onClick={() => onChange(s.id)} store={s} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BranchCard({ active, onClick, store }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
+        active ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'
+      }`}
+    >
+      <PinIcon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? 'text-brand-500' : 'text-slate-400'}`} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-navy-800">{store.name}</span>
+        <span className="block text-xs text-slate-500">{store.address}</span>
+        {store.hours && <span className="mt-0.5 block text-[0.7rem] text-slate-400">🕑 {store.hours}</span>}
+      </span>
+      <span
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+          active ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300'
+        }`}
+      >
+        {active && <span className="text-[0.6rem]">✓</span>}
+      </span>
+    </button>
+  )
+}
+
+function FieldInput({ label, value, onChange, placeholder, type = 'text' }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-500">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      />
+    </label>
+  )
+}
+
+function Row({ label, value, green }) {
+  return (
+    <div className="flex justify-between text-slate-600">
+      <span>{label}</span>
+      <span className={green ? 'font-semibold text-green-600' : ''}>{value}</span>
+    </div>
+  )
+}
+
+function CartIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  )
+}
+
+function PinIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
+}
+
+function ArrowIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  )
+}

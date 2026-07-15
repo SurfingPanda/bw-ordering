@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-script: "Pacifico", cursive;
+  --font-brand: "Fredoka", ui-sans-serif, system-ui, sans-serif;
+
+  --color-navy-50: #eef3fb;
+  --color-navy-100: #dde7f5;
+  --color-navy-700: #173a6a;
+  --color-navy-800: #102a4f;
+  --color-navy-900: #0b1f3d;
+
+  --color-brand-50: #fef4e9;
+  --color-brand-100: #fde4cc;
+  --color-brand-200: #fbcd9f;
+  --color-brand-400: #f59b3f;
+  --color-brand-500: #ef7d1a;
+  --color-brand-600: #e06f10;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Page entrance transition (e.g. navigating to the menu). Opacity-only so it
+   never creates a containing block that would break position:fixed children. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-page-in {
+  animation: page-in 0.45s ease-out;
+}
+
+/* Order-confirmation success check: the green circle pops in, then the tick
+   draws itself. Used on the "Order placed!" screen (src/pages/Checkout.jsx). */
+@keyframes pop-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-check-draw {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: check-draw 0.4s 0.25s ease-out forwards;
+}
+
+/* Gentle continuous bob — used for the logo on the "under construction" page
+   (src/pages/Landing.jsx UnderConstruction) so it feels alive. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Animated backdrop for the "under construction" page: the base gradient slowly
+   pans while two soft brand-colored glows drift behind the content. */
+@keyframes bg-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-bg-pan {
+  background: linear-gradient(125deg, #0b1f3d 0%, #102a4f 38%, #0e2547 62%, #0b1f3d 100%);
+  background-size: 220% 220%;
+  animation: bg-pan 14s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(45px, -30px) scale(1.12);
+  }
+  66% {
+    transform: translate(-30px, 25px) scale(0.94);
+  }
+}
+
+.animate-drift {
+  animation: drift 16s ease-in-out infinite;
+}
+
+@keyframes drift-slow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-55px, 35px) scale(1.18);
+  }
+}
+
+.animate-drift-slow {
+  animation: drift-slow 20s ease-in-out infinite;
+}
+
+/* Bakery treats that gently float in the backdrop of the "under construction"
+   page. Per-item duration/delay are set inline for variety. */
+@keyframes bakery-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-26px) rotate(8deg);
+  }
+}
+
+.animate-bakery-float {
+  animation: bakery-float 6s ease-in-out infinite;
+}
+
+/* "Under construction" baking gag (src/pages/Landing.jsx UnderConstruction):
+   the logo sits there warm and fresh while wisps of steam curl up off it. The
+   logo breathes with a soft warm glow; the steam rises, swells, and fades. */
+@keyframes bake-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 6px rgba(255, 176, 87, 0.25));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45))
+      drop-shadow(0 0 24px rgba(255, 176, 87, 0.55));
+  }
+}
+
+.animate-bake {
+  animation: bake-glow 3.2s ease-in-out infinite;
+}
+
+/* Soft playful tilt for the 🚧 barrier on the same page. */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 1.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in,
+  .animate-pop-in,
+  .animate-check-draw,
+  .animate-float,
+  .animate-wiggle,
+  .animate-bake,
+  .animate-bg-pan,
+  .animate-drift,
+  .animate-drift-slow,
+  .animate-bakery-float {
+    animation: none;
+  }
+  /* Without the draw animation, leave the tick fully visible. */
+  .animate-check-draw {
+    stroke-dashoffset: 0;
+  }
+}
