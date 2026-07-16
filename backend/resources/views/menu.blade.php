@@ -20,25 +20,24 @@
     <script id="menu-category-images-data" type="application/json">{!! json_encode($categoryImages) !!}</script>
     <script id="menu-declared-categories-data" type="application/json">{!! json_encode($declaredCategories) !!}</script>
 
-    <div class="flex min-h-screen flex-col lg:flex-row">
+    <div class="flex min-h-screen flex-col lg:h-screen lg:flex-row lg:overflow-hidden">
         {{-- categories sidebar --}}
-        <aside class="border-b border-navy-900/10 bg-navy-900 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:sticky lg:top-0">
+        <aside class="border-b border-navy-900/10 bg-navy-900 lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
             <a href="/" class="hidden h-24 shrink-0 items-center justify-center px-4 lg:flex">
                 <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-20 w-auto">
             </a>
-            <nav id="category-nav" class="flex gap-2 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto">
+            {{-- Categories scroll on their own only if they overflow the
+                 viewport (many categories) — the logo above stays put either
+                 way, and the scrollbar itself is hidden (still scrolls via
+                 wheel/touch/drag), so it never reads as a layout bug. --}}
+            <nav id="category-nav" class="scrollbar-hide flex gap-2 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto">
                 {{-- filled by JS from the product list --}}
             </nav>
-            <div class="shrink-0 p-3 lg:border-t lg:border-white/10">
-                <a href="{{ route('custom-cake') }}"
-                    class="flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                    🎂 Customize a Cake
-                </a>
-            </div>
         </aside>
 
-        {{-- main column --}}
-        <div class="flex min-w-0 flex-1 flex-col">
+        {{-- main column: the one scrollable pane — header stays put via
+             sticky, and this is the only element that scrolls on desktop. --}}
+        <div class="flex min-w-0 flex-1 flex-col lg:h-full lg:overflow-y-auto">
             <header class="z-20 border-b border-slate-100 bg-white/90 backdrop-blur lg:sticky lg:top-0">
                 <div class="flex h-16 items-center justify-between px-4 sm:px-6">
                     <h2 class="text-lg font-bold text-navy-800">Order Online</h2>
@@ -232,7 +231,7 @@
             DECLARED_CATEGORIES.forEach(name => seen.add(name));
             const hasNew = PRODUCTS.some(p => p.status === 'new');
             const hasBest = PRODUCTS.some(p => p.status === 'best_seller');
-            const cats = [{ name: 'All' }];
+            const cats = [{ name: 'All', icon: 'all' }];
             if (hasNew || PROMO_ACTIVE) cats.push({ name: "What's New", icon: 'new' });
             if (hasBest) cats.push({ name: 'Best Sellers', icon: 'best' });
             seen.forEach(name => cats.push({ name, img: CATEGORY_IMAGES[name] || '' }));
@@ -241,6 +240,10 @@
 
         const SPARKLE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 4.9L5 9.8l4.9 1.9L12 16.6l1.9-4.9 5-1.9-5-1.9z"/></svg>';
         const TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a2 2 0 0 1 2 2 4 4 0 0 1-4 4"/><path d="M7 5H4a2 2 0 0 0-2 2 4 4 0 0 0 4 4"/></svg>';
+        const GRID_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+        const ICON_SVG = { new: SPARKLE_SVG, best: TROPHY_SVG, all: GRID_SVG };
+        const ICON_GRADIENT = { new: 'from-emerald-400 to-teal-500', best: 'from-amber-400 to-orange-500', all: 'from-sky-400 to-blue-500' };
+        const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 
         function renderCategories() {
             const nav = document.getElementById('category-nav');
@@ -252,8 +255,7 @@
                     (active === c.name ? 'bg-white text-navy-900 shadow-lg ring-2 ring-brand-500' : 'text-white hover:bg-white/10');
                 let badge = '';
                 if (c.icon) {
-                    const grad = c.icon === 'new' ? 'from-emerald-400 to-teal-500' : 'from-amber-400 to-orange-500';
-                    badge = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${grad} text-white shadow ring-1 ring-black/5 [&_svg]:h-5 [&_svg]:w-5">${c.icon === 'new' ? SPARKLE_SVG : TROPHY_SVG}</span>`;
+                    badge = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ICON_GRADIENT[c.icon]} text-white shadow ring-1 ring-black/5 [&_svg]:h-5 [&_svg]:w-5">${ICON_SVG[c.icon]}</span>`;
                 } else if (c.img !== undefined) {
                     badge = `<span class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">${c.img ? `<img src="${c.img}" alt="" class="h-full w-full object-cover">` : ''}</span>`;
                 }
@@ -518,7 +520,7 @@
                                 <span class="w-4 text-center text-sm font-semibold">${qty}</span>
                                 <button type="button" data-add="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
                             </div>
-                            <button type="button" data-remove="${p.id}" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600">✕</button>`}
+                            <button type="button" data-remove="${p.id}" aria-label="Remove item" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 [&_svg]:h-4 [&_svg]:w-4">${TRASH_SVG}</button>`}
                     </li>`).join('');
                 list.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
                 // − at qty 1 would remove the item, so it arms the "Remove?"

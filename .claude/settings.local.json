@@ -60,7 +60,9 @@
       "Bash(tasklist)",
       "PowerShell(cd C:\\\\Users\\\\Admin\\\\bw-ordering\\\\backend; Start-Process -WindowStyle Hidden C:\\\\xampp\\\\php8\\\\php.exe -ArgumentList 'artisan','serve','--port=8010'; Start-Sleep -Seconds 3; \"server up:\"; \\(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8010/up\\).StatusCode)",
       "Bash(C:/xampp/php8/php artisan *)",
-      "PowerShell(wsl -l -v)"
+      "PowerShell(wsl -l -v)",
+      "Bash(git ls-tree *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

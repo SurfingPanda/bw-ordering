@@ -41,6 +41,17 @@
 }
 .animate-float { animation: float 3s ease-in-out infinite; }
 
+/* Keeps a region scrollable (wheel/touch/drag still work) without showing
+   the scrollbar track/thumb — used where a scrollbar would look like a
+   layout bug (e.g. the menu sidebar's category list). */
+.scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 /* Animated backdrop: the base gradient slowly pans while two soft
    brand-colored glows drift behind the content. */
 @keyframes bg-pan {
