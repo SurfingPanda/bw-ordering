@@ -60,5 +60,14 @@
         // Dismiss on backdrop click or Escape, like the old modal.
         modal.addEventListener('click', (e) => { if (! e.target.closest('[data-modal-card]')) closeModal() })
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal() })
+
+        // This is a real (non-AJAX) form submit — the browser navigates away
+        // and back once the server redirects, which can take a moment on a
+        // big blob. Without feedback, that gap reads as a dead button.
+        form.addEventListener('submit', () => {
+            save.disabled = true
+            save.classList.add('cursor-not-allowed', 'opacity-60')
+            save.textContent = 'Saving…'
+        })
     })
 </script>
