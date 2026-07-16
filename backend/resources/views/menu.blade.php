@@ -30,7 +30,7 @@
                  viewport (many categories) — the logo above stays put either
                  way, and the scrollbar itself is hidden (still scrolls via
                  wheel/touch/drag), so it never reads as a layout bug. --}}
-            <nav id="category-nav" class="scrollbar-hide flex gap-2 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto">
+            <nav id="category-nav" class="scrollbar-hide flex gap-3 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto">
                 {{-- filled by JS from the product list --}}
             </nav>
         </aside>
@@ -589,6 +589,12 @@
                         voucher: voucher?.code || null,
                     };
                     try { localStorage.setItem('bw_checkout', JSON.stringify(summary)); } catch {}
+                    // window.location navigation isn't instant — disable and
+                    // relabel so the click reads as "working" instead of dead
+                    // for the gap until the checkout page loads.
+                    btn.disabled = true;
+                    btn.classList.add('cursor-not-allowed', 'opacity-60');
+                    btn.textContent = 'Loading…';
                     window.location.href = '{{ route("checkout") }}';
                 };
             });
