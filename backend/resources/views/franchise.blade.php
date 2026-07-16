@@ -26,9 +26,9 @@
     <div class="min-h-screen bg-white text-navy-800">
         {{-- header --}}
         <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
-            <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+            <div class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-12 w-auto shrink-0 sm:h-14">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-auto shrink-0 sm:h-16">
                 </a>
                 <div class="flex items-center gap-4">
                     <a href="/" class="text-sm font-medium text-navy-700 transition hover:text-brand-600">← Back to home</a>

@@ -142,9 +142,9 @@
         {{-- Nav --}}
         <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
             @php $orderState = $btn('navOrder'); @endphp
-            <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+            <nav class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-12 w-auto shrink-0 sm:h-14">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-auto shrink-0 sm:h-16">
                 </a>
 
                 <ul class="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
@@ -285,7 +285,7 @@
                 <p class="mt-3 text-sm text-slate-500">Browse our full range of freshly baked goodies for every occasion.</p>
             </div>
             <div class="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
-                @foreach($categories as $c)
+                @foreach(array_slice($categories, 0, 6) as $c)
                     <div data-reveal data-reveal-delay="{{ $loop->index * 80 }}">
                     <a href="/menu?category={{ urlencode($c['name']) }}" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
                         <span class="h-28 w-28 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-100 transition group-hover:ring-brand-200">
@@ -299,6 +299,11 @@
                     </a>
                     </div>
                 @endforeach
+            </div>
+            <div class="mt-10 text-center">
+                <a href="/menu" class="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900">
+                    See all category
+                </a>
             </div>
         </section>
         @endif
