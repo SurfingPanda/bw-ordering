@@ -49,9 +49,11 @@
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Inquire about a franchise
                     </a>
-                    <a href="#packages" class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                        View packages
-                    </a>
+                    @if($fr['packagesEnabled'] ?? true)
+                        <a href="#packages" class="rounded-full border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                            View packages
+                        </a>
+                    @endif
                 </div>
             </div>
         </section>
@@ -95,6 +97,7 @@
         </section>
 
         {{-- packages --}}
+        @if($fr['packagesEnabled'] ?? true)
         <section id="packages" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center">
                 <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Franchise packages</span>
@@ -123,6 +126,7 @@
                 @endforeach
             </div>
         </section>
+        @endif
 
         {{-- CTA --}}
         <section class="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
