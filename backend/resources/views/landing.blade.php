@@ -144,7 +144,7 @@
             @php $orderState = $btn('navOrder'); @endphp
             <nav class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-auto shrink-0 sm:h-16">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
                 </a>
 
                 <ul class="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
