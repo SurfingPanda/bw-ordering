@@ -462,19 +462,17 @@
             </div>
 
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                <div class="flex items-start justify-between gap-3">
+                <h2 class="text-lg font-bold text-navy-800">Franchise — Packages</h2>
+                <p class="mb-5 mt-0.5 text-sm text-slate-500">The franchise package cards.</p>
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
                     <div>
-                        <h2 class="text-lg font-bold text-navy-800">Franchise — Packages</h2>
-                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The franchise package cards.</p>
+                        <p class="text-sm font-medium text-navy-800">Show packages section</p>
+                        <p class="mt-0.5 text-xs text-slate-500">When off, the packages section (and the hero's “View packages” button) is hidden on the /franchise page.</p>
                     </div>
-                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
-                        <span class="text-xs font-medium text-slate-500">Show on page</span>
-                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
-                            <input type="hidden" name="franchise[visible][packages]" value="0">
-                            <input type="checkbox" name="franchise[visible][packages]" value="1" class="peer sr-only" @checked($frVis['packages'] ?? true)>
-                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
-                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
-                        </span>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="checkbox" name="franchise[packagesEnabled]" value="1" class="peer sr-only" @checked(! empty($fr['packagesEnabled'] ?? true))>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
                     </label>
                 </div>
                 <div data-repeater>

@@ -108,6 +108,7 @@ class SiteContentController extends Controller
                     ['n' => '03', 'title' => 'Sign & set up', 'text' => 'Finalize the agreement, secure your site, and begin store build-out and training.'],
                     ['n' => '04', 'title' => 'Grand opening', 'text' => 'Launch your branch with full marketing and operations support behind you.'],
                 ],
+                'packagesEnabled' => true,
                 'packages' => [
                     ['name' => 'Kiosk', 'price' => '₱1.2M – 1.8M', 'blurb' => 'A compact counter for malls and transit hubs — fast to open, high foot traffic.', 'features' => ['25–40 sqm space', 'Core bestseller menu', 'Equipment & signage', '2-week crew training'], 'featured' => false],
                     ['name' => 'Inline Store', 'price' => '₱2.5M – 3.5M', 'blurb' => 'The flagship bakeshop experience with full product range and seating.', 'features' => ['60–100 sqm space', 'Full menu + custom cakes', 'Bake-on-site setup', 'Dedicated launch support'], 'featured' => true],
@@ -280,6 +281,7 @@ class SiteContentController extends Controller
         $fr['visible'] = array_map(fn ($v) => (bool) $v, (array) ($fr['visible'] ?? []));
         $fr['perks'] = array_values((array) ($fr['perks'] ?? []));
         $fr['steps'] = array_values((array) ($fr['steps'] ?? []));
+        $fr['packagesEnabled'] = $request->boolean('franchise.packagesEnabled');
         $fr['packages'] = array_values(array_map(function ($pkg) {
             $pkg = (array) $pkg;
             $pkg['features'] = $this->linesToArray($pkg['features'] ?? '');
