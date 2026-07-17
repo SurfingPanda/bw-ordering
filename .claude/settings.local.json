@@ -62,7 +62,8 @@
       "Bash(C:/xampp/php8/php artisan *)",
       "PowerShell(wsl -l -v)",
       "Bash(git ls-tree *)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "PowerShell(C:\\\\xampp\\\\php8\\\\php \"C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Admin-bw-ordering\\\\8e05f2ee-c870-416d-9787-aabc05831515\\\\scratchpad\\\\list-products.php\")"
     ]
   }
 }

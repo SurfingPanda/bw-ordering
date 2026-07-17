@@ -89,6 +89,10 @@
                         @include('admin.products._product-row', ['i' => $i, 'product' => $product->toArray()])
                     @endforeach
                 </div>
+                {{-- Client-side pagination (10 rows per page), applied after the
+                     filters. Like filtering, paging only hides rows — every row
+                     still submits, so it never affects what Save changes writes. --}}
+                <div id="products-pagination" class="mt-4 hidden flex-wrap items-center justify-between gap-3"></div>
                 <template>@include('admin.products._product-row', ['i' => '__IDX__', 'product' => []])</template>
                 <button type="button" data-add class="mt-4 w-full rounded-xl border-2 border-dashed border-slate-300 py-3 text-sm font-semibold text-slate-500 transition hover:border-brand-400 hover:text-brand-600">
                     + Add product
@@ -165,8 +169,15 @@
             if (edit) { openModal(edit.closest('[data-row]')); return }
             const close = e.target.closest('[data-modal-close]')
             if (close) { closeModal(close.closest('[data-modal]')); return }
+            // A removed row leaves a gap on the current page — re-page to fill it.
+            if (e.target.closest('#products-form [data-remove]')) { applyProductSearch(); return }
             if (e.target.closest('#products-form [data-add]')) {
-                searchInput.value = '' // an active filter would hide the new row
+                // Clear the filters (they'd hide the new blank row) and jump to
+                // the last page, where the new row is appended.
+                searchInput.value = ''
+                statusFilter.value = 'all'
+                categoryFilter.value = ''
+                productPage = Infinity
                 applyProductSearch()
                 const rows = productsForm.querySelectorAll('[data-row]')
                 if (rows.length) openModal(rows[rows.length - 1])
@@ -190,12 +201,17 @@
         const productRows = () => Array.from(productsForm.querySelectorAll('[data-row]'))
             .filter((row) => row.querySelector('input[name$="[name]"]'))
 
+        // ---- pagination (10 per page, after the filters) ---------------------
+        const PAGE_SIZE = 10
+        const pager = document.getElementById('products-pagination')
+        let productPage = 1
+
         function applyProductSearch() {
             const q = searchInput.value.trim().toLowerCase()
             const wantStatus = statusFilter.value
             const wantCategory = categoryFilter.value.toLowerCase()
             const rows = productRows()
-            let shown = 0
+            const matches = []
             rows.forEach((row) => {
                 const name = (row.querySelector('input[name$="[name]"]')?.value || '').toLowerCase()
                 const category = (row.querySelector('select[name$="[category]"]')?.value || '').toLowerCase()
@@ -203,20 +219,61 @@
                 const byText = !q || name.includes(q) || category.includes(q)
                 const byStatus = wantStatus === 'all' || (wantStatus === 'none' ? status === '' : status === wantStatus)
                 const byCategory = !wantCategory || category === wantCategory
-                const match = byText && byStatus && byCategory
-                row.classList.toggle('hidden', !match)
-                if (match) shown++
+                if (byText && byStatus && byCategory) matches.push(row)
+                else row.classList.add('hidden')
+            })
+            // Page the matches: clamp the current page (filters may have shrunk
+            // the list), show its rows, hide the rest.
+            const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE))
+            productPage = Math.min(Math.max(productPage, 1), pages)
+            matches.forEach((row, i) => {
+                row.classList.toggle('hidden', Math.floor(i / PAGE_SIZE) + 1 !== productPage)
             })
             const filtering = q || wantStatus !== 'all' || wantCategory
             searchCount.classList.toggle('hidden', !filtering)
-            searchCount.textContent = `Showing ${shown} of ${rows.length} products`
-            emptyMsg.classList.toggle('hidden', !(filtering && shown === 0))
+            searchCount.textContent = `Showing ${matches.length} of ${rows.length} products`
+            emptyMsg.classList.toggle('hidden', !(filtering && matches.length === 0))
             emptyMsg.textContent = 'No products match the current filters.'
+            renderPager(matches.length, pages)
         }
 
-        searchInput.addEventListener('input', applyProductSearch)
-        statusFilter.addEventListener('change', applyProductSearch)
-        categoryFilter.addEventListener('change', applyProductSearch)
+        function renderPager(total, pages) {
+            const show = pages > 1
+            pager.classList.toggle('hidden', !show)
+            pager.classList.toggle('flex', show)
+            if (!show) { pager.innerHTML = ''; return }
+            const from = (productPage - 1) * PAGE_SIZE + 1
+            const to = Math.min(productPage * PAGE_SIZE, total)
+            // Windowed page numbers: 1 … current±1 … last.
+            const nums = []
+            for (let n = 1; n <= pages; n++) {
+                if (n === 1 || n === pages || Math.abs(n - productPage) <= 1) nums.push(n)
+                else if (nums[nums.length - 1] !== '…') nums.push('…')
+            }
+            const base = 'h-9 min-w-9 rounded-full border px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40'
+            const idle = `${base} border-slate-300 bg-white text-navy-700 hover:border-brand-400 hover:text-brand-600`
+            const active = `${base} border-brand-500 bg-brand-500 text-white`
+            pager.innerHTML = `
+                <p class="text-xs text-slate-500">Showing ${from}–${to} of ${total}</p>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" data-page="${productPage - 1}" ${productPage <= 1 ? 'disabled' : ''} aria-label="Previous page" class="${idle}">‹</button>
+                    ${nums.map((n) => n === '…'
+                        ? '<span class="px-1 text-sm text-slate-400">…</span>'
+                        : `<button type="button" data-page="${n}" ${n === productPage ? 'aria-current="page"' : ''} class="${n === productPage ? active : idle}">${n}</button>`).join('')}
+                    <button type="button" data-page="${productPage + 1}" ${productPage >= pages ? 'disabled' : ''} aria-label="Next page" class="${idle}">›</button>
+                </div>`
+        }
+
+        pager.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-page]')
+            if (!btn || btn.disabled) return
+            productPage = Number(btn.dataset.page)
+            applyProductSearch()
+        })
+
+        searchInput.addEventListener('input', () => { productPage = 1; applyProductSearch() })
+        statusFilter.addEventListener('change', () => { productPage = 1; applyProductSearch() })
+        categoryFilter.addEventListener('change', () => { productPage = 1; applyProductSearch() })
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') e.preventDefault() // don't submit the form
         })
@@ -230,5 +287,8 @@
             const row = e.target.closest('[data-row]')
             if (row) syncSummary(row)
         })
+
+        // Initial render: apply page 1 (all rows arrive visible from the server).
+        applyProductSearch()
     </script>
 @endsection

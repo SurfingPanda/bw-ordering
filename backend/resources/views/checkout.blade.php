@@ -248,6 +248,9 @@
     (function () {
         const VAT_RATE = 0.12, DELIVERY_FEE = 79, EXPRESS_FEE = 149, FREE_DELIVERY_MIN = 1000;
         const peso = (n) => `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        // Default picture for items without an image (same as /menu); if it
+        // fails to load, onerror clears the img leaving the plain gray box.
+        const FALLBACK_IMG = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
 
         function readCheckout() {
             try { return JSON.parse(localStorage.getItem('bw_checkout') || 'null'); } catch { return null; }
@@ -335,7 +338,7 @@
             document.getElementById('summary-items').innerHTML = items.map(i => `
                 <li class="flex items-center gap-3">
                     <span class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                        ${i.img ? `<img src="${i.img}" alt="" class="h-full w-full object-cover">` : ''}
+                        <img src="${i.img || FALLBACK_IMG}" alt="" class="h-full w-full object-cover" onerror="this.remove()">
                         <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-navy-800 px-1 text-[0.6rem] font-bold text-white">${i.qty}</span>
                     </span>
                     <span class="min-w-0 flex-1 truncate text-sm font-medium text-navy-800">${i.name}</span>

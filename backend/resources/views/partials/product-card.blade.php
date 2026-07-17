@@ -7,14 +7,19 @@
     old React version rendered a fresh <ProductModal> per card instead, but a
     single shared modal avoids duplicating the markup for every product.
 --}}
-@php $p = $product; @endphp
+@php
+    $p = $product;
+    // Default picture for products without an image; if it fails to load the
+    // <img> onerror swaps in the "no image" tile (same rule as /menu).
+    $fallbackImg = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
+@endphp
 <div
     class="product-card-trigger group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
     role="button"
     tabindex="0"
     aria-label="View {{ $p['name'] }}"
     data-name="{{ $p['name'] }}"
-    data-img="{{ $p['img'] }}"
+    data-img="{{ $p['img'] ?: $fallbackImg }}"
     data-tag="{{ $p['tag'] ?? '' }}"
     data-price="{{ $p['price'] }}"
     data-desc="{{ $p['desc'] ?? '' }}"
@@ -23,12 +28,10 @@
 >
     <div class="relative overflow-hidden">
         <span class="relative block h-40 w-full overflow-hidden bg-slate-100 transition duration-300 group-hover:scale-105">
-            @if(!empty($p['img']))
-                <img src="{{ $p['img'] }}" alt="{{ $p['name'] }}" loading="lazy" decoding="async"
-                    class="h-full w-full object-cover">
-            @else
-                <span class="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
-            @endif
+            <img src="{{ $p['img'] ?: $fallbackImg }}" alt="{{ $p['name'] }}" loading="lazy" decoding="async"
+                class="h-full w-full object-cover"
+                onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
+            <span class="hidden h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
         </span>
         @if(!empty($p['tag']))
             <span class="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-brand-600">

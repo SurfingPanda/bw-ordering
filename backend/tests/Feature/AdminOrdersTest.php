@@ -12,7 +12,7 @@ class AdminOrdersTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function session(string $email): array
+    private function supabaseSession(string $email): array
     {
         return [
             'supabase_user' => ['id' => 'test-id', 'email' => $email, 'name' => 'Test', 'contact_number' => '0917'],
@@ -33,7 +33,7 @@ class AdminOrdersTest extends TestCase
 
     public function test_customers_cannot_open_the_orders_queue(): void
     {
-        $this->withSession($this->session('customer@example.com'))
+        $this->withSession($this->supabaseSession('customer@example.com'))
             ->get('/admin/orders')->assertForbidden();
     }
 
@@ -42,7 +42,7 @@ class AdminOrdersTest extends TestCase
         UserRole::create(['email' => 'cashier@bwsuperbakeshop.com', 'role' => 'cashier']);
         $order = $this->makeOrder();
 
-        $this->withSession($this->session('cashier@bwsuperbakeshop.com'))
+        $this->withSession($this->supabaseSession('cashier@bwsuperbakeshop.com'))
             ->get('/admin/orders')
             ->assertOk()
             ->assertSee('Order #'.strtoupper(substr($order->id, 0, 8)), false)
@@ -52,13 +52,13 @@ class AdminOrdersTest extends TestCase
     public function test_an_editor_granted_orders_access_can_open_the_queue(): void
     {
         // Editor role alone is blocked…
-        $this->withSession($this->session('editor@bwsuperbakeshop.com'))
+        $this->withSession($this->supabaseSession('editor@bwsuperbakeshop.com'))
             ->get('/admin/orders')->assertForbidden();
 
         // …until an admin grants the 'orders' section.
         UserRole::create(['email' => 'editor@bwsuperbakeshop.com', 'role' => 'editor', 'permissions' => ['orders']]);
 
-        $this->withSession($this->session('editor@bwsuperbakeshop.com'))
+        $this->withSession($this->supabaseSession('editor@bwsuperbakeshop.com'))
             ->get('/admin/orders')->assertOk();
     }
 
@@ -66,12 +66,12 @@ class AdminOrdersTest extends TestCase
     {
         $order = $this->makeOrder();
 
-        $this->withSession($this->session('bw.redeem@gmail.com'))
+        $this->withSession($this->supabaseSession('bw.redeem@gmail.com'))
             ->post("/admin/orders/{$order->id}/status", ['status' => 'preparing'])
             ->assertRedirect(route('admin.orders'));
         $this->assertSame('preparing', $order->fresh()->status);
 
-        $this->withSession($this->session('bw.redeem@gmail.com'))
+        $this->withSession($this->supabaseSession('bw.redeem@gmail.com'))
             ->post("/admin/orders/{$order->id}/payment", ['payment_status' => 'paid'])
             ->assertRedirect(route('admin.orders'));
         $this->assertSame('paid', $order->fresh()->payment_status);

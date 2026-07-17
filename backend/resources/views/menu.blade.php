@@ -186,6 +186,23 @@
         const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
 
+        // Products without an image show this default picture instead; if it
+        // fails to load, the capturing error listener below degrades any
+        // <img data-img-fallback> to the "no image" tile (or, for the small
+        // cart thumbs — data-img-fallback="remove" — just clears the img,
+        // leaving the plain gray box). Capture phase because error events
+        // don't bubble, and one listener covers every re-render.
+        const FALLBACK_IMG = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
+        document.addEventListener('error', (e) => {
+            const img = e.target;
+            if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-img-fallback')) return;
+            if (img.getAttribute('data-img-fallback') === 'remove') { img.remove(); return; }
+            const tile = document.createElement('div');
+            tile.className = 'flex h-full w-full items-center justify-center text-xs font-medium text-slate-400';
+            tile.textContent = 'no image';
+            img.replaceWith(tile);
+        }, true);
+
         // Editor-controlled "What's New" promo slides (content.menuPromo) —
         // mirrors Menu.jsx's `promoSlides`/`promoActive`.
         const PROMO_SLIDES = MENU_PROMO.enabled === false ? [] : (MENU_PROMO.slides || [])
@@ -418,7 +435,7 @@
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
                     class="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
                     <div class="relative h-40 w-full overflow-hidden bg-slate-100 sm:h-48">
-                        ${p.image_path ? `<img src="${p.image_path}" alt="${p.name}" loading="lazy" class="h-full w-full object-cover ${soldOut ? 'opacity-60 grayscale' : ''}">` : `<div class="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</div>`}
+                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" loading="lazy" class="h-full w-full object-cover ${soldOut ? 'opacity-60 grayscale' : ''}">
                         ${p.status ? `<span class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'}">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
                     </div>
                     <div class="flex flex-1 flex-col p-4">
@@ -504,7 +521,7 @@
                 }
                 list.innerHTML = lines.map(({ product: p, qty }) => `
                     <li class="flex items-center gap-3 px-5 py-3">
-                        <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">${p.image_path ? `<img src="${p.image_path}" alt="" class="h-full w-full object-cover">` : ''}</span>
+                        <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img data-img-fallback="remove" src="${p.image_path || FALLBACK_IMG}" alt="" class="h-full w-full object-cover"></span>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-navy-800">${p.name}</p>
                             <p class="text-xs text-slate-500">${peso(p.price)} each</p>
@@ -627,9 +644,7 @@
                 <button type="button" data-modal-close aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white">✕</button>
                 <div class="grid md:grid-cols-2">
                     <div class="h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[24rem] ${soldOut ? 'opacity-60' : ''}">
-                        ${p.image_path
-                            ? `<img src="${p.image_path}" alt="${p.name}" class="h-full w-full object-cover ${soldOut ? 'grayscale' : ''}">`
-                            : '<div class="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</div>'}
+                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" class="h-full w-full object-cover ${soldOut ? 'grayscale' : ''}">
                     </div>
                     <div class="flex flex-col p-8">
                         ${p.status ? `<span class="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">${STATUS_LABEL[p.status] || p.status}</span>` : ''}

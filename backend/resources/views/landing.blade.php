@@ -491,6 +491,14 @@
             } else {
                 imgEl.removeAttribute('src');
             }
+            // Cards without an image carry the default picture in data-img;
+            // if it (or any product image) fails to load, fall back to the
+            // "no image" tile.
+            imgEl.onerror = function () {
+                imgEl.classList.add('hidden');
+                imgFallback.classList.remove('hidden');
+                imgFallback.classList.add('flex');
+            };
             imgEl.alt = d.name || '';
             imgEl.classList.toggle('hidden', !d.img);
             imgFallback.classList.toggle('hidden', !!d.img);
