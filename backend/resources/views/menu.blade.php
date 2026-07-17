@@ -184,6 +184,18 @@
         const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
 
+        // "Includes: Jumbo Loaf ×1, Mongo Loaf ×2" — resolves a bundle's
+        // linked-product-id => quantity map to display names. '' for
+        // non-bundles or bundles with nothing linked yet.
+        function bundleIncludesText(p) {
+            if (p.type !== 'bundle' || !p.bundle_product_ids) return '';
+            const parts = Object.entries(p.bundle_product_ids).map(([id, qty]) => {
+                const linked = PRODUCTS.find(x => x.id === id);
+                return linked ? `${linked.name} ×${qty}` : null;
+            }).filter(Boolean);
+            return parts.length ? `Includes: ${parts.join(', ')}` : '';
+        }
+
         // Products without an image show this default picture instead; if it
         // fails to load, the capturing error listener below degrades any
         // <img data-img-fallback> to the "no image" tile (or, for the small
@@ -463,7 +475,9 @@
                     </div>
                     <div class="flex flex-1 flex-col p-4">
                         <h3 class="text-sm font-semibold text-navy-800">${p.name}</h3>
-                        <p class="mt-1 line-clamp-2 text-xs text-slate-500">${p.description || ''}</p>
+                        ${bundleIncludesText(p)
+                            ? `<p class="mt-1 line-clamp-2 text-xs font-medium text-brand-600">${bundleIncludesText(p)}</p>`
+                            : `<p class="mt-1 line-clamp-2 text-xs text-slate-500">${p.description || ''}</p>`}
                         <div class="mt-auto flex items-center justify-between pt-3">
                             <span class="flex items-baseline gap-1.5">
                                 <span class="text-lg font-bold text-brand-600">${peso(p.price)}</span>
@@ -506,6 +520,10 @@
         }
 
         // ---- cart mutations ----
+        // A bundle-type product travels in the cart as one normal line, just
+        // like any other product — its linked products are display-only (see
+        // cartLines()'s `includes` field), never added as separate lines, so
+        // there's nothing bundle-specific to do here.
         function add(id) { cart[id] = (cart[id] || 0) + 1; writeCart(cart); renderAll(); }
         function dec(id) {
             if ((cart[id] || 0) <= 1) delete cart[id];
@@ -547,9 +565,30 @@
             };
         }
 
+        // A product-level bundle (Product.type === 'bundle') gets the same
+        // display treatment as a promo bundle (badge + "includes" bullets +
+        // struck-through regular total in renderCart()) — but it's a real
+        // product row with its own id/price, so unlike a promo bundle it's
+        // never decomposed at checkout (see the checkout-btn handler's
+        // `p.bundleItems` check, which this deliberately doesn't set).
+        function withBundleDisplay(product) {
+            if (!product || product.type !== 'bundle' || !product.bundle_product_ids) return product;
+            const entries = Object.entries(product.bundle_product_ids);
+            if (!entries.length) return product;
+            const includes = entries.map(([id]) => PRODUCTS.find(p => p.id === id)).filter(Boolean);
+            const regularTotal = entries.reduce((s, [id, qty]) => {
+                const p = PRODUCTS.find(x => x.id === id);
+                return s + (p ? Number(p.price) * Number(qty) : 0);
+            }, 0);
+            return { ...product, includes, regularTotal };
+        }
+
         function cartLines() {
             return Object.entries(cart)
-                .map(([id, qty]) => ({ product: id.startsWith('bundle:') ? bundleFromKey(id) : PRODUCTS.find(p => p.id === id), qty }))
+                .map(([id, qty]) => ({
+                    product: withBundleDisplay(id.startsWith('bundle:') ? bundleFromKey(id) : PRODUCTS.find(p => p.id === id)),
+                    qty,
+                }))
                 .filter(l => l.product);
         }
 
@@ -572,12 +611,12 @@
                     list.innerHTML = '<div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center"><div class="text-5xl">🛒</div><p class="mt-3 text-sm text-slate-500">Your cart is empty.<br>Add some treats to get started!</p></div>';
                     return;
                 }
-                list.innerHTML = lines.map(({ product: p, qty }) => `
+                list.innerHTML = lines.map(({ product: p, qty }) => { const bundled = p.bundleItems || p.includes; return `
                     <li class="flex items-center gap-3 px-5 py-3">
                         <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img data-img-fallback="remove" src="${p.image_path || FALLBACK_IMG}" alt="" class="h-full w-full object-cover"></span>
                         <div class="min-w-0 flex-1">
-                            <p class="flex items-center gap-1.5 text-sm font-medium text-navy-800"><span class="truncate">${p.name}</span>${p.bundleItems ? '<span class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-brand-600">Bundle</span>' : ''}</p>
-                            ${p.bundleItems ? `<ul class="mt-0.5 space-y-0.5 text-xs text-slate-400">${p.bundleItems.map(b => `<li class="truncate">• ${b.name}</li>`).join('')}</ul>` : ''}
+                            <p class="flex items-center gap-1.5 text-sm font-medium text-navy-800"><span class="truncate">${p.name}</span>${bundled ? '<span class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-brand-600">Bundle</span>' : ''}</p>
+                            ${bundled ? `<ul class="mt-0.5 space-y-0.5 text-xs text-slate-400">${bundled.map(b => `<li class="truncate">• ${b.name}</li>`).join('')}</ul>` : ''}
                             <p class="text-xs text-slate-500">${peso(p.price)} each${p.regularTotal > p.price ? ` <span class="text-slate-400 line-through">${peso(p.regularTotal)}</span>` : ''}</p>
                         </div>
                         ${confirmRemoveId === p.id
@@ -592,7 +631,7 @@
                                 <button type="button" data-add="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
                             </div>
                             <button type="button" data-remove="${p.id}" aria-label="Remove item" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 [&_svg]:h-4 [&_svg]:w-4">${TRASH_SVG}</button>`}
-                    </li>`).join('');
+                    </li>`; }).join('');
                 list.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
                 // − at qty 1 would remove the item, so it arms the "Remove?"
                 // prompt instead of deleting outright (same as ✕ below).
@@ -700,6 +739,7 @@
                 grayscale: soldOut,
             }, (footer) => {
                 footer.innerHTML = `
+                    ${bundleIncludesText(p) ? `<p class="mb-4 text-sm font-medium text-brand-600">${bundleIncludesText(p)}</p>` : ''}
                     <div class="flex flex-wrap items-center justify-between gap-4">
                         <span class="flex items-baseline gap-2">
                             <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>

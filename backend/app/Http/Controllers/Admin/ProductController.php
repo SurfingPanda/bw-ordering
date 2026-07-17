@@ -71,22 +71,36 @@ class ProductController extends Controller
             'products.*.original_price' => 'nullable|numeric|min:0',
             'products.*.calories' => 'nullable|integer|min:0',
             'products.*.status' => ['nullable', Rule::in(['new', 'best_seller', 'bundle', 'sold_out'])],
+            'products.*.type' => ['nullable', Rule::in(['single', 'bundle'])],
+            // bundle_product_ids arrives keyed by linked product id, valued by
+            // quantity (e.g. bundle_product_ids[<uuid>]=2) — Laravel's `.*`
+            // wildcard validates the values regardless of key.
+            'products.*.bundle_product_ids' => 'nullable|array',
+            'products.*.bundle_product_ids.*' => 'nullable|integer|min:0',
             'originalIds' => 'nullable|array',
             'originalIds.*' => 'string',
         ];
         // Product ID must be unique: `distinct` catches duplicates within the
         // submitted grid, and the per-row unique rule checks the table while
-        // ignoring the row's own record (it may keep its existing code).
+        // ignoring the row's own record (it may keep its existing code). A
+        // named card also needs a real price — nullable|min:0 above would
+        // otherwise let a blank price silently save as ₱0 (only skipped
+        // entirely-blank new cards are meant to be forgiving).
         foreach (array_keys((array) $request->input('products', [])) as $k) {
             $rules["products.$k.product_id"] = [
                 'nullable', 'string', 'max:20', 'distinct',
                 Rule::unique('products', 'product_id')->ignore($request->input("products.$k.id")),
             ];
+            if (trim((string) $request->input("products.$k.name", '')) !== '') {
+                $rules["products.$k.price"] = ['required', 'numeric', 'min:0.01'];
+            }
         }
         $request->validate($rules, [
             'products.*.product_id.distinct' => 'Product ID :input is used by more than one product.',
             'products.*.product_id.unique' => 'Product ID :input is already taken by another product.',
             'products.*.product_id.max' => 'Product ID must be 20 characters or fewer.',
+            'products.*.price.required' => 'Every product needs a price.',
+            'products.*.price.min' => 'Price must be greater than ₱0.',
         ]);
 
         // Product ID is assign-once: current codes, keyed by row id, so updates
@@ -102,6 +116,7 @@ class ProductController extends Controller
                 continue;
             }
 
+            $type = ($p['type'] ?? 'single') === 'bundle' ? 'bundle' : 'single';
             $attrs = [
                 'product_id' => trim((string) ($p['product_id'] ?? '')) ?: null,
                 'name' => $name,
@@ -114,6 +129,17 @@ class ProductController extends Controller
                 'calories' => ($p['calories'] ?? '') === '' ? null : (int) $p['calories'],
                 'is_featured' => ! empty($p['is_featured']),
                 'status' => ($p['status'] ?? '') !== '' ? $p['status'] : null,
+                'type' => $type,
+                // Only a bundle actually carries linked products — switching
+                // back to Single drops any previously-picked links rather
+                // than leaving stale ones the UI no longer shows. Keyed by
+                // linked product id => quantity; zero/blank rows are dropped.
+                'bundle_product_ids' => $type === 'bundle'
+                    ? collect((array) ($p['bundle_product_ids'] ?? []))
+                        ->map(fn ($qty) => (int) $qty)
+                        ->filter(fn ($qty) => $qty > 0)
+                        ->all()
+                    : null,
             ];
 
             if (! empty($p['id'])) {

@@ -57,6 +57,40 @@
                         <span class="mb-1 block text-xs font-medium text-slate-500">Name</span>
                         <input type="text" name="products[{{ $i }}][name]" value="{{ $product['name'] ?? '' }}" class="{{ $input }}">
                     </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Type</span>
+                        @php($type = ($product['type'] ?? 'single') === 'bundle' ? 'bundle' : 'single')
+                        <select name="products[{{ $i }}][type]" data-product-type class="{{ $input }} bg-white">
+                            <option value="single" @selected($type === 'single')>Single</option>
+                            <option value="bundle" @selected($type === 'bundle')>Bundle</option>
+                        </select>
+                    </label>
+                    {{-- Bundle only: which other products get auto-added to the
+                         cart alongside this one, and how many of each (see
+                         menu.blade.php's add()), priced at ₱0 up to the
+                         matching bundle quantity (see OrderCreationService).
+                         Blank/0 = not included. --}}
+                    <div data-bundle-products-wrap class="{{ $type === 'bundle' ? '' : 'hidden' }}">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Linked products &amp; quantity (auto-added with this bundle, included free)</span>
+                        @php($linkedQtys = (array) ($product['bundle_product_ids'] ?? []))
+                        <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-slate-300 p-2">
+                            @forelse(($products ?? []) as $op)
+                                @php($opId = is_array($op) ? ($op['id'] ?? null) : $op->id)
+                                @continue($opId === null || $opId === ($product['id'] ?? null))
+                                @php($opName = is_array($op) ? ($op['name'] ?? '') : $op->name)
+                                @php($opQty = (int) ($linkedQtys[$opId] ?? 0))
+                                <div class="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy-800 transition hover:bg-slate-50">
+                                    <span class="truncate">{{ $opName }}</span>
+                                    <input type="number" min="0" step="1" placeholder="0"
+                                        name="products[{{ $i }}][bundle_product_ids][{{ $opId }}]"
+                                        value="{{ $opQty > 0 ? $opQty : '' }}"
+                                        class="w-16 shrink-0 rounded-md border border-slate-300 px-2 py-1 text-xs text-right outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                                </div>
+                            @empty
+                                <p class="px-1.5 py-1 text-xs text-slate-400">No other products yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="block">
                             <span class="mb-1 block text-xs font-medium text-slate-500">Category</span>
@@ -85,7 +119,7 @@
                     <div class="grid grid-cols-2 gap-2">
                         <label class="block">
                             <span class="mb-1 block text-xs font-medium text-slate-500">Price (₱)</span>
-                            <input type="number" step="0.01" min="0" name="products[{{ $i }}][price]" value="{{ $product['price'] ?? '' }}" class="{{ $input }}">
+                            <input type="number" step="0.01" min="0.01" required name="products[{{ $i }}][price]" value="{{ $product['price'] ?? '' }}" class="{{ $input }}">
                         </label>
                         <label class="block">
                             <span class="mb-1 block text-xs font-medium text-slate-500">Was (₱, optional)</span>

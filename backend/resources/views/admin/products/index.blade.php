@@ -306,6 +306,9 @@
         productsForm.addEventListener('change', (e) => {
             const row = e.target.closest('[data-row]')
             if (row) syncSummary(row)
+            if (e.target.matches('[data-product-type]')) {
+                row.querySelector('[data-bundle-products-wrap]')?.classList.toggle('hidden', e.target.value !== 'bundle')
+            }
         })
 
         // Initial render: apply page 1 (all rows arrive visible from the server).
