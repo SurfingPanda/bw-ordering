@@ -89,9 +89,10 @@
                         @include('admin.products._product-row', ['i' => $i, 'product' => $product->toArray()])
                     @endforeach
                 </div>
-                {{-- Client-side pagination (10 rows per page), applied after the
-                     filters. Like filtering, paging only hides rows — every row
-                     still submits, so it never affects what Save changes writes. --}}
+                {{-- Client-side pagination (10/20/50/100 rows per page), applied
+                     after the filters. Like filtering, paging only hides rows —
+                     every row still submits, so it never affects what Save
+                     changes writes. --}}
                 <div id="products-pagination" class="mt-4 hidden flex-wrap items-center justify-between gap-3"></div>
                 <template>@include('admin.products._product-row', ['i' => '__IDX__', 'product' => []])</template>
                 <button type="button" data-add class="mt-4 w-full rounded-xl border-2 border-dashed border-slate-300 py-3 text-sm font-semibold text-slate-500 transition hover:border-brand-400 hover:text-brand-600">
@@ -201,9 +202,10 @@
         const productRows = () => Array.from(productsForm.querySelectorAll('[data-row]'))
             .filter((row) => row.querySelector('input[name$="[name]"]'))
 
-        // ---- pagination (10 per page, after the filters) ---------------------
-        const PAGE_SIZE = 10
+        // ---- pagination (page size selectable, after the filters) ------------
+        const PAGE_SIZES = [10, 20, 50, 100]
         const pager = document.getElementById('products-pagination')
+        let pageSize = PAGE_SIZES[0]
         let productPage = 1
 
         function applyProductSearch() {
@@ -224,10 +226,10 @@
             })
             // Page the matches: clamp the current page (filters may have shrunk
             // the list), show its rows, hide the rest.
-            const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE))
+            const pages = Math.max(1, Math.ceil(matches.length / pageSize))
             productPage = Math.min(Math.max(productPage, 1), pages)
             matches.forEach((row, i) => {
-                row.classList.toggle('hidden', Math.floor(i / PAGE_SIZE) + 1 !== productPage)
+                row.classList.toggle('hidden', Math.floor(i / pageSize) + 1 !== productPage)
             })
             const filtering = q || wantStatus !== 'all' || wantCategory
             searchCount.classList.toggle('hidden', !filtering)
@@ -238,12 +240,16 @@
         }
 
         function renderPager(total, pages) {
-            const show = pages > 1
+            // Keep the bar (and its page-size select) visible whenever there's
+            // more than the smallest page size, even if everything fits on one
+            // page at the current size — otherwise "100 per page" would hide
+            // the select and there'd be no way back.
+            const show = total > PAGE_SIZES[0]
             pager.classList.toggle('hidden', !show)
             pager.classList.toggle('flex', show)
             if (!show) { pager.innerHTML = ''; return }
-            const from = (productPage - 1) * PAGE_SIZE + 1
-            const to = Math.min(productPage * PAGE_SIZE, total)
+            const from = (productPage - 1) * pageSize + 1
+            const to = Math.min(productPage * pageSize, total)
             // Windowed page numbers: 1 … current±1 … last.
             const nums = []
             for (let n = 1; n <= pages; n++) {
@@ -254,7 +260,14 @@
             const idle = `${base} border-slate-300 bg-white text-navy-700 hover:border-brand-400 hover:text-brand-600`
             const active = `${base} border-brand-500 bg-brand-500 text-white`
             pager.innerHTML = `
-                <p class="text-xs text-slate-500">Showing ${from}–${to} of ${total}</p>
+                <label class="flex items-center gap-2 text-xs text-slate-500">
+                    Show
+                    <select data-page-size data-no-dirty aria-label="Products per page"
+                        class="rounded-full border border-slate-300 bg-white px-2 py-1.5 text-sm font-medium text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        ${PAGE_SIZES.map((s) => `<option value="${s}" ${s === pageSize ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                    per page · ${from}–${to} of ${total}
+                </label>
                 <div class="flex flex-wrap items-center gap-1.5">
                     <button type="button" data-page="${productPage - 1}" ${productPage <= 1 ? 'disabled' : ''} aria-label="Previous page" class="${idle}">‹</button>
                     ${nums.map((n) => n === '…'
@@ -268,6 +281,13 @@
             const btn = e.target.closest('button[data-page]')
             if (!btn || btn.disabled) return
             productPage = Number(btn.dataset.page)
+            applyProductSearch()
+        })
+
+        pager.addEventListener('change', (e) => {
+            if (!e.target.matches('[data-page-size]')) return
+            pageSize = Number(e.target.value)
+            productPage = 1
             applyProductSearch()
         })
 
