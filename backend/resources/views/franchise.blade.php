@@ -103,6 +103,7 @@
         @endif
 
         {{-- packages --}}
+        @if($fr['packagesEnabled'] ?? true)
         <section id="packages" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="mx-auto max-w-2xl text-center">
                 <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Franchise packages</span>
