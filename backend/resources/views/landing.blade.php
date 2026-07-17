@@ -417,49 +417,7 @@
     </div>
 
     {{-- Shared product detail modal, populated from whichever card was clicked --}}
-    <div id="product-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" onclick="closeProductModal(event)" role="dialog" aria-modal="true">
-        <div class="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl" onclick="event.stopPropagation()">
-            <button type="button" onclick="closeProductModal()" aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                    <line x1="6" y1="18" x2="18" y2="6" />
-                </svg>
-            </button>
-            <div class="grid md:grid-cols-2">
-                <span class="relative block h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem]">
-                    <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover">
-                    <span id="pm-img-fallback" class="absolute inset-0 hidden items-center justify-center text-xs font-medium text-slate-400">no image</span>
-                </span>
-                <div class="flex flex-col p-8 sm:p-10">
-                    <span id="pm-tag" class="hidden w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600"></span>
-                    <h3 id="pm-name" class="mt-4 text-3xl font-extrabold text-navy-900 sm:text-4xl"></h3>
-                    <p id="pm-desc" class="hidden mt-4 text-base leading-relaxed text-slate-500"></p>
-                    <span id="pm-calories" class="hidden mt-5 w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"></span>
-                    <div id="pm-allergens-wrap" class="hidden mt-6">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
-                        <div id="pm-allergens" class="mt-2.5 flex flex-wrap gap-2"></div>
-                    </div>
-                    <div class="mt-8 border-t border-slate-100 pt-6">
-                        <div class="flex flex-wrap items-center justify-between gap-4">
-                            <span id="pm-price" class="text-3xl font-extrabold text-brand-600"></span>
-                            <div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
-                                <button type="button" id="pm-qty-minus" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">&minus;</button>
-                                <span id="pm-qty" class="w-5 text-center text-sm font-bold text-navy-800">1</span>
-                                <button type="button" id="pm-qty-plus" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
-                            </div>
-                        </div>
-                        <a id="pm-order" href="#" class="mt-5 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                            <span aria-hidden="true">🛍️</span> Order now
-                        </a>
-                        <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
-                            <span aria-hidden="true" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-50 text-[11px]">✅</span>
-                            Made fresh daily with quality ingredients. Satisfaction guaranteed.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('partials.product-modal')
 
     <script>
     (function () {
@@ -493,115 +451,55 @@
             }
         }
 
-        // Shared product detail modal, populated from the clicked card's data-* attrs.
-        var modal = document.getElementById('product-modal');
-        var ALLERGEN_ICONS = {
-            gluten: '🌾', wheat: '🌾',
-            egg: '🥚', eggs: '🥚',
-            milk: '🥛', dairy: '🥛',
-            nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
-            soy: '🫘',
-            shellfish: '🦐', seafood: '🦐',
-            fish: '🐟',
-            sesame: '🌰',
-        };
-        var pmQty = 1;
-        var pmName = '';
-        var updatePmOrderHref = function () {
-            var orderEl = document.getElementById('pm-order');
-            if (orderEl) orderEl.href = '/menu?add=' + encodeURIComponent(pmName) + '&qty=' + pmQty;
-        };
-        var setPmQty = function (q) {
-            pmQty = Math.max(1, q);
-            document.getElementById('pm-qty').textContent = pmQty;
-            updatePmOrderHref();
-        };
-        document.getElementById('pm-qty-minus').addEventListener('click', function () { setPmQty(pmQty - 1); });
-        document.getElementById('pm-qty-plus').addEventListener('click', function () { setPmQty(pmQty + 1); });
+        // Shared product detail modal (partials/product-modal.blade.php),
+        // populated from whichever card's data-* attrs was clicked. Only the
+        // price + qty-stepper + "Order now" link footer is landing-specific
+        // (it just deep-links into /menu — the real cart lives there); the
+        // modal shell itself is shared with menu.blade.php's version.
+        var pmModal = window.ProductModal.init({ closeOnBackdrop: true });
 
-        var openProductModal = function (d) {
-            if (!modal) return;
-            var imgEl = document.getElementById('pm-img');
-            var imgFallback = document.getElementById('pm-img-fallback');
-            if (d.img) {
-                imgEl.src = d.img;
-            } else {
-                imgEl.removeAttribute('src');
-            }
-            // Cards without an image carry the default picture in data-img;
-            // if it (or any product image) fails to load, fall back to the
-            // "no image" tile.
-            imgEl.onerror = function () {
-                imgEl.classList.add('hidden');
-                imgFallback.classList.remove('hidden');
-                imgFallback.classList.add('flex');
-            };
-            imgEl.alt = d.name || '';
-            imgEl.classList.toggle('hidden', !d.img);
-            imgFallback.classList.toggle('hidden', !!d.img);
-            imgFallback.classList.toggle('flex', !d.img);
-            var tagEl = document.getElementById('pm-tag');
-            tagEl.textContent = d.tag || '';
-            tagEl.classList.toggle('hidden', !d.tag);
-            document.getElementById('pm-name').textContent = d.name || '';
-            var descEl = document.getElementById('pm-desc');
-            descEl.textContent = d.desc || '';
-            descEl.classList.toggle('hidden', !d.desc);
-            var calEl = document.getElementById('pm-calories');
-            calEl.textContent = '';
-            if (d.calories) {
-                var flame = document.createElement('span');
-                flame.setAttribute('aria-hidden', 'true');
-                flame.textContent = '🔥';
-                calEl.appendChild(flame);
-                calEl.appendChild(document.createTextNode(' ' + d.calories + ' cal'));
-                calEl.classList.remove('hidden');
-                calEl.classList.add('inline-flex');
-            } else {
-                calEl.classList.add('hidden');
-                calEl.classList.remove('inline-flex');
-            }
-            var allergensWrap = document.getElementById('pm-allergens-wrap');
-            var allergensEl = document.getElementById('pm-allergens');
-            allergensEl.innerHTML = '';
-            var allergens = (d.allergens || '').split(',').map(function (a) { return a.trim(); }).filter(Boolean);
-            if (allergens.length) {
-                allergens.forEach(function (a) {
-                    var span = document.createElement('span');
-                    span.className = 'inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700';
-                    var icon = document.createElement('span');
-                    icon.setAttribute('aria-hidden', 'true');
-                    icon.textContent = ALLERGEN_ICONS[a.toLowerCase()] || '⚠️';
-                    span.appendChild(icon);
-                    span.appendChild(document.createTextNode(' ' + a));
-                    allergensEl.appendChild(span);
-                });
-                allergensWrap.classList.remove('hidden');
-            } else {
-                allergensWrap.classList.add('hidden');
-            }
-            document.getElementById('pm-price').textContent = d.price || '';
-            pmName = d.name || '';
-            setPmQty(1);
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        var buildOrderFooter = function (footer, d) {
+            var qty = 1;
+            footer.innerHTML = `
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <span class="text-3xl font-extrabold text-brand-600">${d.price || ''}</span>
+                    <div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
+                        <button type="button" data-qty-minus aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">&minus;</button>
+                        <span data-qty class="w-5 text-center text-sm font-bold text-navy-800">1</span>
+                        <button type="button" data-qty-plus aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
+                    </div>
+                </div>
+                <a data-order href="#" class="mt-5 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                    <span aria-hidden="true">🛍️</span> Order now
+                </a>`;
+            var qtyEl = footer.querySelector('[data-qty]');
+            var orderEl = footer.querySelector('[data-order]');
+            var updateHref = function () { orderEl.href = '/menu?add=' + encodeURIComponent(d.name || '') + '&qty=' + qty; };
+            var setQty = function (q) { qty = Math.max(1, q); qtyEl.textContent = qty; updateHref(); };
+            footer.querySelector('[data-qty-minus]').addEventListener('click', function () { setQty(qty - 1); });
+            footer.querySelector('[data-qty-plus]').addEventListener('click', function () { setQty(qty + 1); });
+            setQty(1);
         };
-        window.closeProductModal = function (e) {
-            if (e && e.target !== e.currentTarget) return;
-            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
-        };
+
         document.querySelectorAll('.product-card-trigger').forEach(function (el) {
-            el.addEventListener('click', function () { openProductModal(el.dataset); });
+            var open = function () {
+                pmModal.open({
+                    img: el.dataset.img,
+                    name: el.dataset.name,
+                    badge: el.dataset.tag,
+                    desc: el.dataset.desc,
+                    calories: el.dataset.calories,
+                    allergens: el.dataset.allergens,
+                    price: el.dataset.price,
+                }, buildOrderFooter);
+            };
+            el.addEventListener('click', open);
             el.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    openProductModal(el.dataset);
+                    open();
                 }
             });
-        });
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            if (modal && !modal.classList.contains('hidden')) window.closeProductModal();
         });
 
         // Reveal-on-scroll (port of the SPA's Reveal.jsx): fade + slide

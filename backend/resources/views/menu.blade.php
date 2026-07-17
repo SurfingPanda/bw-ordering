@@ -167,11 +167,9 @@
         </div>
     </div>
 
-    {{-- Product detail modal (port of Menu.jsx's ProductMenuModal): one shared
-         shell, filled by renderProductModal() from the clicked card's product. --}}
-    <div id="product-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div id="product-modal-card" class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl"></div>
-    </div>
+    {{-- Product detail modal (port of Menu.jsx's ProductMenuModal), filled by
+         renderProductModal() from the clicked card's product. --}}
+    @include('partials.product-modal')
 
     <script>
     (function () {
@@ -185,16 +183,6 @@
         const CATEGORY_IMAGES = JSON.parse(document.getElementById('menu-category-images-data').textContent || '{}');
         const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
-        const ALLERGEN_ICONS = {
-            gluten: '🌾', wheat: '🌾',
-            egg: '🥚', eggs: '🥚',
-            milk: '🥛', dairy: '🥛',
-            nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
-            soy: '🫘',
-            shellfish: '🦐', seafood: '🦐',
-            fish: '🐟',
-            sesame: '🌰',
-        };
 
         // Products without an image show this default picture instead; if it
         // fails to load, the capturing error listener below degrades any
@@ -628,18 +616,19 @@
         }
 
         // ---- product detail modal (port of Menu.jsx's ProductMenuModal) ----
-        const productModal = document.getElementById('product-modal');
-        const productModalCard = document.getElementById('product-modal-card');
+        // Shell + populate logic live in partials/product-modal.blade.php,
+        // shared with landing.blade.php; only the price/qty/Add-to-cart
+        // footer here is menu-specific, since it drives the real cart.
         let modalProductId = null;
+        const pmModal = window.ProductModal.init({
+            // Deliberately no backdrop-click close — only the ✕ button (and
+            // Escape) dismisses, so a stray click can't lose the reader's place.
+            closeOnBackdrop: false,
+            onClose: () => { modalProductId = null; document.body.classList.remove('overflow-hidden'); },
+        });
 
         function openProductModal(id) { modalProductId = id; renderProductModal(); }
-
-        function closeProductModal() {
-            modalProductId = null;
-            productModal.classList.add('hidden');
-            productModal.classList.remove('flex');
-            document.body.classList.remove('overflow-hidden');
-        }
+        function closeProductModal() { pmModal.close(); }
 
         function renderProductModal() {
             const p = PRODUCTS.find(x => x.id === modalProductId);
@@ -647,56 +636,38 @@
             const qty = cart[p.id] || 0;
             const soldOut = p.status === 'sold_out';
             const onSale = p.original_price != null && Number(p.original_price) > Number(p.price);
-            productModal.classList.remove('hidden');
-            productModal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
-            productModalCard.innerHTML = `
-                <button type="button" data-modal-close aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white">✕</button>
-                <div class="grid md:grid-cols-2">
-                    <div class="relative h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem] ${soldOut ? 'opacity-60' : ''}">
-                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" class="absolute inset-0 h-full w-full object-cover ${soldOut ? 'grayscale' : ''}">
-                    </div>
-                    <div class="flex flex-col p-8 sm:p-10">
-                        ${p.status ? `<span class="w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
-                        <h3 class="mt-4 text-3xl font-extrabold text-navy-900 sm:text-4xl">${p.name}</h3>
-                        ${p.description ? `<p class="mt-4 text-base leading-relaxed text-slate-500">${p.description}</p>` : ''}
-                        ${p.calories != null ? `<span class="mt-5 inline-flex w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"><span aria-hidden="true">🔥</span> ${p.calories} cal</span>` : ''}
-                        ${(p.features || []).length ? `<div class="mt-6">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
-                            <div class="mt-2.5 flex flex-wrap gap-2">${p.features.map(a => `<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700"><span aria-hidden="true">${ALLERGEN_ICONS[String(a).trim().toLowerCase()] || '⚠️'}</span> ${a}</span>`).join('')}</div>
+            pmModal.open({
+                img: p.image_path || FALLBACK_IMG,
+                name: p.name,
+                badge: p.status ? (STATUS_LABEL[p.status] || p.status) : '',
+                desc: p.description || '',
+                calories: p.calories,
+                allergens: p.features || [],
+                dim: soldOut,
+                grayscale: soldOut,
+            }, (footer) => {
+                footer.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <span class="flex items-baseline gap-2">
+                            <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>
+                            ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
+                        </span>
+                        ${!soldOut && qty > 0 ? `<div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
+                            <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">−</button>
+                            <span class="w-5 text-center text-sm font-bold text-navy-800">${qty}</span>
+                            <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
                         </div>` : ''}
-                        <div class="mt-8 border-t border-slate-100 pt-6">
-                            <div class="flex flex-wrap items-center justify-between gap-4">
-                                <span class="flex items-baseline gap-2">
-                                    <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>
-                                    ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
-                                </span>
-                                ${!soldOut && qty > 0 ? `<div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
-                                    <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">−</button>
-                                    <span class="w-5 text-center text-sm font-bold text-navy-800">${qty}</span>
-                                    <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
-                                </div>` : ''}
-                            </div>
-                            ${soldOut
-                                ? '<span class="mt-5 flex items-center justify-center rounded-full bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
-                                : qty === 0
-                                    ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><span aria-hidden="true">🛍️</span> Add to cart</button>`
-                                    : ''}
-                            <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
-                                <span aria-hidden="true" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-50 text-[11px]">✅</span>
-                                Made fresh daily with quality ingredients. Satisfaction guaranteed.
-                            </p>
-                        </div>
                     </div>
-                </div>`;
-            productModalCard.querySelector('[data-modal-close]').addEventListener('click', closeProductModal);
-            productModalCard.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
-            productModalCard.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => dec(btn.dataset.dec)));
+                    ${soldOut
+                        ? '<span class="mt-5 flex items-center justify-center rounded-full bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
+                        : qty === 0
+                            ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><span aria-hidden="true">🛍️</span> Add to cart</button>`
+                            : ''}`;
+                footer.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
+                footer.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => dec(btn.dataset.dec)));
+            });
         }
-
-        // Deliberately no backdrop-click close — only the ✕ button (and
-        // Escape) dismisses, so a stray click can't lose the reader's place.
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalProductId) closeProductModal(); });
 
         function renderAll() {
             renderCategories();
