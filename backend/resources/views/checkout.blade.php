@@ -334,7 +334,7 @@
                         <img src="${i.img || FALLBACK_IMG}" alt="" class="h-full w-full object-cover" onerror="this.remove()">
                         <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-navy-800 px-1 text-[0.6rem] font-bold text-white">${i.qty}</span>
                     </span>
-                    <span class="min-w-0 flex-1 truncate text-sm font-medium text-navy-800">${i.name}</span>
+                    <span class="min-w-0 flex-1 break-words text-sm font-medium text-navy-800">${i.name}</span>
                     <span class="text-sm font-semibold text-navy-800">${peso(Number(i.price || 0) * i.qty)}</span>
                 </li>`).join('');
 
