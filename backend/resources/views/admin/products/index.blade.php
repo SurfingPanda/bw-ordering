@@ -105,6 +105,11 @@
 
 @section('scripts')
     @include('admin.content._form-scripts')
+    {{-- Lightweight catalogue for the bundle linked-products search — id/name/
+         product_id only, so search results can be built on demand by JS
+         instead of every row pre-rendering an <input> per other product
+         (see the comment on data-bundle-products-wrap in _product-row). --}}
+    <script id="all-products-data" type="application/json">{!! $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'product_id' => $p->product_id])->values()->toJson() !!}</script>
     <script>
         // ---- product list rows + edit popup --------------------------------
         // Each [data-row] is a compact summary line (thumbnail + name +
@@ -112,6 +117,7 @@
         // inside the same row (still inside the form, so Save changes submits
         // every product, open or not). Same pattern as the Stores editor.
         const productsForm = document.getElementById('products-form')
+        const ALL_PRODUCTS = JSON.parse(document.getElementById('all-products-data')?.textContent || '[]')
 
         function fieldValue(row, key) {
             const el = row.querySelector(`[name$="[${key}]"]`)
@@ -170,6 +176,15 @@
             if (edit) { openModal(edit.closest('[data-row]')); return }
             const close = e.target.closest('[data-modal-close]')
             if (close) { closeModal(close.closest('[data-modal]')); return }
+            const bundleRemove = e.target.closest('[data-bundle-remove]')
+            if (bundleRemove) {
+                const item = bundleRemove.closest('[data-bundle-item]')
+                const qtyInput = item.querySelector('[data-bundle-qty]')
+                qtyInput.value = ''
+                qtyInput.dispatchEvent(new Event('input', { bubbles: true }))
+                applyBundleFilter(item.closest('[data-bundle-products-wrap]'))
+                return
+            }
             // A removed row leaves a gap on the current page — re-page to fill it.
             if (e.target.closest('#products-form [data-remove]')) { applyProductSearch(); return }
             if (e.target.closest('#products-form [data-add]')) {
@@ -298,10 +313,64 @@
             if (e.key === 'Enter') e.preventDefault() // don't submit the form
         })
 
+        // Linked-products picker: already-linked (qty > 0) rows are the only
+        // ones the server renders (see _product-row's comment on
+        // data-bundle-products-wrap — one <input> per OTHER product per row
+        // blew past PHP's max_input_vars with a 70+ item catalogue). Typing
+        // in the search box instead builds matching rows here, from the
+        // shared ALL_PRODUCTS list, only for products actually being looked
+        // at — so the form only ever carries the fields it needs.
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+        }
+        function bundleItemHtml(rowIndex, product, qty) {
+            const code = product.product_id ? `<span class="text-slate-400">${escapeHtml(product.product_id)}</span> ` : ''
+            return `<div data-bundle-item data-id="${product.id}" data-search="${escapeHtml((product.name + ' ' + (product.product_id || '')).toLowerCase())}" class="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy-800 transition hover:bg-slate-50">
+                <span class="min-w-0 flex-1 truncate">${code}${escapeHtml(product.name)}</span>
+                <input type="number" min="0" step="1" placeholder="0" data-bundle-qty name="products[${rowIndex}][bundle_product_ids][${product.id}]" value="${qty > 0 ? qty : ''}" class="w-16 shrink-0 rounded-md border border-slate-300 px-2 py-1 text-xs text-right outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                <button type="button" data-bundle-remove aria-label="Remove ${escapeHtml(product.name)} from bundle" class="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+                </button>
+            </div>`
+        }
+        function applyBundleFilter(wrap) {
+            const q = (wrap.querySelector('[data-bundle-search]')?.value || '').trim().toLowerCase()
+            const list = wrap.querySelector('[data-bundle-list]')
+            const rowIndex = wrap.dataset.rowIndex
+            const selfId = wrap.dataset.selfId
+
+            let anyVisible = false
+            list.querySelectorAll('[data-bundle-item]').forEach((item) => {
+                const qty = Number(item.querySelector('[data-bundle-qty]').value) || 0
+                const show = qty > 0 || (q && item.dataset.search.includes(q))
+                item.classList.toggle('hidden', !show)
+                if (show) anyVisible = true
+            })
+
+            if (q) {
+                const existingIds = new Set(Array.from(list.querySelectorAll('[data-bundle-item]')).map((el) => el.dataset.id))
+                ALL_PRODUCTS.forEach((p) => {
+                    if (p.id === selfId || existingIds.has(p.id)) return
+                    const hay = (p.name + ' ' + (p.product_id || '')).toLowerCase()
+                    if (!hay.includes(q)) return
+                    list.insertAdjacentHTML('beforeend', bundleItemHtml(rowIndex, p, 0))
+                    anyVisible = true
+                })
+            }
+
+            const emptyMsg = list.querySelector('[data-bundle-empty]')
+            if (emptyMsg) emptyMsg.classList.toggle('hidden', anyVisible)
+            const noMatch = wrap.querySelector('[data-bundle-no-match]')
+            if (noMatch) noMatch.classList.toggle('hidden', anyVisible || !q)
+        }
+
         // Keep the summary line in sync while editing in the popup.
         productsForm.addEventListener('input', (e) => {
             const row = e.target.closest('[data-row]')
             if (row) syncSummary(row)
+            if (e.target.matches('[data-bundle-search]')) {
+                applyBundleFilter(e.target.closest('[data-bundle-products-wrap]'))
+            }
         })
         productsForm.addEventListener('change', (e) => {
             const row = e.target.closest('[data-row]')

@@ -70,25 +70,47 @@
                          menu.blade.php's add()), priced at ₱0 up to the
                          matching bundle quantity (see OrderCreationService).
                          Blank/0 = not included. --}}
-                    <div data-bundle-products-wrap class="{{ $type === 'bundle' ? '' : 'hidden' }}">
+                    {{-- Only already-linked products render real <input>s here —
+                         with 70+ products in the catalogue, rendering one qty
+                         field per OTHER product on EVERY row (bundle or not)
+                         used to blow past PHP's max_input_vars (1000) on save,
+                         silently dropping fields — including other rows'
+                         prices. Search results are built on demand by JS
+                         instead (see applyBundleFilter in index.blade.php),
+                         so the form only ever carries fields for products
+                         actually being linked. --}}
+                    <div data-bundle-products-wrap data-row-index="{{ $i }}" data-self-id="{{ $product['id'] ?? '' }}" class="{{ $type === 'bundle' ? '' : 'hidden' }}">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Linked products &amp; quantity (auto-added with this bundle, included free)</span>
                         @php($linkedQtys = (array) ($product['bundle_product_ids'] ?? []))
-                        <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-slate-300 p-2">
-                            @forelse(($products ?? []) as $op)
-                                @php($opId = is_array($op) ? ($op['id'] ?? null) : $op->id)
-                                @continue($opId === null || $opId === ($product['id'] ?? null))
+                        @php($productsById = collect($products ?? [])->keyBy(fn ($op) => is_array($op) ? ($op['id'] ?? null) : $op->id))
+                        <input type="text" data-bundle-search data-no-dirty placeholder="Search products by name or ID…"
+                            class="mb-1.5 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        <div data-bundle-list class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-slate-300 p-2">
+                            @forelse($linkedQtys as $opId => $opQty)
+                                @continue((int) $opQty <= 0 || ! $productsById->has($opId))
+                                @php($op = $productsById[$opId])
                                 @php($opName = is_array($op) ? ($op['name'] ?? '') : $op->name)
-                                @php($opQty = (int) ($linkedQtys[$opId] ?? 0))
-                                <div class="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy-800 transition hover:bg-slate-50">
-                                    <span class="truncate">{{ $opName }}</span>
-                                    <input type="number" min="0" step="1" placeholder="0"
+                                @php($opCode = is_array($op) ? ($op['product_id'] ?? '') : $op->product_id)
+                                <div data-bundle-item data-id="{{ $opId }}" data-search="{{ strtolower(trim($opName.' '.$opCode)) }}"
+                                    class="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 text-sm text-navy-800 transition hover:bg-slate-50">
+                                    <span class="min-w-0 flex-1 truncate">
+                                        @if($opCode)<span class="text-slate-400">{{ $opCode }}</span> @endif{{ $opName }}
+                                    </span>
+                                    <input type="number" min="0" step="1" placeholder="0" data-bundle-qty
                                         name="products[{{ $i }}][bundle_product_ids][{{ $opId }}]"
-                                        value="{{ $opQty > 0 ? $opQty : '' }}"
+                                        value="{{ (int) $opQty }}"
                                         class="w-16 shrink-0 rounded-md border border-slate-300 px-2 py-1 text-xs text-right outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                                    <button type="button" data-bundle-remove aria-label="Remove {{ $opName }} from bundle"
+                                        class="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
+                                        </svg>
+                                    </button>
                                 </div>
                             @empty
-                                <p class="px-1.5 py-1 text-xs text-slate-400">No other products yet.</p>
+                                <p data-bundle-empty class="px-1.5 py-1 text-xs text-slate-400">No products linked yet — search below to add some.</p>
                             @endforelse
+                            <p data-bundle-no-match class="hidden px-1.5 py-1 text-xs text-slate-400">No products match your search.</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
