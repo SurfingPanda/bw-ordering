@@ -576,8 +576,8 @@
                     <li class="flex items-center gap-3 px-5 py-3">
                         <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img data-img-fallback="remove" src="${p.image_path || FALLBACK_IMG}" alt="" class="h-full w-full object-cover"></span>
                         <div class="min-w-0 flex-1">
-                            <p class="flex items-center gap-1.5 text-sm font-medium text-navy-800"><span class="truncate">${p.name}</span>${p.bundleItems ? '<span class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-brand-600">Bundle</span>' : ''}</p>
-                            ${p.bundleItems ? `<ul class="mt-0.5 space-y-0.5 text-xs text-slate-400">${p.bundleItems.map(b => `<li class="truncate">• ${b.name}</li>`).join('')}</ul>` : ''}
+                            <p class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-navy-800"><span class="min-w-0 break-words">${p.name}</span>${p.bundleItems ? '<span class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-brand-600">Bundle</span>' : ''}</p>
+                            ${p.bundleItems ? `<ul class="mt-0.5 space-y-0.5 text-xs text-slate-400">${p.bundleItems.map(b => `<li class="break-words">• ${b.name}</li>`).join('')}</ul>` : ''}
                             <p class="text-xs text-slate-500">${peso(p.price)} each${p.regularTotal > p.price ? ` <span class="text-slate-400 line-through">${peso(p.regularTotal)}</span>` : ''}</p>
                         </div>
                         ${confirmRemoveId === p.id
