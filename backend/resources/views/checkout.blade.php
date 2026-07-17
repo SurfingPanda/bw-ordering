@@ -244,10 +244,12 @@
 
     <script id="live-checkout-config" type="application/json">{!! json_encode(['qrUrl' => route('checkout.qr'), 'storeUrl' => route('checkout.store')]) !!}</script>
 
+    {{-- Shared pricing formula + peso formatter (also used by menu.blade.php). --}}
+    @include('partials.order-pricing')
+
     <script>
     (function () {
-        const VAT_RATE = 0.12, DELIVERY_FEE = 79, EXPRESS_FEE = 149, FREE_DELIVERY_MIN = 1000;
-        const peso = (n) => `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const { peso, DELIVERY_FEE, computeTotals, renderTotalsHTML } = window.OrderPricing;
         // Default picture for items without an image (same as /menu); if it
         // fails to load, onerror clears the img leaving the plain gray box.
         const FALLBACK_IMG = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
@@ -313,28 +315,11 @@
         }).catch(() => {});
 
         function subtotal() { return items.reduce((s, i) => s + Number(i.price || 0) * i.qty, 0); }
-        function voucherDiscount(sub) {
-            const def = voucherCode ? VOUCHER_DEFS[voucherCode] : null;
-            if (!def) return 0;
-            if (def.type === 'percent') return (sub * def.value) / 100;
-            if (def.type === 'amount') return Math.min(def.value, sub);
-            return 0;
-        }
-        function computeTotals() {
-            const sub = subtotal();
-            const discount = voucherDiscount(sub);
-            const discounted = sub - discount;
-            const def = voucherCode ? VOUCHER_DEFS[voucherCode] : null;
-            const freeDelivery = sub >= FREE_DELIVERY_MIN || def?.type === 'freedel';
-            let delivery = 0;
-            if (mode === 'delivery') delivery = speed === 'express' ? EXPRESS_FEE : (freeDelivery ? 0 : DELIVERY_FEE);
-            const vat = discounted * VAT_RATE;
-            const total = discounted + vat + delivery;
-            return { sub, discount, delivery, vat, total, freeDelivery };
-        }
 
         function renderSummary() {
-            const t = computeTotals();
+            const sub = subtotal();
+            const voucher = voucherCode ? VOUCHER_DEFS[voucherCode] : null;
+            const t = computeTotals({ subtotal: sub, voucher, deliveryMode: mode, deliverySpeed: speed });
             document.getElementById('summary-items').innerHTML = items.map(i => `
                 <li class="flex items-center gap-3">
                     <span class="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
@@ -345,13 +330,7 @@
                     <span class="text-sm font-semibold text-navy-800">${peso(Number(i.price || 0) * i.qty)}</span>
                 </li>`).join('');
 
-            document.getElementById('summary-totals').innerHTML = `
-                <div class="flex justify-between text-slate-600"><span>Subtotal</span><span class="font-semibold text-navy-800">${peso(t.sub)}</span></div>
-                ${t.discount > 0 ? `<div class="flex justify-between text-green-600"><span>Discount</span><span class="font-semibold">−${peso(t.discount)}</span></div>` : ''}
-                <div class="flex justify-between text-slate-600"><span>${mode === 'pickup' ? 'Pickup' : 'Delivery Fee'}</span><span class="${t.delivery === 0 ? 'font-semibold text-green-600' : ''}">${t.delivery === 0 ? 'FREE' : peso(t.delivery)}</span></div>
-                <div class="flex justify-between text-slate-600"><span>VAT (12%)</span><span>${peso(t.vat)}</span></div>
-                <div class="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-navy-800"><span>Total</span><span>${peso(t.total)}</span></div>
-            `;
+            document.getElementById('summary-totals').innerHTML = renderTotalsHTML(t, { deliveryLabel: mode === 'pickup' ? 'Pickup' : 'Delivery Fee' });
 
             document.querySelector('.standard-price').textContent = t.freeDelivery ? 'FREE' : peso(DELIVERY_FEE);
 

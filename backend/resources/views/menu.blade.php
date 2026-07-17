@@ -171,12 +171,12 @@
          renderProductModal() from the clicked card's product. --}}
     @include('partials.product-modal')
 
+    {{-- Shared pricing formula + peso formatter (also used by checkout.blade.php). --}}
+    @include('partials.order-pricing')
+
     <script>
     (function () {
-        const VAT_RATE = 0.12;
-        const DELIVERY_FEE = 79;
-        const FREE_DELIVERY_MIN = 1000;
-        const peso = (n) => `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const { peso, computeTotals, renderTotalsHTML } = window.OrderPricing;
 
         const PRODUCTS = JSON.parse(document.getElementById('menu-products-data').textContent || '[]');
         const MENU_PROMO = JSON.parse(document.getElementById('menu-promo-data').textContent || '{}');
@@ -551,24 +551,10 @@
                 list.querySelectorAll('[data-cancel-remove]').forEach(btn => btn.addEventListener('click', () => { confirmRemoveId = null; renderCart(); }));
             });
 
-            let discount = 0;
-            if (voucher?.type === 'percent') discount = (subtotal * voucher.value) / 100;
-            else if (voucher?.type === 'amount') discount = Math.min(voucher.value, subtotal);
-            const discounted = subtotal - discount;
-            const freeDelivery = subtotal >= FREE_DELIVERY_MIN || voucher?.type === 'freedel';
-            const delivery = freeDelivery ? 0 : DELIVERY_FEE;
-            const vat = discounted * VAT_RATE;
-            const total = discounted + vat + delivery;
+            const t = computeTotals({ subtotal, voucher });
 
             document.querySelectorAll('.cart-totals').forEach(el => {
-                el.innerHTML = `
-                    <div class="flex justify-between text-slate-600"><span>Subtotal</span><span class="font-semibold text-navy-800">${peso(subtotal)}</span></div>
-                    ${discount > 0 ? `<div class="flex justify-between text-green-600"><span>Discount</span><span class="font-semibold">−${peso(discount)}</span></div>` : ''}
-                    <div class="flex justify-between text-slate-600"><span>Delivery</span><span class="${freeDelivery ? 'font-semibold text-green-600' : 'text-slate-500'}">${freeDelivery ? 'FREE' : peso(DELIVERY_FEE)}</span></div>
-                    <div class="flex justify-between text-slate-600"><span>VAT (12%)</span><span>${peso(vat)}</span></div>
-                    <div class="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-navy-800"><span>Total</span><span>${peso(total)}</span></div>
-                    ${voucher && !freeDelivery ? `<p class="pt-1 text-xs text-brand-600">Add ${peso(FREE_DELIVERY_MIN - subtotal)} more for free delivery 🚚</p>` : ''}
-                `;
+                el.innerHTML = renderTotalsHTML(t, { showFreeDeliveryHint: !!voucher });
             });
 
             document.querySelectorAll('.voucher-box').forEach(box => {
