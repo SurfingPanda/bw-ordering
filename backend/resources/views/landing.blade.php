@@ -74,7 +74,7 @@
         $social = $content['social'] ?? [];
         $socialMeta = [
             ['key' => 'facebook', 'label' => 'Facebook', 'icon' => 'f'],
-            ['key' => 'linkedin', 'label' => 'LinkedIn', 'icon' => 'in'],
+            ['key' => 'tiktok', 'label' => 'TikTok', 'icon' => '<svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07Z"/></svg>'],
             ['key' => 'x', 'label' => 'X (Twitter)', 'icon' => '𝕏'],
         ];
         $activeSocials = array_values(array_filter(array_map(function ($s) use ($social) {
@@ -123,7 +123,7 @@
                         <a href="{{ $s['href'] }}" @if($isExternal($s['href'])) target="_blank" rel="noopener noreferrer" @endif
                             aria-label="{{ $s['label'] }}"
                             class="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-base font-semibold text-white transition hover:scale-110 hover:bg-brand-600">
-                            {{ $s['icon'] }}
+                            {!! $s['icon'] !!}
                         </a>
                     @endforeach
                 </div>
@@ -141,7 +141,7 @@
 
         {{-- Nav --}}
         <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
-            @php $orderState = $btn('navOrder'); @endphp
+            @php $orderState = $btn('navOrder'); $signInState = $btn('navSignIn'); @endphp
             <nav class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
                     <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
@@ -158,8 +158,9 @@
                         <a href="{{ $accountRoute }}" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
-                    @else
-                        <a href="{{ route('login') }}" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">Sign In</a>
+                    @elseif($signInState !== 'off')
+                        <a href="{{ route('login') }}" @if($signInState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
+                            class="text-sm font-semibold text-navy-700 transition hover:text-brand-600 {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
                     @endif
                     @if($orderState !== 'off')
                         <a href="/menu" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
@@ -189,8 +190,9 @@
                         <a href="{{ $accountRoute }}" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
-                    @else
-                        <a href="{{ route('login') }}" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">Sign In</a>
+                    @elseif($signInState !== 'off')
+                        <a href="{{ route('login') }}" @if($signInState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
+                            class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
                     @endif
                     @if($orderState !== 'off')
                         <a href="/menu" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
@@ -425,23 +427,34 @@
             </button>
             <div class="grid md:grid-cols-2">
                 <span class="relative block h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem]">
-                    <img id="pm-img" src="" alt="" class="h-full w-full object-cover">
-                    <span id="pm-img-fallback" class="hidden h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
+                    <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover">
+                    <span id="pm-img-fallback" class="absolute inset-0 hidden items-center justify-center text-xs font-medium text-slate-400">no image</span>
                 </span>
                 <div class="flex flex-col p-8 sm:p-10">
-                    <span id="pm-tag" class="hidden w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600"></span>
-                    <h3 id="pm-name" class="mt-4 text-3xl font-bold text-navy-800"></h3>
-                    <p id="pm-desc" class="hidden mt-4 text-base leading-relaxed text-slate-600"></p>
-                    <span id="pm-calories" class="hidden mt-4 w-fit rounded-full bg-navy-50 px-3 py-1 text-sm font-semibold text-navy-700"></span>
+                    <span id="pm-tag" class="hidden w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600"></span>
+                    <h3 id="pm-name" class="mt-4 text-3xl font-extrabold text-navy-900 sm:text-4xl"></h3>
+                    <p id="pm-desc" class="hidden mt-4 text-base leading-relaxed text-slate-500"></p>
+                    <span id="pm-calories" class="hidden mt-5 w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"></span>
                     <div id="pm-allergens-wrap" class="hidden mt-6">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-navy-700">Allergens</p>
-                        <div id="pm-allergens" class="mt-2 flex flex-wrap gap-2"></div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
+                        <div id="pm-allergens" class="mt-2.5 flex flex-wrap gap-2"></div>
                     </div>
-                    <div class="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
-                        <span id="pm-price" class="text-3xl font-bold text-brand-600"></span>
-                        <a id="pm-order" href="#" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                            Order now
+                    <div class="mt-8 border-t border-slate-100 pt-6">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <span id="pm-price" class="text-3xl font-extrabold text-brand-600"></span>
+                            <div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
+                                <button type="button" id="pm-qty-minus" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">&minus;</button>
+                                <span id="pm-qty" class="w-5 text-center text-sm font-bold text-navy-800">1</span>
+                                <button type="button" id="pm-qty-plus" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
+                            </div>
+                        </div>
+                        <a id="pm-order" href="#" class="mt-5 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                            <span aria-hidden="true">🛍️</span> Order now
                         </a>
+                        <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
+                            <span aria-hidden="true" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-50 text-[11px]">✅</span>
+                            Made fresh daily with quality ingredients. Satisfaction guaranteed.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -482,6 +495,30 @@
 
         // Shared product detail modal, populated from the clicked card's data-* attrs.
         var modal = document.getElementById('product-modal');
+        var ALLERGEN_ICONS = {
+            gluten: '🌾', wheat: '🌾',
+            egg: '🥚', eggs: '🥚',
+            milk: '🥛', dairy: '🥛',
+            nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
+            soy: '🫘',
+            shellfish: '🦐', seafood: '🦐',
+            fish: '🐟',
+            sesame: '🌰',
+        };
+        var pmQty = 1;
+        var pmName = '';
+        var updatePmOrderHref = function () {
+            var orderEl = document.getElementById('pm-order');
+            if (orderEl) orderEl.href = '/menu?add=' + encodeURIComponent(pmName) + '&qty=' + pmQty;
+        };
+        var setPmQty = function (q) {
+            pmQty = Math.max(1, q);
+            document.getElementById('pm-qty').textContent = pmQty;
+            updatePmOrderHref();
+        };
+        document.getElementById('pm-qty-minus').addEventListener('click', function () { setPmQty(pmQty - 1); });
+        document.getElementById('pm-qty-plus').addEventListener('click', function () { setPmQty(pmQty + 1); });
+
         var openProductModal = function (d) {
             if (!modal) return;
             var imgEl = document.getElementById('pm-img');
@@ -511,21 +548,32 @@
             descEl.textContent = d.desc || '';
             descEl.classList.toggle('hidden', !d.desc);
             var calEl = document.getElementById('pm-calories');
+            calEl.textContent = '';
             if (d.calories) {
-                calEl.textContent = d.calories + ' cal';
+                var flame = document.createElement('span');
+                flame.setAttribute('aria-hidden', 'true');
+                flame.textContent = '🔥';
+                calEl.appendChild(flame);
+                calEl.appendChild(document.createTextNode(' ' + d.calories + ' cal'));
                 calEl.classList.remove('hidden');
+                calEl.classList.add('inline-flex');
             } else {
                 calEl.classList.add('hidden');
+                calEl.classList.remove('inline-flex');
             }
             var allergensWrap = document.getElementById('pm-allergens-wrap');
             var allergensEl = document.getElementById('pm-allergens');
             allergensEl.innerHTML = '';
-            var allergens = (d.allergens || '').split(',').filter(Boolean);
+            var allergens = (d.allergens || '').split(',').map(function (a) { return a.trim(); }).filter(Boolean);
             if (allergens.length) {
                 allergens.forEach(function (a) {
                     var span = document.createElement('span');
-                    span.className = 'inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700';
-                    span.textContent = a;
+                    span.className = 'inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700';
+                    var icon = document.createElement('span');
+                    icon.setAttribute('aria-hidden', 'true');
+                    icon.textContent = ALLERGEN_ICONS[a.toLowerCase()] || '⚠️';
+                    span.appendChild(icon);
+                    span.appendChild(document.createTextNode(' ' + a));
                     allergensEl.appendChild(span);
                 });
                 allergensWrap.classList.remove('hidden');
@@ -533,7 +581,8 @@
                 allergensWrap.classList.add('hidden');
             }
             document.getElementById('pm-price').textContent = d.price || '';
-            document.getElementById('pm-order').href = '/menu?add=' + encodeURIComponent(d.name || '');
+            pmName = d.name || '';
+            setPmQty(1);
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         };

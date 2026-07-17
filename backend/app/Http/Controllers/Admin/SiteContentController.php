@@ -34,6 +34,7 @@ class SiteContentController extends Controller
     /** Mirrors frontend/src/lib/content.js's LANDING_BUTTONS. */
     public const LANDING_BUTTONS = [
         ['key' => 'navOrder', 'label' => 'Order Now', 'group' => 'Navigation bar'],
+        ['key' => 'navSignIn', 'label' => 'Sign In', 'group' => 'Navigation bar'],
         ['key' => 'bestSellersMenu', 'label' => 'See full menu', 'group' => 'Best Sellers'],
         ['key' => 'promoOrder', 'label' => 'Order a custom cake', 'group' => 'Promo banner'],
         ['key' => 'storeLocatorFind', 'label' => 'Find a store (+ search box)', 'group' => 'Store locator'],

@@ -55,15 +55,25 @@
                     <a href="/" class="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-white/20">
                         View site
                     </a>
-                    <form method="POST" action="{{ route('logout') }}" class="flex-1">
-                        @csrf
-                        <button type="submit" class="w-full rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600">
-                            Logout
-                        </button>
-                    </form>
+                    <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
+                    <button type="button" onclick="showLogoutConfirm()" class="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600">
+                        Logout
+                    </button>
                 </div>
             </div>
         </aside>
+
+        {{-- Log-out confirmation (ConfirmModal port, same pattern as the landing/menu pages) --}}
+        <div id="logout-confirm-modal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" onclick="hideLogoutConfirm(event)" role="dialog" aria-modal="true" aria-label="Log out?">
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onclick="event.stopPropagation()">
+                <h3 class="text-lg font-bold text-navy-800">Log out?</h3>
+                <p class="mt-2 text-sm leading-relaxed text-slate-500">You'll be signed out of the Site Editor.</p>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="hideLogoutConfirm()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50">Cancel</button>
+                    <button type="button" onclick="document.getElementById('logout-form').submit()" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">Log out</button>
+                </div>
+            </div>
+        </div>
 
         {{-- main --}}
         <div class="flex min-w-0 flex-1 flex-col">
@@ -121,6 +131,16 @@
         document.getElementById('sidebar-open').addEventListener('click', () => setSidebarOpen(true))
         document.getElementById('sidebar-close').addEventListener('click', () => setSidebarOpen(false))
         sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false))
+
+        window.showLogoutConfirm = function () {
+            const el = document.getElementById('logout-confirm-modal')
+            if (el) { el.classList.remove('hidden'); el.classList.add('flex') }
+        }
+        window.hideLogoutConfirm = function (e) {
+            if (e && e.target !== e.currentTarget) return
+            const el = document.getElementById('logout-confirm-modal')
+            if (el) { el.classList.add('hidden'); el.classList.remove('flex') }
+        }
     </script>
     @yield('scripts')
 </body>

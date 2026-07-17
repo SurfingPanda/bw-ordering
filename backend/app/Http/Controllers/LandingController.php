@@ -38,6 +38,7 @@ class LandingController extends Controller
         ],
         'buttons' => [
             'navOrder' => true,
+            'navSignIn' => true,
             'bestSellersMenu' => true,
             'promoOrder' => true,
             'storeLocatorFind' => true,
@@ -68,7 +69,7 @@ class LandingController extends Controller
         ],
         'social' => [
             'facebook' => 'https://www.facebook.com/bwsuperbakeshop',
-            'linkedin' => '',
+            'tiktok' => '',
             'x' => '',
         ],
         'footer' => [

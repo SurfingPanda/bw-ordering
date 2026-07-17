@@ -588,7 +588,7 @@
         {{-- ============ Social Links ============ --}}
         <section data-panel="social" class="{{ $panel }}">
             <h2 class="text-lg font-bold text-navy-800">Social Links</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The Facebook, LinkedIn, and X (Twitter) icons in the footer. Paste each profile’s full URL (https://…). All three icons always show; a field left empty just won’t link anywhere.</p>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The Facebook, TikTok, and X (Twitter) icons in the footer. Paste each profile’s full URL (https://…). All three icons always show; a field left empty just won’t link anywhere.</p>
             @php($so = (array) ($content['social'] ?? []))
             <div class="space-y-3">
                 <label class="block">
@@ -596,8 +596,8 @@
                     <input type="text" name="social[facebook]" value="{{ $so['facebook'] ?? '' }}" placeholder="https://www.facebook.com/…" class="{{ $input }}">
                 </label>
                 <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-slate-500">LinkedIn URL</span>
-                    <input type="text" name="social[linkedin]" value="{{ $so['linkedin'] ?? '' }}" class="{{ $input }}">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">TikTok URL</span>
+                    <input type="text" name="social[tiktok]" value="{{ $so['tiktok'] ?? '' }}" class="{{ $input }}">
                 </label>
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">X (Twitter) URL</span>

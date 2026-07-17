@@ -185,6 +185,16 @@
         const CATEGORY_IMAGES = JSON.parse(document.getElementById('menu-category-images-data').textContent || '{}');
         const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
+        const ALLERGEN_ICONS = {
+            gluten: '🌾', wheat: '🌾',
+            egg: '🥚', eggs: '🥚',
+            milk: '🥛', dairy: '🥛',
+            nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
+            soy: '🫘',
+            shellfish: '🦐', seafood: '🦐',
+            fish: '🐟',
+            sesame: '🌰',
+        };
 
         // Products without an image show this default picture instead; if it
         // fails to load, the capturing error listener below degrades any
@@ -569,7 +579,7 @@
                     <div class="flex justify-between text-slate-600"><span>Delivery</span><span class="${freeDelivery ? 'font-semibold text-green-600' : 'text-slate-500'}">${freeDelivery ? 'FREE' : peso(DELIVERY_FEE)}</span></div>
                     <div class="flex justify-between text-slate-600"><span>VAT (12%)</span><span>${peso(vat)}</span></div>
                     <div class="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-navy-800"><span>Total</span><span>${peso(total)}</span></div>
-                    ${!freeDelivery ? `<p class="pt-1 text-xs text-brand-600">Add ${peso(FREE_DELIVERY_MIN - subtotal)} more for free delivery 🚚</p>` : ''}
+                    ${voucher && !freeDelivery ? `<p class="pt-1 text-xs text-brand-600">Add ${peso(FREE_DELIVERY_MIN - subtotal)} more for free delivery 🚚</p>` : ''}
                 `;
             });
 
@@ -643,32 +653,39 @@
             productModalCard.innerHTML = `
                 <button type="button" data-modal-close aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white">✕</button>
                 <div class="grid md:grid-cols-2">
-                    <div class="h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[24rem] ${soldOut ? 'opacity-60' : ''}">
-                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" class="h-full w-full object-cover ${soldOut ? 'grayscale' : ''}">
+                    <div class="relative h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem] ${soldOut ? 'opacity-60' : ''}">
+                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" class="absolute inset-0 h-full w-full object-cover ${soldOut ? 'grayscale' : ''}">
                     </div>
-                    <div class="flex flex-col p-8">
-                        ${p.status ? `<span class="w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-600">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
-                        <h3 class="mt-3 text-2xl font-bold text-navy-800">${p.name}</h3>
-                        ${p.description ? `<p class="mt-3 text-sm leading-relaxed text-slate-600">${p.description}</p>` : ''}
-                        ${p.calories != null ? `<span class="mt-4 w-fit rounded-full bg-navy-50 px-3 py-1 text-sm font-semibold text-navy-700">${p.calories} cal</span>` : ''}
-                        ${(p.features || []).length ? `<div class="mt-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-navy-700">Allergens</p>
-                            <div class="mt-2 flex flex-wrap gap-2">${p.features.map(a => `<span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">${a}</span>`).join('')}</div>
+                    <div class="flex flex-col p-8 sm:p-10">
+                        ${p.status ? `<span class="w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
+                        <h3 class="mt-4 text-3xl font-extrabold text-navy-900 sm:text-4xl">${p.name}</h3>
+                        ${p.description ? `<p class="mt-4 text-base leading-relaxed text-slate-500">${p.description}</p>` : ''}
+                        ${p.calories != null ? `<span class="mt-5 inline-flex w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"><span aria-hidden="true">🔥</span> ${p.calories} cal</span>` : ''}
+                        ${(p.features || []).length ? `<div class="mt-6">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
+                            <div class="mt-2.5 flex flex-wrap gap-2">${p.features.map(a => `<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700"><span aria-hidden="true">${ALLERGEN_ICONS[String(a).trim().toLowerCase()] || '⚠️'}</span> ${a}</span>`).join('')}</div>
                         </div>` : ''}
-                        <div class="mt-auto flex flex-wrap items-center justify-between gap-4 pt-8">
-                            <span class="flex items-baseline gap-2">
-                                <span class="text-2xl font-bold text-brand-600">${peso(p.price)}</span>
-                                ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
-                            </span>
+                        <div class="mt-8 border-t border-slate-100 pt-6">
+                            <div class="flex flex-wrap items-center justify-between gap-4">
+                                <span class="flex items-baseline gap-2">
+                                    <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>
+                                    ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
+                                </span>
+                                ${!soldOut && qty > 0 ? `<div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
+                                    <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">−</button>
+                                    <span class="w-5 text-center text-sm font-bold text-navy-800">${qty}</span>
+                                    <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
+                                </div>` : ''}
+                            </div>
                             ${soldOut
-                                ? '<span class="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-400">Sold out</span>'
+                                ? '<span class="mt-5 flex items-center justify-center rounded-full bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
                                 : qty === 0
-                                    ? `<button type="button" data-add="${p.id}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">Add to cart</button>`
-                                    : `<div class="flex items-center gap-3">
-                                        <button type="button" data-dec="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 transition hover:bg-brand-500 hover:text-white">−</button>
-                                        <span class="w-6 text-center text-base font-semibold">${qty}</span>
-                                        <button type="button" data-add="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 transition hover:bg-brand-500 hover:text-white">+</button>
-                                    </div>`}
+                                    ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><span aria-hidden="true">🛍️</span> Add to cart</button>`
+                                    : ''}
+                            <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
+                                <span aria-hidden="true" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-50 text-[11px]">✅</span>
+                                Made fresh daily with quality ingredients. Satisfaction guaranteed.
+                            </p>
                         </div>
                     </div>
                 </div>`;
