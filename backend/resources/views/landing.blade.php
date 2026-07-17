@@ -147,10 +147,16 @@
                     <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
                 </a>
 
+                @php
+                    // Animated underline on hover: a rounded bar that grows
+                    // from the left, matching the pill/soft-edge language
+                    // used everywhere else on this page (buttons, badges).
+                    $navLink = 'relative py-1 transition hover:text-brand-600 after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 after:ease-out after:content-[\'\'] hover:after:w-full';
+                @endphp
                 <ul class="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
-                    <li><a href="/menu" class="transition hover:text-brand-600">Menu</a></li>
-                    <li><a href="/stores" class="transition hover:text-brand-600">Store</a></li>
-                    <li><a href="/franchise" class="transition hover:text-brand-600">Partner with us</a></li>
+                    <li><a href="/menu" class="{{ $navLink }}">Menu</a></li>
+                    <li><a href="/stores" class="{{ $navLink }}">Store</a></li>
+                    <li><a href="/franchise" class="{{ $navLink }}">Partner with us</a></li>
                 </ul>
 
                 <div class="hidden items-center gap-3 lg:flex">
