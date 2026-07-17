@@ -395,18 +395,43 @@
             }
         }
         function handlePromoButton(slide) {
-            const link = (slide?.buttonLink || '').trim();
-            if (!link) return;
-            try {
-                const url = new URL(link, window.location.origin);
-                const addName = url.searchParams.get('add');
-                if (addName) {
-                    const product = PRODUCTS.find(p => p.name.toLowerCase() === addName.toLowerCase());
-                    if (product) { add(product.id); document.getElementById('cart-drawer').classList.remove('hidden'); return; }
+            // Bundle slide: add one bundle line named after the promo and open
+            // the cart. The server verifies the exact linked-product set, so
+            // the bundle is only orderable while every component is live — if
+            // any is archived or sold out, the button does nothing rather than
+            // charging the promo price for a partial bundle. The legacy
+            // button-link fallback below still serves pre-bundle promos.
+            const linked = slide?.products || [];
+            if (linked.length) {
+                const all = linked.map(id => PRODUCTS.find(p => p.id === id));
+                if (all.every(p => p && p.status !== 'sold_out')) {
+                    add('bundle:' + encodeURIComponent((slide.title || '').trim() || 'Promo bundle') + ':' + linked.join(','));
+                    document.getElementById('cart-drawer').classList.remove('hidden');
                 }
-                if (url.origin === window.location.origin) window.location.href = url.pathname + url.search;
-                else window.open(link, '_blank', 'noopener');
-            } catch { window.location.href = link; }
+                return;
+            }
+            const link = (slide?.buttonLink || '').trim();
+            if (link) {
+                try {
+                    const url = new URL(link, window.location.origin);
+                    const addName = url.searchParams.get('add');
+                    if (addName) {
+                        const product = PRODUCTS.find(p => p.name.toLowerCase() === addName.toLowerCase());
+                        if (product) { add(product.id); document.getElementById('cart-drawer').classList.remove('hidden'); return; }
+                    }
+                    if (url.origin === window.location.origin) window.location.href = url.pathname + url.search;
+                    else window.open(link, '_blank', 'noopener');
+                } catch { window.location.href = link; }
+                return;
+            }
+            // No bundle and no legacy link (the editor no longer offers one):
+            // fall back to matching a product by the slide's title, so a
+            // simple one-product promo still adds it to the cart.
+            const byTitle = PRODUCTS.find(p => p.name.toLowerCase() === (slide?.title || '').trim().toLowerCase());
+            if (byTitle && byTitle.status !== 'sold_out') {
+                add(byTitle.id);
+                document.getElementById('cart-drawer').classList.remove('hidden');
+            }
         }
 
         // ---- infinite scroll: render in batches, grow as the sentinel nears ----
@@ -504,9 +529,39 @@
         // Cart line pending the small "Remove?" confirmation (✕ was clicked).
         let confirmRemoveId = null;
 
+        // A promo bundle travels in the cart as one line under a synthetic key
+        // ("bundle:<encoded title>:<id,id,…>") so it survives reloads without
+        // extra storage. It renders as a single line named after the promo.
+        // Price comes from the matching live slide's bundlePrice (the same
+        // saved value OrderCreationService re-verifies at order time), falling
+        // back to the components' regular total; the line vanishes if any
+        // component stops being purchasable. `verified` marks that a live
+        // slide still matches — only then does checkout submit it as a bundle.
+        function bundleFromKey(id) {
+            if (!id.startsWith('bundle:')) return null;
+            const rest = id.slice(7);
+            const sep = rest.indexOf(':');
+            if (sep < 0) return null;
+            const ids = rest.slice(sep + 1).split(',').filter(Boolean);
+            const items = ids.map(pid => PRODUCTS.find(p => p.id === pid));
+            if (!ids.length || items.some(p => !p || p.status === 'sold_out')) return null;
+            const setKey = ids.slice().sort().join(',');
+            const slide = PROMO_SLIDES.find(s => (s.products || []).slice().sort().join(',') === setKey);
+            const regularTotal = items.reduce((s, p) => s + Number(p.price), 0);
+            return {
+                id,
+                name: (slide && slide.title) || decodeURIComponent(rest.slice(0, sep)) || 'Promo bundle',
+                price: slide && Number(slide.bundlePrice) > 0 ? Number(slide.bundlePrice) : regularTotal,
+                image_path: (items.find(p => p.image_path) || {}).image_path || null,
+                bundleItems: items,
+                regularTotal,
+                verified: !!slide,
+            };
+        }
+
         function cartLines() {
             return Object.entries(cart)
-                .map(([id, qty]) => ({ product: PRODUCTS.find(p => p.id === id), qty }))
+                .map(([id, qty]) => ({ product: id.startsWith('bundle:') ? bundleFromKey(id) : PRODUCTS.find(p => p.id === id), qty }))
                 .filter(l => l.product);
         }
 
@@ -533,8 +588,9 @@
                     <li class="flex items-center gap-3 px-5 py-3">
                         <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img data-img-fallback="remove" src="${p.image_path || FALLBACK_IMG}" alt="" class="h-full w-full object-cover"></span>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium text-navy-800">${p.name}</p>
-                            <p class="text-xs text-slate-500">${peso(p.price)} each</p>
+                            <p class="flex items-center gap-1.5 text-sm font-medium text-navy-800"><span class="truncate">${p.name}</span>${p.bundleItems ? '<span class="shrink-0 rounded-full bg-brand-50 px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-brand-600">Bundle</span>' : ''}</p>
+                            ${p.bundleItems ? `<ul class="mt-0.5 space-y-0.5 text-xs text-slate-400">${p.bundleItems.map(b => `<li class="truncate">• ${b.name}</li>`).join('')}</ul>` : ''}
+                            <p class="text-xs text-slate-500">${peso(p.price)} each${p.regularTotal > p.price ? ` <span class="text-slate-400 line-through">${peso(p.regularTotal)}</span>` : ''}</p>
                         </div>
                         ${confirmRemoveId === p.id
                             ? `<div class="flex shrink-0 items-center gap-1.5 text-xs">
@@ -612,7 +668,17 @@
             document.querySelectorAll('.checkout-btn').forEach(btn => {
                 btn.onclick = () => {
                     const summary = {
-                        items: lines.map(({ product: p, qty }) => ({ product_id: p.id, name: p.name, qty, img: p.image_path, price: p.price })),
+                        // A still-verified bundle is submitted as its product-id
+                        // set so the server can re-verify it against the saved
+                        // slide and charge the saved bundle price. A bundle
+                        // whose slide no longer matches expands back into plain
+                        // products at their regular prices.
+                        items: lines.flatMap(({ product: p, qty }) => {
+                            if (p.bundleItems && p.verified) {
+                                return [{ bundle_products: p.bundleItems.map(b => b.id), name: p.name, qty, img: p.image_path, price: p.price }];
+                            }
+                            return (p.bundleItems || [p]).map(b => ({ product_id: b.id, name: b.name, qty, img: b.image_path, price: b.price }));
+                        }),
                         voucher: voucher?.code || null,
                     };
                     try { localStorage.setItem('bw_checkout', JSON.stringify(summary)); } catch {}

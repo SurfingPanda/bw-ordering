@@ -78,6 +78,7 @@ class SiteContentController extends Controller
                         'price' => '₱720.00',
                         'buttonLabel' => 'Add to cart',
                         'buttonLink' => '/menu?add=Ube Chiffon Cake',
+                        'products' => [],
                     ],
                 ],
             ],
@@ -170,6 +171,9 @@ class SiteContentController extends Controller
 
         return view('admin.content.index', [
             'content' => $content,
+            // Menu Promo slides can link real products (a bundle) — the picker
+            // in _slide-row lists the live catalogue.
+            'bundleProducts' => $products,
             'categories' => $allCategories,
             'categoryCounts' => $counts,
             'categoryImages' => $content['menuCategoryImages'] ?? [],
@@ -274,7 +278,21 @@ class SiteContentController extends Controller
 
         $updates['menuPromo'] = (array) ($updates['menuPromo'] ?? []);
         $updates['menuPromo']['enabled'] = $request->boolean('menuPromo.enabled');
-        $updates['menuPromo']['slides'] = array_values((array) ($updates['menuPromo']['slides'] ?? []));
+        // Each slide may carry linked product ids (bundle) — keep them a clean
+        // list of strings so the menu JS can match them against the catalogue.
+        // bundlePrice is the authoritative charged price for the whole bundle
+        // (OrderCreationService re-reads it from the saved blob at order time);
+        // blank means "charge the products' regular total".
+        $updates['menuPromo']['slides'] = array_values(array_map(function ($s) {
+            $s = (array) $s;
+            $s['products'] = array_values(array_filter(array_map(
+                fn ($id) => trim((string) $id),
+                (array) ($s['products'] ?? [])
+            )));
+            $s['bundlePrice'] = ($s['bundlePrice'] ?? '') === '' ? null : max(0, (float) $s['bundlePrice']);
+
+            return $s;
+        }, (array) ($updates['menuPromo']['slides'] ?? [])));
 
         $fr = (array) ($updates['franchise'] ?? []);
         $fr['hero'] = (array) ($fr['hero'] ?? []);

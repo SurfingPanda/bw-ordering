@@ -524,8 +524,17 @@
         {{-- ============ Menu Promo ============ --}}
         <section data-panel="menuPromo" class="{{ $panel }}">
             <h2 class="text-lg font-bold text-navy-800">Menu Promo Banner</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The promotional banner on the menu’s “What’s New” tab. Add one or more slides — the banner rotates through them. Each slide is fully custom (not tied to a product).</p>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The promotional banner on the menu’s “What’s New” tab. Add one or more slides — the banner rotates through them. A slide can be fully custom, or link products to sell as one bundle: the button then adds them to the cart as a single bundle line named after the slide's title.</p>
             @php($mp = (array) ($content['menuPromo'] ?? []))
+            {{-- Catalogue for the slides' bundle picker (rendered once; each
+                 picker's dropdown is built from this by JS). --}}
+            <script type="application/json" id="bundle-products-data">{!! json_encode(($bundleProducts ?? collect())->map(fn ($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'price' => $p->price,
+                'category' => $p->category,
+                'code' => $p->product_id,
+            ])->values()) !!}</script>
             <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
                 <div>
                     <p class="text-sm font-medium text-navy-800">Show promo banner</p>
@@ -538,7 +547,7 @@
                 </label>
             </div>
             <div data-repeater>
-                <div data-rows class="space-y-4">
+                <div data-rows class="space-y-2">
                     @foreach(array_values((array) ($mp['slides'] ?? [])) as $i => $item)
                         @include('admin.content._slide-row')
                     @endforeach
@@ -789,6 +798,129 @@
         // pages — just navigate.
         const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', customCakeForm: '/custom-cake' }
 
+        // ---- Menu Promo bundle picker ----------------------------------------
+        // Each slide has a searchable combobox ([data-bundle-search]): typing
+        // filters the catalogue (#bundle-products-data) by name, code, or
+        // category; picking an option appends a chip holding a hidden
+        // products[] input; ✕ unlinks it. Delegated so repeater-added rows
+        // work too. Options/chips are built via DOM APIs (not innerHTML) so
+        // product names can't inject markup. The search box is data-no-dirty —
+        // only actually linking/unlinking marks the form dirty.
+        const BUNDLE_PRODUCTS = JSON.parse(document.getElementById('bundle-products-data')?.textContent || '[]')
+        const peso = (n) => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+        function bundleLinkedIds(picker) {
+            const list = picker.closest('[data-bundle]').querySelector('[data-bundle-list]')
+            return new Set(Array.from(list.querySelectorAll('input')).map((inp) => inp.value))
+        }
+
+        function renderBundleMenu(picker) {
+            const menu = picker.querySelector('[data-bundle-menu]')
+            const q = picker.querySelector('[data-bundle-search]').value.trim().toLowerCase()
+            const linked = bundleLinkedIds(picker)
+            const matches = BUNDLE_PRODUCTS
+                .filter((p) => !linked.has(p.id))
+                .filter((p) => !q
+                    || p.name.toLowerCase().includes(q)
+                    || (p.code || '').toLowerCase().includes(q)
+                    || (p.category || '').toLowerCase().includes(q))
+                .slice(0, 30)
+            menu.innerHTML = ''
+            if (!matches.length) {
+                const empty = document.createElement('p')
+                empty.className = 'px-3 py-2.5 text-sm text-slate-400'
+                empty.textContent = 'No products match.'
+                menu.appendChild(empty)
+            }
+            matches.forEach((p) => {
+                const opt = document.createElement('button')
+                opt.type = 'button'
+                opt.setAttribute('data-bundle-option', p.id)
+                opt.className = 'flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-brand-50'
+                const name = document.createElement('span')
+                name.className = 'min-w-0 flex-1 truncate font-medium text-navy-800'
+                name.textContent = p.name
+                const meta = document.createElement('span')
+                meta.className = 'shrink-0 text-xs text-slate-400'
+                meta.textContent = (p.category ? p.category + ' · ' : '') + peso(p.price)
+                opt.append(name, meta)
+                menu.appendChild(opt)
+            })
+            menu.classList.remove('hidden')
+        }
+
+        function closeBundleMenus() {
+            document.querySelectorAll('[data-bundle-menu]').forEach((m) => m.classList.add('hidden'))
+        }
+
+        document.addEventListener('input', (e) => {
+            const search = e.target.closest('[data-bundle-search]')
+            if (search) renderBundleMenu(search.closest('[data-bundle-picker]'))
+        })
+        document.addEventListener('focusin', (e) => {
+            const search = e.target.closest('[data-bundle-search]')
+            if (search) renderBundleMenu(search.closest('[data-bundle-picker]'))
+        })
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // With a picker dropdown open, Escape closes just the dropdown —
+                // not the slide popup underneath (whose own Escape handler is
+                // registered later, so stopping immediate propagation skips it).
+                if (document.querySelector('[data-bundle-menu]:not(.hidden)')) {
+                    closeBundleMenus()
+                    e.stopImmediatePropagation()
+                }
+                return
+            }
+            // Enter links the top match instead of submitting the whole form.
+            if (e.key === 'Enter' && e.target.closest('[data-bundle-search]')) {
+                e.preventDefault()
+                const picker = e.target.closest('[data-bundle-picker]')
+                picker.querySelector('[data-bundle-option]')?.click()
+            }
+        })
+        document.addEventListener('click', (e) => {
+            const option = e.target.closest('[data-bundle-option]')
+            if (option) {
+                const picker = option.closest('[data-bundle-picker]')
+                const search = picker.querySelector('[data-bundle-search]')
+                const p = BUNDLE_PRODUCTS.find((x) => x.id === option.dataset.bundleOption)
+                const list = picker.closest('[data-bundle]').querySelector('[data-bundle-list]')
+                if (p && !bundleLinkedIds(picker).has(p.id)) {
+                    const chip = document.createElement('span')
+                    chip.setAttribute('data-bundle-chip', '')
+                    chip.className = 'inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-medium text-navy-700'
+                    const hidden = document.createElement('input')
+                    hidden.type = 'hidden'
+                    hidden.name = search.dataset.name
+                    hidden.value = p.id
+                    const remove = document.createElement('button')
+                    remove.type = 'button'
+                    remove.setAttribute('data-bundle-remove', '')
+                    remove.setAttribute('aria-label', 'Unlink ' + p.name)
+                    remove.className = 'text-slate-400 transition hover:text-red-600'
+                    remove.textContent = '✕'
+                    chip.append(hidden, document.createTextNode(p.name), remove)
+                    list.appendChild(chip)
+                    // Chips don't fire input/change on their own — poke the
+                    // form so the Save/Reset buttons appear.
+                    list.dispatchEvent(new Event('input', { bubbles: true }))
+                }
+                search.value = ''
+                renderBundleMenu(picker) // stay open so several can be linked in a row
+                search.focus()
+                return
+            }
+            const unlink = e.target.closest('[data-bundle-remove]')
+            if (unlink) {
+                const list = unlink.closest('[data-bundle-list]')
+                unlink.closest('[data-bundle-chip]').remove()
+                list.dispatchEvent(new Event('input', { bubbles: true }))
+                return
+            }
+            if (!e.target.closest('[data-bundle-picker]')) closeBundleMenus()
+        })
+
         const panels = Array.from(document.querySelectorAll('[data-panel]'))
         const tabs = Array.from(document.querySelectorAll('[data-tab]'))
         const SECTION_LABELS = {}
@@ -937,7 +1069,10 @@
             // A freshly added row closed while still completely empty is
             // discarded, so + Add → close doesn't pile up blank items.
             const row = modal.closest('[data-row]')
+            // Bundle chips count as content too — a new slide that only links
+            // products must survive the discard-if-empty check.
             const empty = Array.from(row.querySelectorAll('input[type="text"], textarea')).every((el) => el.value.trim() === '')
+                && !row.querySelector('[data-bundle-chip]')
             if (row.hasAttribute('data-new') && empty) row.querySelector('[data-remove]').click()
             else row.removeAttribute('data-new')
         }

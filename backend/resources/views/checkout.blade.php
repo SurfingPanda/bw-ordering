@@ -288,6 +288,14 @@
             const priceChanges = [];
             const unavailable = [];
             items = items.map(i => {
+                // Promo bundle line: every component must still be purchasable.
+                // Its price isn't repriced here — the server re-verifies the
+                // bundle against the saved promo and charges its saved price.
+                if (i.bundle_products) {
+                    const dead = i.bundle_products.map(id => live[id]).findIndex(p => !p || p.status === 'sold_out');
+                    if (dead !== -1) unavailable.push({ name: i.name, reason: 'promo no longer available' });
+                    return i;
+                }
                 const p = live[i.product_id];
                 if (!p) { unavailable.push({ name: i.name, reason: 'no longer available' }); return i; }
                 if (p.status === 'sold_out') { unavailable.push({ name: i.name, reason: 'sold out' }); return i; }
@@ -568,7 +576,9 @@
         document.getElementById('back-to-details').addEventListener('click', () => showStep('form'));
 
         document.getElementById('checkout-form').addEventListener('submit', () => {
-            document.getElementById('items_json').value = JSON.stringify(items.map(i => ({ product_id: i.product_id, name: i.name, qty: i.qty })));
+            document.getElementById('items_json').value = JSON.stringify(items.map(i => i.bundle_products
+                ? { bundle_products: i.bundle_products, qty: i.qty }
+                : { product_id: i.product_id, name: i.name, qty: i.qty }));
             document.getElementById('place-order').disabled = true;
             document.getElementById('place-order').textContent = 'Placing order…';
         });

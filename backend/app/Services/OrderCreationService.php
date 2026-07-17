@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\SiteContent;
 use App\Models\Store;
 use App\Models\Voucher;
 use Illuminate\Validation\ValidationException;
@@ -37,7 +38,11 @@ class OrderCreationService
     {
         return [
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|string',
+            // A line is either a plain product or a promo bundle (the linked
+            // product ids of a saved Menu Promo slide — see resolveBundle()).
+            'items.*.product_id' => 'required_without:items.*.bundle_products|string',
+            'items.*.bundle_products' => 'sometimes|array|min:1',
+            'items.*.bundle_products.*' => 'string',
             'items.*.qty' => 'required|integer|min:1',
             'voucher' => 'nullable|string',
             'payment_method' => 'nullable|in:qrph,cash,paymongo',
@@ -97,13 +102,26 @@ class OrderCreationService
         // PayMongo stays pending until the gateway confirms (webhook / return check).
         $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
 
-        // Trusted product lookup (non-archived only).
-        $ids = collect($data['items'])->pluck('product_id')->unique()->all();
+        // Trusted product lookup (non-archived only) — covers plain lines and
+        // every product inside a bundle line.
+        $ids = collect($data['items'])
+            ->flatMap(fn ($l) => ! empty($l['bundle_products']) ? $l['bundle_products'] : [$l['product_id']])
+            ->unique()->all();
         $products = Product::whereIn('id', $ids)->whereNull('archived_at')->get()->keyBy('id');
 
         $items = [];
         $subtotal = 0;
         foreach ($data['items'] as $line) {
+            $qty = (int) $line['qty'];
+
+            if (! empty($line['bundle_products'])) {
+                $bundle = $this->resolveBundle((array) $line['bundle_products'], $products);
+                $subtotal += $bundle['price'] * $qty;
+                $items[] = $bundle + ['qty' => $qty];
+
+                continue;
+            }
+
             $product = $products->get($line['product_id']);
             if (! $product) {
                 throw ValidationException::withMessages([
@@ -115,7 +133,6 @@ class OrderCreationService
                     'items' => "\u{201c}{$product->name}\u{201d} is sold out.",
                 ]);
             }
-            $qty = (int) $line['qty'];
             $price = (float) $product->price;
             $subtotal += $price * $qty;
             $items[] = [
@@ -189,6 +206,66 @@ class OrderCreationService
             'total' => round($total, 2),
             'status' => 'pending',
         ]);
+    }
+
+    /**
+     * Verify a promo-bundle line against the *saved* Menu Promo content and
+     * price it from there — the client only ever names the product ids, so a
+     * tampered request can't invent a bundle or its discount. The submitted id
+     * set must exactly match a saved slide's linked products (a promo edited
+     * or removed since the cart was filled no longer applies), every component
+     * must still be purchasable, and the charged price is the slide's saved
+     * bundlePrice (falling back to the components' regular total when blank).
+     *
+     * @param  \Illuminate\Support\Collection<string, Product>  $products
+     * @return array{product_id: null, bundle: true, name: string, price: float, products: array}
+     */
+    private function resolveBundle(array $ids, $products): array
+    {
+        $menuPromo = (array) ((SiteContent::find(1)?->data ?? [])['menuPromo'] ?? []);
+        $wanted = collect($ids)->map(fn ($id) => (string) $id)->sort()->values()->all();
+
+        $slide = ($menuPromo['enabled'] ?? true)
+            ? collect((array) ($menuPromo['slides'] ?? []))->first(function ($s) use ($wanted) {
+                $linked = collect((array) (((array) $s)['products'] ?? []))->map(fn ($id) => (string) $id)->sort()->values()->all();
+
+                return $linked !== [] && $linked === $wanted;
+            })
+            : null;
+        if (! $slide) {
+            throw ValidationException::withMessages([
+                'items' => 'That promo bundle is no longer available.',
+            ]);
+        }
+        $slide = (array) $slide;
+
+        $components = [];
+        $regularTotal = 0.0;
+        foreach ($ids as $id) {
+            $product = $products->get($id);
+            if (! $product) {
+                throw ValidationException::withMessages([
+                    'items' => 'A product in the promo bundle is no longer available.',
+                ]);
+            }
+            if ($product->status === 'sold_out') {
+                throw ValidationException::withMessages([
+                    'items' => "\u{201c}{$product->name}\u{201d} is sold out.",
+                ]);
+            }
+            $regularTotal += (float) $product->price;
+            $components[] = ['product_id' => $product->id, 'name' => $product->name];
+        }
+
+        $bundlePrice = (float) ($slide['bundlePrice'] ?? 0);
+
+        return [
+            'product_id' => null,
+            'bundle' => true,
+            'name' => trim((string) ($slide['title'] ?? '')) ?: 'Promo bundle',
+            'price' => $bundlePrice > 0 ? $bundlePrice : $regularTotal,
+            'products' => $components,
+        ];
     }
 
     /**

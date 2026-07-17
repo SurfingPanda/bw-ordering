@@ -5,7 +5,7 @@
      Wiring (open/close, summary sync, discard-empty-new-rows) is the
      "list rows + edit popups" script in admin/content/index.blade.php;
      numbering + move/remove come from the shared repeater JS. --}}
-@props(['heading' => 'Edit item', 'emptyLabel' => 'New item'])
+@props(['heading' => 'Edit item', 'emptyLabel' => 'New item', 'hideMove' => false])
 <div data-row data-empty-label="{{ $emptyLabel }}" class="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
     <div class="flex items-center gap-2">
         <span data-row-number class="text-xs font-semibold uppercase tracking-wide text-slate-400">#</span>
@@ -13,8 +13,10 @@
             <p data-item-title class="truncate text-sm font-semibold text-navy-800">{{ $emptyLabel }}</p>
             <p data-item-meta class="truncate text-xs text-slate-500"></p>
         </div>
-        <button type="button" data-move="-1" aria-label="Move up" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-navy-700 transition hover:border-brand-400 disabled:opacity-40">↑</button>
-        <button type="button" data-move="1" aria-label="Move down" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-navy-700 transition hover:border-brand-400 disabled:opacity-40">↓</button>
+        @unless($hideMove)
+            <button type="button" data-move="-1" aria-label="Move up" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-navy-700 transition hover:border-brand-400 disabled:opacity-40">↑</button>
+            <button type="button" data-move="1" aria-label="Move down" class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-navy-700 transition hover:border-brand-400 disabled:opacity-40">↓</button>
+        @endunless
         <button type="button" data-edit class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600">Edit</button>
         <button type="button" data-remove class="rounded-md px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50">Remove</button>
     </div>
