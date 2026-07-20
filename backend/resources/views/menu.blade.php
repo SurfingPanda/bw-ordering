@@ -207,10 +207,19 @@
             const img = e.target;
             if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-img-fallback')) return;
             if (img.getAttribute('data-img-fallback') === 'remove') { img.remove(); return; }
+            img.parentElement?.classList.remove('animate-pulse');
             const tile = document.createElement('div');
             tile.className = 'flex h-full w-full items-center justify-center text-xs font-medium text-slate-400';
             tile.textContent = 'no image';
             img.replaceWith(tile);
+        }, true);
+        // Grid cards pulse their image tile while the photo loads (instead of
+        // sitting on flat gray, which reads as broken/missing); 'load' doesn't
+        // bubble either, hence the same capture-phase pattern as the listener above.
+        document.addEventListener('load', (e) => {
+            const img = e.target;
+            if (!(img instanceof HTMLImageElement) || !img.hasAttribute('data-img-fallback')) return;
+            img.parentElement?.classList.remove('animate-pulse');
         }, true);
 
         // Editor-controlled "What's New" promo slides (content.menuPromo) —
@@ -339,10 +348,14 @@
             if (qty === 0) {
                 return `<button type="button" data-add="${p.id}" class="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600">Add</button>`;
             }
-            return `<div class="flex items-center gap-2">
-                <button type="button" data-dec="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">−</button>
-                <span class="w-5 text-center text-sm font-semibold">${qty}</span>
-                <button type="button" data-add="${p.id}" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
+            // Quantity itself is only ever adjusted/removed in the cart panel;
+            // the card just confirms it's in the cart and offers a quick +1.
+            return `<div class="flex items-center gap-1.5">
+                <span class="flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-600">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                    In cart · ${qty}
+                </span>
+                <button type="button" data-add="${p.id}" aria-label="Add another ${p.name}" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
             </div>`;
         }
 
@@ -469,7 +482,7 @@
                 return `
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
                     class="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
-                    <div class="relative h-40 w-full overflow-hidden bg-slate-100 sm:h-48">
+                    <div class="relative h-40 w-full overflow-hidden bg-slate-100 sm:h-48 animate-pulse">
                         <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" loading="lazy" class="h-full w-full object-cover ${soldOut ? 'opacity-60 grayscale' : ''}">
                         ${p.status ? `<span class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'}">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
                     </div>
@@ -509,8 +522,7 @@
             }
 
             grid.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
-            grid.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => dec(btn.dataset.dec)));
-            // Clicking a card (not its Add/− buttons) opens the detail modal.
+            // Clicking a card (not its Add/+ button) opens the detail modal.
             grid.querySelectorAll('[data-view]').forEach(el => {
                 el.addEventListener('click', (e) => { if (e.target.closest('button')) return; openProductModal(el.dataset.view); });
                 el.addEventListener('keydown', (e) => {
@@ -754,7 +766,7 @@
                     ${soldOut
                         ? '<span class="mt-5 flex items-center justify-center rounded-full bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
                         : qty === 0
-                            ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><span aria-hidden="true">🛍️</span> Add to cart</button>`
+                            ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Add to cart</button>`
                             : ''}`;
                 footer.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
                 footer.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => dec(btn.dataset.dec)));
