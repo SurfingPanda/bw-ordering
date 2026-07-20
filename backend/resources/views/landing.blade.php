@@ -170,7 +170,8 @@
                     @endif
                     @if($orderState !== 'off')
                         <a href="/menu" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
-                            class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 {{ $orderState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">
+                            class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 {{ $orderState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg>
                             Order Now
                         </a>
                     @endif
@@ -202,7 +203,8 @@
                     @endif
                     @if($orderState !== 'off')
                         <a href="/menu" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
-                            class="flex-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white {{ $orderState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">
+                            class="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white {{ $orderState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg>
                             Order Now
                         </a>
                     @endif
