@@ -476,7 +476,7 @@
                     </div>
                 </div>
                 <a data-order href="#" class="mt-5 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                    <span aria-hidden="true">🛍️</span> Order now
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Order now
                 </a>`;
             var qtyEl = footer.querySelector('[data-qty]');
             var orderEl = footer.querySelector('[data-order]');

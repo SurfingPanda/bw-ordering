@@ -236,6 +236,30 @@
         }
 
         let cart = readCart();
+
+        // Deep-add from the landing page (?add=<name>&qty=<n> — the product
+        // card quick-add icon and the shared product modal's "Order now"
+        // button both link here since the real cart only lives on this
+        // page). Resolves by name, folds the qty into the cart, then scrubs
+        // the params so a refresh/share of the URL doesn't re-add it.
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const addName = params.get('add');
+            if (addName) {
+                const product = PRODUCTS.find(p => p.name.toLowerCase() === addName.toLowerCase());
+                if (product) {
+                    const qty = Math.max(1, parseInt(params.get('qty'), 10) || 1);
+                    cart[product.id] = (cart[product.id] || 0) + qty;
+                    writeCart(cart);
+                    document.getElementById('cart-drawer')?.classList.remove('hidden');
+                }
+                params.delete('add');
+                params.delete('qty');
+                const qs = params.toString();
+                history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+            }
+        })();
+
         // Lands on "All" by default; a ?category= deep link (e.g. the landing
         // page's "See What's New" button) still opens its tab when it exists.
         // (categories() is hoisted, and only reads consts defined above.)
