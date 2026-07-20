@@ -222,7 +222,12 @@
                 @foreach($heroSlides as $i => $slide)
                     <div class="hero-slide transition-opacity duration-700 ease-out {{ $i === 0 ? 'opacity-100' : 'pointer-events-none absolute inset-0 opacity-0' }}">
                         <a href="/menu" class="block">
-                            <img src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
+                            {{-- Only the first slide is visible on load, so later
+                                 slides are marked lazy on principle; note browsers
+                                 still fetch them near-immediately in practice since
+                                 they're stacked in the same above-the-fold box
+                                 (opacity, not position, is what hides them). --}}
+                            <img src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" loading="{{ $i === 0 ? 'eager' : 'lazy' }}" decoding="async" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
                         </a>
                     </div>
                 @endforeach
