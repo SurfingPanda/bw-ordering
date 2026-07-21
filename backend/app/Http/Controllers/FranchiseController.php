@@ -59,6 +59,8 @@ class FranchiseController extends Controller
             // (same key-by-key default fallback LandingController::index applies).
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
+            // Pilot: click-to-edit affordances (see partials/_editor-bridge).
+            'editable' => $this->isEditablePreview($request),
         ]);
     }
 }

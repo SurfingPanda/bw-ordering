@@ -15,6 +15,17 @@
     $input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
     $panel = 'hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6';
     $addBtn = 'mt-4 w-full rounded-xl border-2 border-dashed border-slate-300 py-3 text-sm font-semibold text-slate-500 transition hover:border-brand-400 hover:text-brand-600';
+
+    // On a failed save, Laravel flashes the submitted section values back via
+    // old() — merge them over $content (a shallow, top-level merge; each key
+    // here is one whole section's worth of fields, submitted as one blob, so
+    // this restores exactly what was resubmitted). Without this, a bad value
+    // in ONE section used to wipe every edit across all 14 sections, since
+    // every @php extraction below reads from $content. old() is empty on a
+    // normal page load, so this is a no-op then.
+    if ($old = old()) {
+        $content = array_merge($content, $old);
+    }
 @endphp
 
 @section('editor-nav')
@@ -32,6 +43,24 @@
         @csrf
         @method('PUT')
         <input type="hidden" name="section" id="content-section-field" value="">
+
+        @if($errors->any())
+            {{-- Shown regardless of which tab is active — the offending
+                 field(s) may be in a different, currently-hidden panel; the
+                 script at the bottom switches to it and highlights the field. --}}
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p class="mb-1 font-semibold">Couldn't save — fix the highlighted field{{ $errors->count() > 1 ? 's' : '' }} below and save again.</p>
+                <ul class="list-inside list-disc">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            {{-- Field names with errors (e.g. "franchise.email"), for the
+                 script at the bottom to switch to the right tab and
+                 highlight the field. --}}
+            <script id="content-form-error-fields" type="application/json">{!! json_encode($errors->keys()) !!}</script>
+        @endif
 
         {{-- ============ Announcement ============ --}}
         <section data-panel="announcement" class="{{ $panel }}">
@@ -797,6 +826,11 @@
         // below, so Stores/Vouchers/Products items — plain links to their own
         // pages — just navigate.
         const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', customCakeForm: '/custom-cake' }
+        // Sections whose previewed page ships partials/_editor-bridge — only
+        // these get pointer-events enabled in the preview iframe (see
+        // swapPreview's `editable` param and Controller::isEditablePreview).
+        // Pilot: franchise only; extend as more pages get the bridge wired in.
+        const EDITABLE_PREVIEW_SECTIONS = new Set(['franchise'])
 
         // ---- Menu Promo bundle picker ----------------------------------------
         // Each slide has a searchable combobox ([data-bundle-search]): typing
@@ -929,6 +963,7 @@
         const editorTitle = document.getElementById('editor-title')
         const contentForm = document.getElementById('content-form')
         let currentPreviewPath = '/'
+        let currentPreviewEditable = false
 
         // Live preview: stage the current unsaved form as a draft (server keeps
         // it in this editor's session only), then swap in the preview reloaded
@@ -947,7 +982,7 @@
                 })
             } catch { /* preview is best-effort */ }
             const sep = currentPreviewPath.includes('?') ? '&' : '?'
-            swapPreview(currentPreviewPath + sep + 'preview=1&_=' + Date.now())
+            swapPreview(currentPreviewPath + sep + 'preview=1&_=' + Date.now(), currentPreviewEditable)
         }
 
         let previewTimer
@@ -980,6 +1015,7 @@
             editorTitle.textContent = SECTION_LABELS[key] || 'Site Editor'
             sectionField.value = key
             currentPreviewPath = PREVIEW_URLS[key] || '/'
+            currentPreviewEditable = EDITABLE_PREVIEW_SECTIONS.has(key)
             refreshPreview()
             history.replaceState(null, '', '?section=' + encodeURIComponent(key))
         }
@@ -990,6 +1026,13 @@
             setSidebarOpen(false)
         }))
         showSection(new URLSearchParams(location.search).get('section') || 'announcement')
+
+        // Dotted CMS field path ("franchise.hero.title") → this form's actual
+        // input name ("franchise[hero][title]") — used by both validation-error
+        // locating and the click-to-edit bridge below.
+        function dotPathToName(path) {
+            return path.split('.').map((part, i) => (i === 0 ? part : `[${part}]`)).join('')
+        }
 
         document.addEventListener('input', (e) => {
             if (e.target.id === 'announcement-input') {
@@ -1100,5 +1143,49 @@
 
         contentForm.addEventListener('input', (e) => { const row = listRowOf(e.target); if (row) itemSummary(row) })
         contentForm.addEventListener('change', (e) => { const row = listRowOf(e.target); if (row) itemSummary(row) })
+
+        // ---- locating a field (shared by validation errors + click-to-edit) --
+        // Switches to the field's tab, opens its list-row popup if it's inside
+        // one (franchise perks/steps/packages etc.), then scrolls to and
+        // focuses it — the existing focus:ring on every input is highlight
+        // enough on its own.
+        function revealField(field) {
+            const panel = field.closest('[data-panel]')
+            if (panel) showSection(panel.dataset.panel)
+            const row = listRowOf(field)
+            if (row) openItemModal(row)
+            field.scrollIntoView({ block: 'center' })
+            field.focus()
+        }
+
+        // ---- validation-error locating -----------------------------------
+        // On a failed save, the server flashes which fields were invalid
+        // ("franchise.email", "menuPromo.slides.0.bundlePrice" — see the JSON
+        // blob near the top of the form). With 14 always-in-DOM-but-hidden
+        // tabs (and repeater fields hidden inside popups on top of that), the
+        // failing one could be anywhere.
+        const contentErrorFieldsEl = document.getElementById('content-form-error-fields')
+        if (contentErrorFieldsEl) {
+            const errorFields = JSON.parse(contentErrorFieldsEl.textContent || '[]')
+                .map((key) => contentForm.querySelector(`[name="${CSS.escape(dotPathToName(key))}"]`))
+                .filter(Boolean)
+            // Every invalid field gets a persistent red ring (revealField's
+            // focus-ring only shows on whichever one is currently focused).
+            errorFields.forEach((field) => field.classList.add('!border-red-400', 'ring-2', 'ring-red-500/30'))
+            if (errorFields[0]) revealField(errorFields[0])
+        }
+
+        // ---- click-to-edit bridge ------------------------------------------
+        // partials/_editor-bridge (loaded inside the preview iframe, only for
+        // sections in EDITABLE_PREVIEW_SECTIONS) posts the CMS path of
+        // whatever the editor clicked on the actual rendered page — jump
+        // straight to that field instead of making them hunt for it in the
+        // sidebar.
+        window.addEventListener('message', (e) => {
+            if (e.origin !== window.location.origin) return
+            if (!e.data || e.data.source !== 'bw-editor-bridge') return
+            const field = contentForm.querySelector(`[name="${CSS.escape(dotPathToName(e.data.path))}"]`)
+            if (field) revealField(field)
+        })
     </script>
 @endsection

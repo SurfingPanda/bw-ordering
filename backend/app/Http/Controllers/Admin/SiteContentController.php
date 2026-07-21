@@ -194,6 +194,25 @@ class SiteContentController extends Controller
     {
         $this->authorizeEditor($request);
 
+        // Most of this form is free-text CMS copy with no fixed shape worth
+        // rejecting — but these few fields fail *silently* without this: a
+        // typo'd bundle price used to be coerced with (float) (e.g. "1o0"
+        // silently becomes ₱1, not ₱100), and an invalid frosting hex or
+        // franchise email used to just fall back to a default with no
+        // indication anything was wrong. See collectManagedFields() for the
+        // coercions this makes unreachable for these fields (kept anyway, as
+        // defense-in-depth for non-form submitters of this endpoint).
+        $request->validate([
+            'franchise.email' => ['nullable', 'email'],
+            'menuPromo.slides.*.bundlePrice' => ['nullable', 'numeric', 'min:0'],
+            'customCakeForm.colors.*.hex' => ['nullable', 'regex:/^#[0-9a-f]{3,8}$/i'],
+        ], [
+            'franchise.email.email' => 'Franchise contact email must be a valid email address.',
+            'menuPromo.slides.*.bundlePrice.numeric' => 'Bundle price must be a number.',
+            'menuPromo.slides.*.bundlePrice.min' => "Bundle price can't be negative.",
+            'customCakeForm.colors.*.hex.regex' => "One of the frosting colors isn't a valid color.",
+        ]);
+
         $current = SiteContent::find(1)?->data ?? [];
         $updates = $this->collectManagedFields($request);
 

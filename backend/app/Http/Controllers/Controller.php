@@ -36,16 +36,32 @@ abstract class Controller
      */
     protected function previewDraft(Request $request): ?array
     {
-        if (! $request->boolean('preview')) {
-            return null;
-        }
-        $email = $this->optionalSupabaseUser($request)['email'] ?? null;
-        if (! $this->isEditor($email)) {
+        if (! $this->isEditablePreview($request)) {
             return null;
         }
         $draft = $request->session()->get('content_draft');
 
         return is_array($draft) ? $draft : null;
+    }
+
+    /**
+     * True only for a genuine Site Editor preview: `?preview=1` from a
+     * request carrying an editor's own session (never for a real visitor who
+     * merely has the query param, e.g. a leaked/bookmarked preview link).
+     * Public controllers pass this to their view as `editable` to decide
+     * whether to render click-to-edit affordances (see
+     * partials/_editor-bridge.blade.php) — those affordances intercept every
+     * click on the page (to keep the preview "look, don't touch" safe for
+     * navigation), so they must never activate for a non-editor.
+     */
+    protected function isEditablePreview(Request $request): bool
+    {
+        if (! $request->boolean('preview')) {
+            return false;
+        }
+        $email = $this->optionalSupabaseUser($request)['email'] ?? null;
+
+        return $this->isEditor($email);
     }
 
     /** True if this email is hard-coded into an env allowlist (the bootstrap layer). */

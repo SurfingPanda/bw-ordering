@@ -34,4 +34,26 @@ class FranchisePageTest extends TestCase
             ->assertSee('Food Cart')
             ->assertSee('invest@bw.test');
     }
+
+    public function test_editor_preview_includes_the_click_to_edit_bridge(): void
+    {
+        $this->withSession([
+            'supabase_user' => ['id' => 'test-id', 'email' => 'editor@bwsuperbakeshop.com', 'name' => 'Test User'],
+            'supabase_token_expires_at' => now()->addHour()->timestamp,
+        ])->get('/franchise?preview=1')
+            ->assertOk()
+            ->assertSee('data-editable="franchise.hero.title"', false)
+            ->assertSee('bw-editor-bridge');
+    }
+
+    public function test_anonymous_preview_request_never_gets_the_edit_bridge(): void
+    {
+        // ?preview=1 alone isn't enough — Controller::isEditablePreview also
+        // requires an editor session, so a leaked/bookmarked preview link
+        // can't turn click-to-edit on (which would otherwise intercept and
+        // swallow every click on the page) for a real visitor.
+        $this->get('/franchise?preview=1')
+            ->assertOk()
+            ->assertDontSee('bw-editor-bridge');
+    }
 }
