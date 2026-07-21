@@ -29,7 +29,7 @@
 >
     <div class="relative overflow-hidden">
         <span class="relative block h-40 w-full overflow-hidden bg-slate-100 transition duration-300 group-hover:scale-105">
-            <img src="{{ $p['img'] ?: $fallbackImg }}" alt="{{ $p['name'] }}" loading="lazy" decoding="async"
+            <img src="{{ $p['img'] ?: $fallbackImg }}" alt="{{ $p['name'] }}" loading="lazy" decoding="async" width="320" height="160"
                 class="h-full w-full object-cover"
                 onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
             <span class="hidden h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>

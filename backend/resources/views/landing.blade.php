@@ -319,7 +319,7 @@
                     <a href="/menu?category={{ urlencode($c['name']) }}" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
                         <span class="h-28 w-28 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-100 transition group-hover:ring-brand-200">
                             @if(!empty($c['img']))
-                                <img src="{{ $c['img'] }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-300 group-hover:scale-110">
+                                <img src="{{ $c['img'] }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" width="112" height="112" class="h-full w-full object-cover transition duration-300 group-hover:scale-110">
                             @else
                                 <span class="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
                             @endif
@@ -347,7 +347,11 @@
             <div id="custom-cake"
                 class="relative min-h-[300px] rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
                 @if(!empty($cc['image']))
-                    <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async"
+                    {{-- 480x720 matches the default custom-cake-tower.svg's own
+                         viewBox (2:3) — same "intrinsic ratio hint, not the
+                         literal file size" approach as the hero banner above,
+                         since an editor-uploaded replacement can be any ratio. --}}
+                    <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async" width="480" height="720"
                         class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl sm:block sm:right-10 sm:h-[420px] lg:right-16 lg:h-[500px]">
                 @endif
                 <div class="relative z-10 max-w-md">
