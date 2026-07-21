@@ -131,7 +131,7 @@
         </div>
     </div>
 @else
-    <div class="min-h-screen bg-white text-navy-800">
+    <div class="min-h-screen bg-brand-50 text-navy-800">
         {{-- Announcement bar (Site Editor toggle; absent = shown) --}}
         @if($content['announcementVisible'] ?? true)
             <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
@@ -140,7 +140,7 @@
         @endif
 
         {{-- Nav --}}
-        <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
+        <header class="sticky top-0 z-50 border-b border-slate-100 bg-brand-50">
             @php $orderState = $btn('navOrder'); $signInState = $btn('navSignIn'); @endphp
             {{-- Nav "Menu"/"Order Now" open straight to What's New (falls back to
                  "All" on /menu itself if there's nothing new to show — see the
@@ -191,7 +191,7 @@
                 </button>
             </nav>
 
-            <div id="mobile-nav" class="hidden border-t border-slate-100 bg-white px-4 py-3 lg:hidden">
+            <div id="mobile-nav" class="hidden border-t border-slate-100 bg-brand-50 px-4 py-3 lg:hidden">
                 <ul class="flex flex-col gap-1 text-sm font-medium text-navy-700">
                     <li><a href="{{ $menuHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600">Menu</a></li>
                     <li><a href="/stores" class="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600">Store</a></li>
@@ -391,11 +391,11 @@
             $firstStore = $mapStores->first();
         @endphp
         @if($sl['visible'] ?? true)
-        <section id="stores" class="relative overflow-hidden bg-white py-16">
+        <section id="stores" class="relative overflow-hidden bg-brand-50 py-16">
             <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl"></div>
             <div class="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-5 lg:items-center lg:gap-12">
                 <div class="lg:col-span-2" data-reveal>
-                    <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-brand-600">
+                    <span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-brand-600 shadow-sm">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M3 9l1.5-5h15L21 9" /><path d="M4 9v11h16V9" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /><path d="M9 20v-5h6v5" />
                         </svg>
@@ -496,7 +496,7 @@
         @php $n = $content['newsletter']; $newsState = $btn('newsletterSubscribe'); @endphp
         @if($n['visible'] ?? true)
         <section id="newsletter" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <div class="rounded-3xl border border-brand-100 bg-brand-50 px-8 py-12 text-center sm:px-12" data-reveal>
+            <div class="rounded-3xl border border-brand-100 bg-white px-8 py-12 text-center shadow-sm sm:px-12" data-reveal>
                 <h2 class="text-2xl font-bold text-navy-800 sm:text-3xl">{{ $n['title'] }}</h2>
                 @if(!empty($n['subtitle']))
                     <p class="mt-2 text-sm text-slate-600">{{ $n['subtitle'] }}</p>
@@ -507,7 +507,7 @@
                         <input type="email" required @if($newsOff) disabled @endif placeholder="{{ $n['placeholder'] }}"
                             class="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed">
                         <button type="submit" @if($newsOff) disabled @endif
-                            class="rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900 disabled:cursor-not-allowed">
+                            class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
                             {{ $n['buttonLabel'] }}
                         </button>
                     </form>
