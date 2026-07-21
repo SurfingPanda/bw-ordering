@@ -90,12 +90,20 @@
                         </button>
                     </form>
 
+                    {{-- Social sign-in — each button togglable in the Site
+                         Editor (Login Page section); the "or" divider only
+                         shows when at least one is on. --}}
+                    @php($showGoogle = $authPanel['showGoogle'] ?? true)
+                    @php($showFacebook = $authPanel['showFacebook'] ?? true)
+                    @if($showGoogle || $showFacebook)
                     <div class="my-5 flex items-center gap-3">
                         <span class="h-px flex-1 bg-slate-200"></span>
                         <span class="text-xs font-medium uppercase tracking-wide text-slate-400">or</span>
                         <span class="h-px flex-1 bg-slate-200"></span>
                     </div>
+                    @endif
 
+                    @if($showGoogle)
                     <a href="{{ route('oauth.redirect', 'google') }}"
                         class="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -106,14 +114,17 @@
                         </svg>
                         Continue with Google
                     </a>
+                    @endif
 
+                    @if($showFacebook)
                     <a href="{{ route('oauth.redirect', 'facebook') }}"
-                        class="mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30">
+                        class="{{ $showGoogle ? 'mt-3' : '' }} flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-navy-800 transition hover:bg-slate-50 focus:ring-2 focus:ring-brand-500/30">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
                             <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.08 24 18.09 24 12.07Z" />
                         </svg>
                         Continue with Facebook
                     </a>
+                    @endif
 
                     <p class="mt-6 text-center text-xs text-slate-400">
                         Already have an account?

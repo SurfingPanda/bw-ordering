@@ -141,6 +141,33 @@ class SupabaseAuthService
     }
 
     /**
+     * POST /auth/v1/recover — emails a password-reset link that lands on
+     * `redirectTo` (the URL must be in Supabase's auth Redirect URLs
+     * allow-list). GoTrue answers 200 whether or not the address exists, so a
+     * null (success) here never leaks which emails are registered — an error
+     * message comes back only for transport/rate-limit failures.
+     */
+    public function sendPasswordReset(string $email, string $redirectTo): ?string
+    {
+        try {
+            $resp = $this->http()->post('/auth/v1/recover?redirect_to='.urlencode($redirectTo), [
+                'email' => $email,
+            ]);
+        } catch (\Throwable) {
+            return 'Could not reach the authentication service. Please try again.';
+        }
+
+        if ($resp->status() === 429) {
+            return 'Too many reset requests. Please wait a moment and try again.';
+        }
+        if ($resp->failed()) {
+            return 'Unable to send the reset link. Please try again.';
+        }
+
+        return null;
+    }
+
+    /**
      * True when another account already holds this normalized number — the
      * `contact_number_taken` SECURITY DEFINER RPC the SPA's register form
      * called before sign-up. Null when the check itself failed.

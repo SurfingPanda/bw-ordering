@@ -88,6 +88,8 @@ class SiteContentController extends Controller
                 'tagline' => 'Freshly baked. Made with love.',
                 'script' => 'Ordered with ease.',
                 'image' => '/images/cake.png',
+                'showGoogle' => true,
+                'showFacebook' => true,
             ],
             'franchise' => [
                 'hero' => [
@@ -270,6 +272,9 @@ class SiteContentController extends Controller
         $updates['newsletter'] = (array) ($updates['newsletter'] ?? []);
         $updates['payment'] = (array) ($updates['payment'] ?? []);
         $updates['authPanel'] = (array) ($updates['authPanel'] ?? []);
+        // Unchecked checkboxes don't submit — coerce to real booleans.
+        $updates['authPanel']['showGoogle'] = $request->boolean('authPanel.showGoogle');
+        $updates['authPanel']['showFacebook'] = $request->boolean('authPanel.showFacebook');
         $updates['social'] = (array) ($updates['social'] ?? []);
         $updates['buttons'] = (array) ($updates['buttons'] ?? []);
 

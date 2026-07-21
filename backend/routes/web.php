@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Auth\CompleteProfileController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CheckoutController;
@@ -43,6 +44,14 @@ Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 
 Route::get('/register', [RegistrationController::class, 'create'])->name('register');
 Route::post('/register', [RegistrationController::class, 'store']);
+
+// Forgot/reset password (port of the SPA's ForgotPassword.jsx/ResetPassword.jsx):
+// Supabase emails a recovery link that lands on /reset-password with the token
+// in the URL #fragment — see Auth\PasswordResetController.
+Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+Route::get('/reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
 
 // Social sign-in (port of the SPA's supabase.auth.signInWithOAuth): redirect
 // out to Supabase's authorize endpoint, come back to /auth/callback where the

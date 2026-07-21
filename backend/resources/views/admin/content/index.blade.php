@@ -591,6 +591,31 @@
                     <span class="mb-1 block text-xs font-medium text-slate-500">Script line</span>
                     <input type="text" name="authPanel[script]" value="{{ $ap['script'] ?? '' }}" class="{{ $input }}">
                 </label>
+
+                {{-- Social sign-in buttons on Login/Register — hide either (or
+                     both, which also hides the "or" divider). --}}
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-navy-800">Show “Continue with Google”</p>
+                        <p class="mt-0.5 text-xs text-slate-500">The Google sign-in button on the Login and Register pages.</p>
+                    </div>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="checkbox" name="authPanel[showGoogle]" value="1" class="peer sr-only" @checked($ap['showGoogle'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-navy-800">Show “Continue with Facebook”</p>
+                        <p class="mt-0.5 text-xs text-slate-500">The Facebook sign-in button on the Login and Register pages.</p>
+                    </div>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="checkbox" name="authPanel[showFacebook]" value="1" class="peer sr-only" @checked($ap['showFacebook'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
             </div>
         </section>
 
