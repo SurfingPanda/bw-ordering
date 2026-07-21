@@ -374,41 +374,116 @@
         </section>
         @endif
 
-        {{-- Store locator teaser (Site Editor → Store Locator; the real
-             MapLibre locator lives on /stores) --}}
-        @php $sl = $content['storeLocator']; $storeState = $btn('storeLocatorFind'); @endphp
+        {{-- Store locator teaser (Site Editor → Store Locator) — two-panel
+             layout: copy + search on the left, a real pannable/zoomable 3D
+             map (lazy-loaded, see the script at the bottom of this file)
+             previewing actual branch pins on the right, with a floating card
+             for whichever pin is selected. The full search/region-filter/
+             find-nearest experience stays on /stores. --}}
+        @php
+            $sl = $content['storeLocator'];
+            $storeState = $btn('storeLocatorFind');
+            $dirHref = fn ($address) => 'https://www.google.com/maps/dir/?api=1&destination='.urlencode($address);
+            $firstStore = $mapStores->first();
+        @endphp
         @if($sl['visible'] ?? true)
-        <section id="stores" class="bg-navy-900 py-16">
-            <div class="mx-auto max-w-3xl px-4 text-center sm:px-6" data-reveal>
-                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
-                    <svg class="h-7 w-7 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 9l1.5-5h15L21 9" />
-                        <path d="M4 9v11h16V9" />
-                        <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
-                        <path d="M9 20v-5h6v5" />
-                    </svg>
-                </span>
-                <h2 class="mt-5 text-3xl font-bold text-white sm:text-4xl">{{ $sl['title'] ?? '' }}</h2>
-                @if(!empty($sl['subtitle']))
-                    <p class="mt-3 text-sm text-navy-50/80">{{ $sl['subtitle'] }}</p>
-                @endif
-                @if($storeState !== 'off')
-                    @php $storeOff = $storeState === 'disabled'; @endphp
-                    {{-- A real GET form to /stores?q=... — stores.blade.php's JS
-                         (resources/js/stores.js) reads `q` on load and applies it
-                         to the same search box the /stores page itself uses, so
-                         typing here and pressing Enter (or clicking the button)
-                         actually filters, instead of always landing on an
-                         unfiltered list regardless of what was typed. --}}
-                    <form action="/stores" method="GET" class="mt-7 flex flex-col justify-center gap-3 sm:flex-row {{ $storeOff ? 'cursor-not-allowed opacity-60' : '' }}">
-                        <input type="text" name="q" placeholder="{{ $sl['placeholder'] ?? 'Enter your city or area' }}" @if($storeOff) disabled @endif
-                            class="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed sm:w-72">
-                        <button type="submit" @if($storeOff) disabled @endif
-                            class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
-                            Find a store
-                        </button>
-                    </form>
-                @endif
+        <section id="stores" class="relative overflow-hidden bg-white py-16">
+            <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl"></div>
+            <div class="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-5 lg:items-center lg:gap-12">
+                <div class="lg:col-span-2" data-reveal>
+                    <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-brand-600">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 9l1.5-5h15L21 9" /><path d="M4 9v11h16V9" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /><path d="M9 20v-5h6v5" />
+                        </svg>
+                        Store Locator
+                    </span>
+                    <h2 class="mt-5 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $sl['title'] ?? '' }}</h2>
+                    @if(!empty($sl['subtitle']))
+                        <p class="mt-3 text-sm text-slate-500">{{ $sl['subtitle'] }}</p>
+                    @endif
+                    @if($storeState !== 'off')
+                        @php $storeOff = $storeState === 'disabled'; @endphp
+                        {{-- A real GET form to /stores?q=... — stores.blade.php's JS
+                             (resources/js/stores.js) reads `q` on load and applies it
+                             to the same search box the /stores page itself uses, so
+                             typing here and pressing Enter (or clicking the button)
+                             actually filters, instead of always landing on an
+                             unfiltered list regardless of what was typed. --}}
+                        <form action="/stores" method="GET" class="mt-6 flex flex-col gap-3 sm:flex-row {{ $storeOff ? 'cursor-not-allowed opacity-60' : '' }}">
+                            <div class="relative w-full">
+                                <svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+                                <input type="text" name="q" placeholder="{{ $sl['placeholder'] ?? 'Enter your city or area' }}" @if($storeOff) disabled @endif
+                                    class="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-navy-800 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 disabled:cursor-not-allowed">
+                            </div>
+                            <button type="submit" @if($storeOff) disabled @endif
+                                class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
+                                Find a store <span aria-hidden="true">→</span>
+                            </button>
+                        </form>
+                    @endif
+
+                    <div class="mt-7 grid grid-cols-3 gap-3 text-center">
+                        @foreach([
+                            ['icon' => '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" />', 'label' => 'Nationwide Branches'],
+                            ['icon' => '<circle cx="18.5" cy="17.5" r="2.5" /><circle cx="5.5" cy="17.5" r="2.5" /><path d="M15 6a1 1 0 0 1 1 1v8.5M15 6H9.5L6 11h9M5.5 17.5H3V13l2-4" /><path d="M13 11h4.5l2.5 3v3.5" />', 'label' => 'Fast Delivery & Pickup'],
+                            ['icon' => '<rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />', 'label' => 'Easy & Secure Ordering'],
+                        ] as $f)
+                            <div>
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $f['icon'] !!}</svg>
+                                </span>
+                                <p class="mt-2 text-xs font-medium leading-snug text-navy-700">{{ $f['label'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4">
+                        <div>
+                            <p class="text-sm font-bold text-navy-800">Can't find your area?</p>
+                            <p class="text-xs text-slate-500">View all stores and get detailed directions.</p>
+                        </div>
+                        <a href="/stores" class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-navy-700 transition hover:border-brand-200 hover:text-brand-600">
+                            View all stores <span aria-hidden="true">→</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3" data-reveal>
+                    @if($mapStores->isNotEmpty())
+                        <script id="landing-stores-data" type="application/json">{!! json_encode($mapStores, JSON_HEX_TAG) !!}</script>
+                        <div class="relative overflow-hidden rounded-2xl border border-slate-200 shadow-xl">
+                            <div id="landing-store-map" data-map-src="{{ $mapJsSrc }}" data-map-css="{{ $mapCssHref }}"
+                                class="flex h-80 w-full items-center justify-center bg-slate-100 text-sm text-slate-400 sm:h-[28rem]">
+                                Loading map…
+                            </div>
+
+                            {{-- Selected-store card, floating over the map (bottom-right,
+                                 matching /stores' own "here's the currently selected
+                                 branch" panel). Pre-filled server-side with the first
+                                 store so it's visible before the lazy map script even
+                                 loads; landing-map.js updates it when another pin is
+                                 clicked. --}}
+                            <div id="landing-store-card" class="absolute bottom-4 right-4 z-10 max-w-[15rem] rounded-xl bg-white p-4 shadow-lg sm:max-w-xs">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1.5-5h15L21 9" /><path d="M4 9v11h16V9" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /><path d="M9 20v-5h6v5" /></svg>
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <p id="landing-store-name" class="truncate text-sm font-bold text-navy-800">{{ $firstStore['name'] ?? '' }}</p>
+                                        <p id="landing-store-address" class="mt-0.5 line-clamp-2 text-xs text-slate-500">{{ $firstStore['address'] ?? '' }}</p>
+                                        {{-- always rendered (even if empty) so JS can toggle it
+                                             per-store instead of the element not existing at all --}}
+                                        <p id="landing-store-hours" class="mt-1 text-xs text-slate-400 {{ empty($firstStore['hours']) ? 'hidden' : '' }}">{{ $firstStore['hours'] ?? '' }}</p>
+                                    </div>
+                                    <a id="landing-store-directions" href="{{ $firstStore ? $dirHref($firstStore['address']) : '#' }}" target="_blank" rel="noreferrer" aria-label="Get directions"
+                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-50 text-navy-700 transition hover:bg-brand-500 hover:text-white">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
         </section>
         @endif
@@ -444,6 +519,22 @@
     {{-- Shared product detail modal, populated from whichever card was clicked --}}
     @include('partials.product-modal')
 
+    {{-- Floating cart button — reachable from anywhere on the page without
+         scrolling back up, same fixed-FAB pattern as /menu's mobile cart
+         button, but shown at every breakpoint here since landing (unlike
+         /menu) has no persistent cart panel to fall back on for desktop. --}}
+    <button type="button" id="cart-fab" data-open-cart aria-label="Open cart"
+        class="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/40 transition hover:scale-105">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+        <span class="mini-cart-badge absolute -right-1 -top-1 hidden h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-brand-600 ring-2 ring-brand-500">0</span>
+    </button>
+
+    {{-- Landing's quick-add cart drawer + the peso/totals formula it previews with --}}
+    @include('partials.mini-cart-drawer')
+    @include('partials.order-pricing')
+
     <script>
     (function () {
         // Hero carousel: auto cross-fade, pause on hover, honors reduced motion
@@ -476,10 +567,152 @@
             }
         }
 
+        // ---- mini cart (Add to Cart) ----
+        // Reads/writes the exact same bw_cart localStorage /menu's cart uses,
+        // so an add here shows up there and vice versa. Landing only ever
+        // renders a handful of products server-side (whatsNewProducts /
+        // bestSellers), so unlike /menu there's no full catalog to resolve
+        // cart lines against — the full product list is fetched once, lazily,
+        // the first time the drawer actually needs to render lines.
+        var FALLBACK_IMG = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
+        var peso = window.OrderPricing.peso;
+        var computeTotals = window.OrderPricing.computeTotals;
+        var renderTotalsHTML = window.OrderPricing.renderTotalsHTML;
+
+        function readCart() { try { return JSON.parse(localStorage.getItem('bw_cart') || '{}') || {}; } catch (e) { return {}; } }
+        function writeCart(c) { try { localStorage.setItem('bw_cart', JSON.stringify(c)); } catch (e) {} }
+        var cart = readCart();
+
+        var allProducts = null;
+        var productsPromise = null;
+        function ensureProducts() {
+            if (allProducts) return Promise.resolve(allProducts);
+            if (productsPromise) return productsPromise;
+            productsPromise = fetch('/api/products').then(function (r) { return r.json(); })
+                .then(function (list) { allProducts = Array.isArray(list) ? list : []; return allProducts; })
+                .catch(function () { return []; });
+            return productsPromise;
+        }
+
+        function cartCount() {
+            return Object.keys(cart).reduce(function (s, id) { return s + cart[id]; }, 0);
+        }
+
+        function updateBadge() {
+            var n = cartCount();
+            document.querySelectorAll('.mini-cart-badge, .mini-cart-count').forEach(function (el) {
+                el.textContent = n;
+                el.classList.toggle('hidden', n === 0);
+            });
+        }
+
+        function add(id, qty) {
+            if (!id) return;
+            cart[id] = (cart[id] || 0) + (qty || 1);
+            writeCart(cart);
+            updateBadge();
+        }
+        function dec(id) {
+            if ((cart[id] || 0) <= 1) delete cart[id]; else cart[id] -= 1;
+            writeCart(cart);
+            updateBadge();
+            renderDrawer();
+        }
+        function removeLine(id) {
+            delete cart[id];
+            writeCart(cart);
+            updateBadge();
+            renderDrawer();
+        }
+
+        function renderDrawer() {
+            ensureProducts().then(function (products) {
+                var lines = Object.keys(cart).map(function (id) {
+                    return { product: products.find(function (p) { return p.id === id; }), qty: cart[id] };
+                }).filter(function (l) { return l.product; });
+                var subtotal = lines.reduce(function (s, l) { return s + Number(l.product.price) * l.qty; }, 0);
+
+                document.querySelectorAll('.mini-cart-footer').forEach(function (el) { el.classList.toggle('hidden', !lines.length); });
+
+                document.querySelectorAll('.mini-cart-list').forEach(function (list) {
+                    if (!lines.length) {
+                        list.innerHTML = '<div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center"><div class="text-5xl">🛒</div><p class="mt-3 text-sm text-slate-500">Your cart is empty.<br>Add some treats to get started!</p></div>';
+                        return;
+                    }
+                    list.innerHTML = lines.map(function (l) {
+                        var p = l.product;
+                        return `
+                        <li class="flex items-center gap-3 px-5 py-3">
+                            <span class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src="${p.image_path || FALLBACK_IMG}" alt="" class="h-full w-full object-cover" onerror="this.remove()"></span>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-medium text-navy-800">${p.name}</p>
+                                <p class="text-xs text-slate-500">${peso(p.price)} each</p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-1.5">
+                                <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">&minus;</button>
+                                <span class="w-4 text-center text-sm font-semibold">${l.qty}</span>
+                                <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-7 w-7 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
+                            </div>
+                            <button type="button" data-remove="${p.id}" aria-label="Remove item" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                            </button>
+                        </li>`;
+                    }).join('');
+                    list.querySelectorAll('[data-add]').forEach(function (b) { b.addEventListener('click', function () { add(b.dataset.add); renderDrawer(); }); });
+                    list.querySelectorAll('[data-dec]').forEach(function (b) { b.addEventListener('click', function () { dec(b.dataset.dec); }); });
+                    list.querySelectorAll('[data-remove]').forEach(function (b) { b.addEventListener('click', function () { removeLine(b.dataset.remove); }); });
+                });
+
+                var t = computeTotals({ subtotal: subtotal });
+                document.querySelectorAll('.mini-cart-totals').forEach(function (el) { el.innerHTML = renderTotalsHTML(t, { showFreeDeliveryHint: true }); });
+            });
+        }
+
+        function openDrawer() { document.getElementById('mini-cart-drawer').classList.remove('hidden'); renderDrawer(); }
+
+        document.querySelectorAll('[data-open-cart]').forEach(function (btn) { btn.addEventListener('click', openDrawer); });
+
+        // The FAB is fixed to the viewport, not the page, so once the visitor
+        // scrolls all the way down it has nowhere left to "avoid" — it just
+        // sits on top of the footer's copyright line forever. Fade it out
+        // whenever the footer is actually on screen instead.
+        var cartFab = document.getElementById('cart-fab');
+        var footerEl = document.getElementById('site-footer');
+        if (cartFab && footerEl && 'IntersectionObserver' in window) {
+            var fabObserver = new IntersectionObserver(function (entries) {
+                var overFooter = entries.some(function (e) { return e.isIntersecting; });
+                cartFab.classList.toggle('opacity-0', overFooter);
+                cartFab.classList.toggle('pointer-events-none', overFooter);
+            });
+            fabObserver.observe(footerEl);
+        }
+        document.querySelectorAll('[data-add-to-cart]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                add(btn.dataset.addToCart, 1);
+                openDrawer();
+            });
+        });
+
+        // Proceeding to checkout hands off via bw_checkout, same as /menu's
+        // .checkout-btn — only meaningful once there's a real session to
+        // place the order under (see mini-cart-drawer.blade.php's $user gate).
+        document.querySelectorAll('.mini-checkout-btn').forEach(function (a) {
+            a.addEventListener('click', function () {
+                ensureProducts().then(function (products) {
+                    var items = Object.keys(cart).map(function (id) {
+                        var p = products.find(function (x) { return x.id === id; });
+                        return p ? { product_id: p.id, name: p.name, qty: cart[id], img: p.image_path, price: p.price } : null;
+                    }).filter(Boolean);
+                    try { localStorage.setItem('bw_checkout', JSON.stringify({ items: items, voucher: null })); } catch (e) {}
+                });
+            });
+        });
+
+        updateBadge();
+
         // Shared product detail modal (partials/product-modal.blade.php),
         // populated from whichever card's data-* attrs was clicked. Only the
-        // price + qty-stepper + "Order now" link footer is landing-specific
-        // (it just deep-links into /menu — the real cart lives there); the
+        // price + qty-stepper + "Add to cart" footer is landing-specific; the
         // modal shell itself is shared with menu.blade.php's version.
         var pmModal = window.ProductModal.init({ closeOnBackdrop: true });
 
@@ -494,21 +727,25 @@
                         <button type="button" data-qty-plus aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
                     </div>
                 </div>
-                <a data-order href="#" class="mt-5 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Order now
-                </a>`;
+                <button type="button" data-add-to-cart-modal class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Add to cart
+                </button>`;
             var qtyEl = footer.querySelector('[data-qty]');
-            var orderEl = footer.querySelector('[data-order]');
-            var updateHref = function () { orderEl.href = '/menu?add=' + encodeURIComponent(d.name || '') + '&qty=' + qty; };
-            var setQty = function (q) { qty = Math.max(1, q); qtyEl.textContent = qty; updateHref(); };
+            var setQty = function (q) { qty = Math.max(1, q); qtyEl.textContent = qty; };
             footer.querySelector('[data-qty-minus]').addEventListener('click', function () { setQty(qty - 1); });
             footer.querySelector('[data-qty-plus]').addEventListener('click', function () { setQty(qty + 1); });
+            footer.querySelector('[data-add-to-cart-modal]').addEventListener('click', function () {
+                add(d.id, qty);
+                pmModal.close();
+                openDrawer();
+            });
             setQty(1);
         };
 
         document.querySelectorAll('.product-card-trigger').forEach(function (el) {
             var open = function () {
                 pmModal.open({
+                    id: el.dataset.id,
                     img: el.dataset.img,
                     name: el.dataset.name,
                     badge: el.dataset.tag,
@@ -552,6 +789,34 @@
                 });
             }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
             reveals.forEach(function (el) { revealObserver.observe(el); });
+        }
+
+        // Store locator map: loaded lazily. maplibre-gl is a ~290KB (gzipped)
+        // dependency — fetching it on every landing page load regardless of
+        // whether anyone scrolls this far would undercut the whole point of
+        // a fast landing page, so the actual module is only import()'d once
+        // the section is about to enter the viewport (see LandingController's
+        // mapJsSrc/mapCssHref — resolved by hand since Blade's Vite directive
+        // always emits its tags eagerly, which is exactly what this avoids).
+        var mapEl = document.getElementById('landing-store-map');
+        if (mapEl && mapEl.dataset.mapSrc && 'IntersectionObserver' in window) {
+            var loadMap = function () {
+                if (mapEl.dataset.mapCss) {
+                    var link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = mapEl.dataset.mapCss;
+                    document.head.appendChild(link);
+                }
+                mapEl.textContent = '';
+                import(mapEl.dataset.mapSrc);
+            };
+            var mapObserver = new IntersectionObserver(function (entries) {
+                if (entries.some(function (e) { return e.isIntersecting; })) {
+                    mapObserver.disconnect();
+                    loadMap();
+                }
+            }, { rootMargin: '400px 0px' });
+            mapObserver.observe(mapEl);
         }
     })();
     </script>

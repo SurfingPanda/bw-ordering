@@ -173,7 +173,42 @@ class LandingController extends Controller
             (array) ($content['menuCategories'] ?? []),
         );
 
+        // Same cached list /stores' full locator uses (StoreController),
+        // trimmed to the fields the landing map preview's markers/popups
+        // need — see resources/js/landing-map.js.
+        $viewData['mapStores'] = app(StoreController::class)->cachedList()->map(fn ($s) => [
+            'name' => $s->name,
+            'address' => $s->address,
+            'hours' => $s->hours,
+            'latitude' => $s->latitude,
+            'longitude' => $s->longitude,
+        ])->values();
+        // The map script is loaded lazily (dynamic import(), triggered only
+        // once the section nears the viewport — see landing.blade.php) rather
+        // than via @vite(), so maplibre-gl's ~290KB never costs anything for
+        // visitors who don't scroll this far. That means resolving its URLs
+        // by hand instead of letting @vite() emit the tags.
+        $viewData['mapJsSrc'] = \Illuminate\Support\Facades\Vite::asset('resources/js/landing-map.js');
+        $viewData['mapCssHref'] = $this->viteEntryCssHref('resources/js/landing-map.js');
+
         return view('landing', $viewData);
+    }
+
+    /**
+     * The stylesheet a Vite entry pulls in transitively (here: landing-map.js
+     * → the shared maplibre-gl chunk → maplibre-gl.css), as a plain href —
+     * @vite()/Vite::asset() only ever resolve the entry's own JS URL, and
+     * there's no public API for "just the CSS this entry depends on" since
+     * normally @vite() emits both tags itself. In local dev (Vite dev server
+     * running) this returns null and that's correct: Vite's dev client
+     * injects imported CSS itself as the module loads, no <link> needed.
+     */
+    private function viteEntryCssHref(string $entry): ?string
+    {
+        $html = (string) app(\Illuminate\Foundation\Vite::class)([$entry]);
+        preg_match('/<link[^>]+href="([^"]+\.css)"/', $html, $m);
+
+        return $m[1] ?? null;
     }
 
     /** Map a Product row to the flat shape the product-card partial expects. */
@@ -182,6 +217,7 @@ class LandingController extends Controller
         $price = (float) $p->price;
 
         return [
+            'id' => $p->id,
             'name' => $p->name,
             'img' => $p->image_path,
             'tag' => self::STATUS_TAGS[$p->status] ?? null,

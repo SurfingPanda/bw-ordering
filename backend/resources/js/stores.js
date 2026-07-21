@@ -71,7 +71,19 @@ const map = new maplibregl.Map({
                 tileSize: 256,
                 attribution: '© OpenStreetMap contributors',
             },
+            // Same Terrarium tiles, but two distinct sources — sharing one
+            // source between the hillshade layer and setTerrain() below
+            // works, but MapLibre logs a console warning recommending
+            // separate sources for better rendering quality, so it gets one
+            // each rather than silencing/ignoring the warning.
             'terrain-dem': {
+                type: 'raster-dem',
+                tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                encoding: 'terrarium',
+                attribution: 'Terrain: AWS Open Data Terrarium DEM',
+            },
+            'hillshade-dem': {
                 type: 'raster-dem',
                 tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
                 tileSize: 256,
@@ -91,7 +103,7 @@ const map = new maplibregl.Map({
             {
                 id: 'hillshade',
                 type: 'hillshade',
-                source: 'terrain-dem',
+                source: 'hillshade-dem',
                 paint: {
                     'hillshade-shadow-color': '#0f172a',
                     'hillshade-highlight-color': '#e0f2fe',
