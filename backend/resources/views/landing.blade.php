@@ -109,9 +109,9 @@
                 <div class="animate-float relative">
                     {{-- steam rising off the logo as it bakes (transparent animated
                          webp — the gif's black backdrop was keyed out into real alpha) --}}
-                    <img src="/images/smoke.webp" alt="" aria-hidden="true"
+                    <img src="/images/smoke.webp" alt="" aria-hidden="true" width="260" height="390"
                         class="pointer-events-none absolute bottom-[50%] left-1/2 w-44 -translate-x-1/2 select-none sm:w-52">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="animate-bake relative h-44 w-auto sm:h-56">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="animate-bake relative h-44 w-auto sm:h-56">
                 </div>
             </div>
             <span class="animate-wiggle mt-10 inline-block text-6xl" role="img" aria-label="Under construction">🚧</span>
@@ -144,7 +144,7 @@
             @php $orderState = $btn('navOrder'); $signInState = $btn('navSignIn'); @endphp
             <nav class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
                 </a>
 
                 @php
@@ -227,7 +227,12 @@
                                  still fetch them near-immediately in practice since
                                  they're stacked in the same above-the-fold box
                                  (opacity, not position, is what hides them). --}}
-                            <img src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" loading="{{ $i === 0 ? 'eager' : 'lazy' }}" decoding="async" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
+                            {{-- width/height set the intrinsic ratio (matches the CMS's
+                                 documented recommended banner size, 1920x800 = 12:5) as a
+                                 fallback for the aspect-[12/5] class — actual uploaded
+                                 banners are cropped to this box via object-cover
+                                 regardless of their real dimensions. --}}
+                            <img src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" loading="{{ $i === 0 ? 'eager' : 'lazy' }}" decoding="async" width="1920" height="800" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
                         </a>
                     </div>
                 @endforeach
@@ -262,7 +267,10 @@
             </section>
         @endif
 
-        {{-- Best Sellers: live products flagged status=best_seller (see LandingController) --}}
+        {{-- Best Sellers: live products flagged status=best_seller (see LandingController).
+             Hidden entirely when nothing is flagged yet, same as What's New below —
+             otherwise this renders as an empty heading + empty grid. --}}
+        @if(!empty($bestSellers))
         <section id="best-sellers" class="bg-navy-50/60 py-16">
             <div class="mx-auto max-w-6xl px-4 sm:px-6">
                 <div class="mx-auto max-w-2xl text-center" data-reveal>
@@ -289,6 +297,7 @@
                 @endif
             </div>
         </section>
+        @endif
 
         {{-- Categories: distinct product categories (see LandingController;
              Site Editor toggle saved by the Menu Categories tab) --}}
@@ -388,14 +397,20 @@
                 @endif
                 @if($storeState !== 'off')
                     @php $storeOff = $storeState === 'disabled'; @endphp
-                    <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row {{ $storeOff ? 'cursor-not-allowed opacity-60' : '' }}">
-                        <input type="text" placeholder="{{ $sl['placeholder'] ?? 'Enter your city or area' }}" @if($storeOff) disabled @endif
+                    {{-- A real GET form to /stores?q=... — stores.blade.php's JS
+                         (resources/js/stores.js) reads `q` on load and applies it
+                         to the same search box the /stores page itself uses, so
+                         typing here and pressing Enter (or clicking the button)
+                         actually filters, instead of always landing on an
+                         unfiltered list regardless of what was typed. --}}
+                    <form action="/stores" method="GET" class="mt-7 flex flex-col justify-center gap-3 sm:flex-row {{ $storeOff ? 'cursor-not-allowed opacity-60' : '' }}">
+                        <input type="text" name="q" placeholder="{{ $sl['placeholder'] ?? 'Enter your city or area' }}" @if($storeOff) disabled @endif
                             class="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-navy-50/50 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 disabled:cursor-not-allowed sm:w-72">
-                        <a href="/stores" @if($storeOff) aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
-                            class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                        <button type="submit" @if($storeOff) disabled @endif
+                            class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
                             Find a store
-                        </a>
-                    </div>
+                        </button>
+                    </form>
                 @endif
             </div>
         </section>

@@ -106,6 +106,15 @@ class LandingController extends Controller
         'sold_out' => 'Sold Out',
     ];
 
+    /**
+     * Best Sellers / What's New render in a 4-wide grid (md:grid-cols-4) —
+     * cap at two full rows. Unlike the old CMS-curated card lists, these are
+     * every product with a given status, which is unbounded: an editor could
+     * flag 50 products best_seller and this section would otherwise render
+     * all 50 on the landing page.
+     */
+    private const LANDING_GRID_LIMIT = 8;
+
     public function index(Request $request)
     {
         // Site Editor live preview (?preview=1, editor session) shows the
@@ -152,12 +161,12 @@ class LandingController extends Controller
             ->get());
 
         $viewData['content'] = $content;
-        $viewData['bestSellers'] = $products->where('status', 'best_seller')->values()
+        $viewData['bestSellers'] = $products->where('status', 'best_seller')->take(self::LANDING_GRID_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         // What's New is likewise products-table-sourced: every product whose
         // status is "new" (set in the admin Products editor), not a
         // CMS-curated card list.
-        $viewData['whatsNewProducts'] = $products->where('status', 'new')->values()
+        $viewData['whatsNewProducts'] = $products->where('status', 'new')->take(self::LANDING_GRID_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         $viewData['categories'] = $this->categoriesFrom(
             $products,

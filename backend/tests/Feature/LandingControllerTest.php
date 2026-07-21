@@ -29,6 +29,66 @@ class LandingControllerTest extends TestCase
         );
     }
 
+    public function test_store_locator_search_submits_to_the_real_stores_search(): void
+    {
+        // The teaser used to be a plain link to /stores that ignored whatever
+        // was typed — it must now be a real GET form so the search box
+        // actually filters the /stores page it lands on.
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<form action="/stores" method="GET"', false)
+            ->assertSee('name="q"', false);
+    }
+
+    public function test_store_locator_search_is_disabled_when_the_button_is_off(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => [
+            'buttons' => ['storeLocatorFind' => 'off'],
+        ]]);
+
+        $this->get('/')->assertOk()->assertDontSee('name="q"', false);
+    }
+
+    public function test_best_sellers_section_is_hidden_when_nothing_is_flagged(): void
+    {
+        Product::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Plain Pandesal',
+            'price' => 60,
+            'status' => null,
+        ]);
+
+        // No product is flagged best_seller — the section (heading, empty
+        // grid, and "See Best Sellers" button) must not render at all.
+        $this->get('/')->assertOk()->assertDontSee('Our Best Sellers');
+    }
+
+    public function test_best_sellers_section_renders_when_a_product_is_flagged(): void
+    {
+        Product::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Mocha Cake',
+            'price' => 650,
+            'status' => 'best_seller',
+        ]);
+
+        $this->get('/')->assertOk()->assertSee('Our Best Sellers')->assertSee('Mocha Cake');
+    }
+
+    public function test_best_sellers_and_whats_new_are_capped_at_two_rows(): void
+    {
+        // The grid is md:grid-cols-4 — flagging more than 8 products used to
+        // render every single one, unbounded.
+        Product::factory()->count(12)->create(['status' => 'best_seller']);
+        Product::factory()->count(9)->create(['status' => 'new']);
+
+        $view = app(LandingController::class)->index(Request::create('/'));
+        $data = $view->getData();
+
+        $this->assertCount(8, $data['bestSellers']);
+        $this->assertCount(8, $data['whatsNewProducts']);
+    }
+
     public function test_best_sellers_and_categories_come_from_the_products_table(): void
     {
         Product::create([

@@ -16,7 +16,11 @@
         <div>
             <div class="flex items-center gap-2">
                 @if(!empty($f['logo']))
-                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-16 w-auto">
+                    {{-- Editor-uploaded, arbitrary aspect ratio — unlike the nav/
+                         maintenance-page logo (a fixed local asset), there's no
+                         single real width/height to declare here. A fixed box +
+                         object-contain reserves the space without needing one. --}}
+                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-16 w-40 object-contain object-left">
                 @endif
             </div>
             <p class="mt-4 max-w-xs text-sm text-navy-50/70">{{ $f['description'] }}</p>

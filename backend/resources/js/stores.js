@@ -242,6 +242,16 @@ function applyFilters() {
     map.resize() // layout may have shifted (empty state toggled)
 }
 
+// Arriving from the landing page's store-locator teaser (a GET form to
+// /stores?q=...) — apply the typed search immediately instead of showing
+// every store regardless of what was searched for.
+const initialQuery = new URLSearchParams(location.search).get('q')
+if (initialQuery) {
+    query = initialQuery
+    searchInput.value = initialQuery
+    applyFilters()
+}
+
 regionButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
         region = btn.dataset.region
