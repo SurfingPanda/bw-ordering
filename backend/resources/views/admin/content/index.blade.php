@@ -194,10 +194,6 @@
                         <input type="text" name="customCake[buttonLink]" value="{{ $cc['buttonLink'] ?? '' }}" placeholder="/custom-cake" class="{{ $input }}">
                     </label>
                 </div>
-                <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-slate-500">Banner link (clicking anywhere on the banner)</span>
-                    <input type="text" name="customCake[bannerLink]" value="{{ $cc['bannerLink'] ?? '' }}" placeholder="/menu" class="{{ $input }}">
-                </label>
             </div>
         </section>
 

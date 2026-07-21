@@ -146,7 +146,7 @@
                     </div>
 
                     <div id="promo-banner"></div>
-                    <div id="tag-filters" class="mb-5 hidden flex-wrap gap-2"></div>
+                    <div id="tag-filters" class="mb-5 hidden flex flex-wrap gap-2.5"></div>
 
                     <div id="product-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4"></div>
                     <p id="empty-state" class="hidden py-16 text-center text-sm text-slate-500">No treats found.</p>
@@ -321,6 +321,16 @@
         const GRID_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
         const ICON_SVG = { new: SPARKLE_SVG, best: TROPHY_SVG, all: GRID_SVG };
         const ICON_GRADIENT = { new: 'from-emerald-400 to-teal-500', best: 'from-amber-400 to-orange-500', all: 'from-sky-400 to-blue-500' };
+        // Sub-filter chip theming (#tag-filters) — mirrors the sidebar's
+        // per-category icon + gradient (ICON_SVG/ICON_GRADIENT above) so the
+        // "All"/"New"/"Best Seller" chips read as the same categories, not a
+        // generic filter list. 'bundle' has no sidebar icon, so it falls back
+        // to the plain brand-orange treatment below.
+        const TAG_THEME = {
+            all: { icon: 'all', activeGrad: 'from-sky-400 to-blue-500', activeShadow: 'shadow-sky-500/30', idleIcon: 'text-sky-500' },
+            new: { icon: 'new', activeGrad: 'from-emerald-400 to-teal-500', activeShadow: 'shadow-teal-500/30', idleIcon: 'text-emerald-500' },
+            best_seller: { icon: 'best', activeGrad: 'from-amber-400 to-orange-500', activeShadow: 'shadow-orange-500/30', idleIcon: 'text-amber-500' },
+        };
         const TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 
         function renderCategories() {
@@ -353,21 +363,32 @@
 
         function availableTags() {
             const present = new Set(PRODUCTS.filter(inActiveCategory).map(p => p.status).filter(Boolean));
-            return ['new', 'best_seller', 'bundle'].filter(t => present.has(t));
+            // All / New / Best Seller always show, on every category (even one
+            // with no matching products yet — picking that filter just yields
+            // the empty state, same as a text search with no hits). Bundle
+            // stays opt-in: it only shows up for categories that actually have
+            // a bundle product.
+            return ['new', 'best_seller', ...(present.has('bundle') ? ['bundle'] : [])];
         }
 
         function renderTagFilters() {
             const wrap = document.getElementById('tag-filters');
             const tags = availableTags();
-            if (!tags.length) { wrap.classList.add('hidden'); wrap.innerHTML = ''; return; }
             wrap.classList.remove('hidden');
             wrap.innerHTML = '';
             [{ key: 'all', label: 'All' }, ...tags.map(t => ({ key: t, label: STATUS_LABEL[t] }))].forEach(t => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.textContent = t.label;
-                btn.className = 'rounded-full px-4 py-1.5 text-sm font-semibold transition ' +
-                    (tag === t.key ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-white text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50');
+                const theme = TAG_THEME[t.key];
+                const isActive = tag === t.key;
+                const icon = theme
+                    ? `<span class="${isActive ? 'text-white' : theme.idleIcon} [&_svg]:h-3.5 [&_svg]:w-3.5">${ICON_SVG[theme.icon]}</span>`
+                    : '';
+                btn.innerHTML = icon + `<span>${t.label}</span>`;
+                btn.className = 'inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition ' +
+                    (isActive
+                        ? (theme ? `bg-gradient-to-r ${theme.activeGrad} text-white shadow-md ${theme.activeShadow}` : 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/30')
+                        : 'bg-white text-navy-700 ring-1 ring-slate-200 hover:bg-slate-50');
                 btn.addEventListener('click', () => { tag = t.key; renderGrid(); renderTagFilters(); });
                 wrap.appendChild(btn);
             });
@@ -419,7 +440,7 @@
             const i = promoIndex % PROMO_SLIDES.length;
             const s = PROMO_SLIDES[i];
             wrap.innerHTML = `
-                <div class="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-brand-500 to-orange-600 shadow-lg shadow-brand-500/25">
+                <div class="mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-amber-900 via-amber-700 to-amber-500 shadow-lg shadow-amber-700/25">
                     <div class="flex flex-col-reverse sm:flex-row">
                         <div class="flex flex-1 flex-col justify-center gap-2 p-6 sm:p-8">
                             ${s.badge ? `<span class="w-fit rounded-full bg-white/25 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white backdrop-blur-sm">${s.badge}</span>` : ''}
@@ -427,13 +448,13 @@
                             ${s.description ? `<p class="line-clamp-2 max-w-md text-sm text-white/90">${s.description}</p>` : ''}
                             ${(s.price || s.buttonLabel) ? `<div class="mt-1 flex items-center gap-3">
                                 ${s.price ? `<span class="text-xl font-bold text-white drop-shadow-sm">${s.price}</span>` : ''}
-                                ${s.buttonLabel ? `<button type="button" id="promo-btn" class="rounded-full bg-white px-5 py-2 text-sm font-bold text-brand-600 shadow-md transition hover:bg-white/90">${s.buttonLabel}</button>` : ''}
+                                ${s.buttonLabel ? `<button type="button" id="promo-btn" class="rounded-full bg-white px-5 py-2 text-sm font-bold text-amber-800 shadow-md transition hover:bg-white/90">${s.buttonLabel}</button>` : ''}
                             </div>` : ''}
                             ${PROMO_SLIDES.length > 1 ? `<div class="mt-3 flex gap-1.5">${PROMO_SLIDES.map((slide, idx) => `<button type="button" data-promo-dot="${idx}" aria-label="Show ${slide.title || ('slide ' + (idx + 1))}" class="h-1.5 rounded-full transition-all ${idx === i ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}"></button>`).join('')}</div>` : ''}
                         </div>
-                        <div class="relative h-40 w-full shrink-0 overflow-hidden bg-gradient-to-br from-brand-500 to-orange-600 sm:h-auto sm:w-72">
-                            ${s.image ? `<img src="${s.image}" alt="${s.title || 'Promo'}" class="h-full w-full object-cover">` : `<div class="flex h-full w-full items-center justify-center text-5xl opacity-90">🧁</div>`}
-                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-orange-600/40 to-transparent sm:bg-gradient-to-r sm:from-brand-500/60 sm:to-transparent"></div>
+                        <div class="relative h-48 w-full shrink-0 overflow-hidden sm:h-auto sm:w-72">
+                            ${s.image ? `<img src="${s.image}" alt="${s.title || 'Promo'}" class="h-full w-full object-contain p-4 drop-shadow-lg sm:p-6">` : `<div class="flex h-full w-full items-center justify-center text-5xl opacity-90">🧁</div>`}
+                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-amber-900/25 to-transparent sm:bg-gradient-to-r sm:from-amber-700/35 sm:to-transparent"></div>
                         </div>
                     </div>
                 </div>`;
@@ -530,7 +551,12 @@
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
                     class="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
                     <div class="relative h-40 w-full overflow-hidden bg-slate-100 sm:h-48 animate-pulse">
-                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" loading="lazy" class="h-full w-full object-cover ${soldOut ? 'opacity-60 grayscale' : ''}">
+                        {{-- object-contain (not -cover): portrait product photos
+                             (tall bread bags, etc.) in this short, wide box were
+                             getting cropped top and bottom — see the product
+                             modal's identical fix. Letterboxes on bg-slate-100
+                             instead of cropping. --}}
+                        <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" loading="lazy" class="h-full w-full object-contain ${soldOut ? 'opacity-60 grayscale' : ''}">
                         ${p.status ? `<span class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'}">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
                     </div>
                     <div class="flex flex-1 flex-col p-4">

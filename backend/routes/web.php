@@ -64,7 +64,8 @@ Route::middleware('supabase.session')->group(function () {
     Route::post('/complete-profile', [CompleteProfileController::class, 'store'])->name('complete-profile.store');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])
+        ->middleware('throttle:checkout')->name('checkout.store');
     Route::get('/my-orders', [MyOrdersController::class, 'index'])->name('my-orders');
 
     // Account settings (port of Profile.jsx) — two forms, two POSTs.

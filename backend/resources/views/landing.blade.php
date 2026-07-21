@@ -331,7 +331,7 @@
             </div>
             <div class="mt-10 text-center">
                 <a href="/menu" class="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900">
-                    See all category
+                    See all categories
                 </a>
             </div>
         </section>
@@ -340,22 +340,15 @@
         {{-- Custom cake promo banner --}}
         @php
             $cc = $content['customCake'];
-            $bannerLink = $cc['bannerLink'] ?: '/menu';
-            $bannerJs = $isExternal($bannerLink)
-                ? "window.open(".json_encode($bannerLink).", '_blank', 'noopener')"
-                : 'window.location.href='.json_encode($bannerLink);
             $promoState = $btn('promoOrder');
         @endphp
         @if($cc['visible'] ?? true)
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6" data-reveal>
-            <div id="custom-cake" role="button" tabindex="0"
-                onclick="{{ $bannerJs }}"
-                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();{{ $bannerJs }};}"
-                aria-label="Order custom cakes"
-                class="relative min-h-[300px] cursor-pointer rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl outline-none transition hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-white/70 sm:px-12">
+            <div id="custom-cake"
+                class="relative min-h-[300px] rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
                 @if(!empty($cc['image']))
                     <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async"
-                        class="pointer-events-none absolute bottom-0 right-0 hidden w-[58%] max-w-[680px] drop-shadow-2xl sm:block">
+                        class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl sm:block sm:right-10 sm:h-[420px] lg:right-16 lg:h-[500px]">
                 @endif
                 <div class="relative z-10 max-w-md">
                     @if(!empty($cc['eyebrow']))
@@ -371,8 +364,7 @@
                             $promoDisabled = $promoState === 'disabled';
                         @endphp
                         <a href="{{ $promoHref }}" @if($isExternal($promoHref)) target="_blank" rel="noreferrer" @endif
-                            onclick="event.stopPropagation();{{ $promoDisabled ? 'event.preventDefault();' : '' }}"
-                            @if($promoDisabled) aria-disabled="true" tabindex="-1" @endif
+                            @if($promoDisabled) onclick="event.preventDefault();" aria-disabled="true" tabindex="-1" @endif
                             class="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50 {{ $promoDisabled ? 'cursor-not-allowed opacity-60' : '' }}">
                             {{ $cc['buttonLabel'] ?: 'Order a custom cake' }}
                         </a>

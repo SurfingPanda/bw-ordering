@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 720" width="480" height="720" role="img" aria-label="Tall three-tier custom celebration cake with drip icing and a candle on top">
+  <defs>
+    <linearGradient id="cakeSide" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fffaf2"/>
+      <stop offset="45%" stop-color="#fff4e4"/>
+      <stop offset="100%" stop-color="#eddcc0"/>
+    </linearGradient>
+    <radialGradient id="cakeTop" cx="35%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f3e6cf"/>
+    </radialGradient>
+    <linearGradient id="dripGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f7ad4d"/>
+      <stop offset="100%" stop-color="#e06f10"/>
+    </linearGradient>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d8d2c8"/>
+    </linearGradient>
+    <radialGradient id="flameGrad" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#fff6c8"/>
+      <stop offset="55%" stop-color="#ffb648"/>
+      <stop offset="100%" stop-color="#f2711c"/>
+    </radialGradient>
+    <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="cakeShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#5c2e0a" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- grounding shadow -->
+  <ellipse cx="240" cy="702" rx="168" ry="14" fill="#3a1f08" opacity="0.22" filter="url(#softBlur)"/>
+
+  <g filter="url(#cakeShadow)">
+    <!-- stand / plate -->
+    <ellipse cx="240" cy="688" rx="190" ry="16" fill="url(#plateGrad)"/>
+    <ellipse cx="240" cy="684" rx="190" ry="14" fill="#ffffff"/>
+
+    <!-- ===== tier 3 (bottom) ===== -->
+    <rect x="75" y="520" width="330" height="156" fill="url(#cakeSide)"/>
+    <circle cx="115" cy="600" r="7" fill="#ffffff" opacity="0.9"/>
+    <circle cx="150" cy="612" r="7" fill="#ffffff" opacity="0.9"/>
+    <circle cx="365" cy="605" r="7" fill="#ffffff" opacity="0.9"/>
+    <circle cx="330" cy="617" r="7" fill="#ffffff" opacity="0.9"/>
+    <!-- drips -->
+    <rect x="90"  y="514" width="16" height="34" rx="8" fill="url(#dripGrad)"/>
+    <rect x="128" y="514" width="14" height="22" rx="7" fill="url(#dripGrad)"/>
+    <rect x="166" y="514" width="16" height="44" rx="8" fill="url(#dripGrad)"/>
+    <rect x="206" y="514" width="14" height="26" rx="7" fill="url(#dripGrad)"/>
+    <rect x="244" y="514" width="16" height="38" rx="8" fill="url(#dripGrad)"/>
+    <rect x="282" y="514" width="14" height="24" rx="7" fill="url(#dripGrad)"/>
+    <rect x="320" y="514" width="16" height="46" rx="8" fill="url(#dripGrad)"/>
+    <rect x="358" y="514" width="14" height="28" rx="7" fill="url(#dripGrad)"/>
+    <ellipse cx="240" cy="520" rx="165" ry="17" fill="url(#cakeTop)"/>
+    <!-- rosette accents -->
+    <g transform="translate(120,608)">
+      <circle r="9" fill="#f7c3d6"/><circle cx="10" r="7" fill="#f7c3d6"/><circle cx="-10" r="7" fill="#f7c3d6"/>
+      <circle cy="9" r="7" fill="#f7c3d6"/><circle cy="-9" r="7" fill="#f7c3d6"/>
+      <circle r="4" fill="#fbdfe9"/>
+    </g>
+    <g transform="translate(358,614)">
+      <circle r="9" fill="#f7c3d6"/><circle cx="10" r="7" fill="#f7c3d6"/><circle cx="-10" r="7" fill="#f7c3d6"/>
+      <circle cy="9" r="7" fill="#f7c3d6"/><circle cy="-9" r="7" fill="#f7c3d6"/>
+      <circle r="4" fill="#fbdfe9"/>
+    </g>
+
+    <!-- ===== tier 2 (middle) ===== -->
+    <rect x="120" y="375" width="240" height="150" fill="url(#cakeSide)"/>
+    <circle cx="150" cy="450" r="6" fill="#ffffff" opacity="0.9"/>
+    <circle cx="330" cy="450" r="6" fill="#ffffff" opacity="0.9"/>
+    <rect x="132" y="369" width="14" height="30" rx="7" fill="url(#dripGrad)"/>
+    <rect x="164" y="369" width="12" height="18" rx="6" fill="url(#dripGrad)"/>
+    <rect x="196" y="369" width="14" height="36" rx="7" fill="url(#dripGrad)"/>
+    <rect x="228" y="369" width="12" height="20" rx="6" fill="url(#dripGrad)"/>
+    <rect x="260" y="369" width="14" height="32" rx="7" fill="url(#dripGrad)"/>
+    <rect x="292" y="369" width="12" height="20" rx="6" fill="url(#dripGrad)"/>
+    <rect x="324" y="369" width="14" height="28" rx="7" fill="url(#dripGrad)"/>
+    <ellipse cx="240" cy="375" rx="120" ry="14" fill="url(#cakeTop)"/>
+    <g transform="translate(240,460)">
+      <circle r="8" fill="#f7c3d6"/><circle cx="9" r="6" fill="#f7c3d6"/><circle cx="-9" r="6" fill="#f7c3d6"/>
+      <circle cy="8" r="6" fill="#f7c3d6"/><circle cy="-8" r="6" fill="#f7c3d6"/>
+      <circle r="3.5" fill="#fbdfe9"/>
+    </g>
+
+    <!-- ===== tier 1 (top) ===== -->
+    <rect x="158" y="245" width="164" height="135" fill="url(#cakeSide)"/>
+    <rect x="168" y="239" width="12" height="24" rx="6" fill="url(#dripGrad)"/>
+    <rect x="192" y="239" width="11" height="16" rx="5.5" fill="url(#dripGrad)"/>
+    <rect x="216" y="239" width="12" height="28" rx="6" fill="url(#dripGrad)"/>
+    <rect x="240" y="239" width="11" height="18" rx="5.5" fill="url(#dripGrad)"/>
+    <rect x="264" y="239" width="12" height="24" rx="6" fill="url(#dripGrad)"/>
+    <rect x="288" y="239" width="11" height="16" rx="5.5" fill="url(#dripGrad)"/>
+    <ellipse cx="240" cy="245" rx="82" ry="11" fill="url(#cakeTop)"/>
+
+    <!-- candle -->
+    <rect x="232" y="176" width="16" height="70" rx="3" fill="#ef7d1a"/>
+    <rect x="232" y="176" width="16" height="12" rx="3" fill="#ffffff"/>
+    <rect x="232" y="200" width="16" height="10" rx="2" fill="#ffffff"/>
+    <rect x="232" y="222" width="16" height="10" rx="2" fill="#ffffff"/>
+    <circle cx="240" cy="168" r="16" fill="#ffcf7a" opacity="0.35" filter="url(#softBlur)"/>
+    <path d="M240 140 C 250 155 250 170 240 178 C 230 170 230 155 240 140 Z" fill="url(#flameGrad)"/>
+  </g>
+
+  <!-- festive sparkles -->
+  <g fill="#ffffff" opacity="0.85">
+    <path d="M84 300 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 Z"/>
+    <path d="M404 420 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z"/>
+    <path d="M62 470 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z"/>
+  </g>
+  <g fill="#f7ad4d" opacity="0.7">
+    <path d="M410 250 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z"/>
+    <path d="M56 560 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 Z"/>
+  </g>
+</svg>

@@ -50,9 +50,8 @@ class LandingController extends Controller
             'title' => 'Custom cakes for birthdays & special occasions',
             'subtitle' => 'Make it unforgettable with a personalized cake, baked fresh and decorated just the way you want it.',
             'buttonLabel' => 'Order a custom cake',
-            'image' => '/images/custom-cakes.png',
-            'alt' => 'Custom tiered celebration cakes — wedding, themed, and princess designs',
-            'bannerLink' => '/menu',
+            'image' => '/images/custom-cake-tower.svg',
+            'alt' => 'A tall three-tier custom celebration cake with drip icing and a candle on top',
             'buttonLink' => '/custom-cake',
         ],
         'storeLocator' => [
