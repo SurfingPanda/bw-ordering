@@ -120,7 +120,9 @@
 
                         <div id="delivery-address-wrap" class="mt-5">
                             <label class="mb-1 block text-sm font-semibold text-navy-800">📍 Delivery address</label>
-                            <textarea name="address" id="address" rows="2" placeholder="House / unit no., street, barangay, city" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"></textarea>
+                            {{-- Prefilled from the profile's saved address (My Profile → Account
+                                 details) when set — still just a starting point, editable per order. --}}
+                            <textarea name="address" id="address" rows="2" placeholder="House / unit no., street, barangay, city" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">{{ $savedAddress ?? '' }}</textarea>
                         </div>
 
                         <div class="mt-5">
