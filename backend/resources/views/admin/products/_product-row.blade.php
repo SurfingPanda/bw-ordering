@@ -46,8 +46,16 @@
                     @include('admin.content._image-field', ['name' => "products[$i][image_path]", 'value' => $product['image_path'] ?? '', 'fieldLabel' => 'Image'])
                     {{-- Product ID is assign-once: editable while blank (new rows,
                          legacy products without a code), read-only after it's saved.
-                         The server enforces this too — see Admin\ProductController. --}}
-                    @php($pidLocked = ($product['product_id'] ?? '') !== '')
+                         The server enforces this too — see Admin\ProductController.
+                         Locked based on the row's ACTUAL saved code in the DB, not
+                         whatever is currently in the field — otherwise re-rendering
+                         a failed save's old() input would lock a brand-new row the
+                         moment its (possibly duplicate, not-yet-saved) typed code
+                         got flashed back into the field. --}}
+                    @php($productsById = collect($products ?? [])->keyBy(fn ($op) => is_array($op) ? ($op['id'] ?? null) : $op->id))
+                    @php($savedProduct = ! empty($product['id']) ? $productsById->get($product['id']) : null)
+                    @php($savedProductId = $savedProduct ? (is_array($savedProduct) ? ($savedProduct['product_id'] ?? null) : $savedProduct->product_id) : null)
+                    @php($pidLocked = ! empty($savedProductId))
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Product ID {{ $pidLocked ? '' : '(unique, max 20 — set once)' }}</span>
                         <input type="text" name="products[{{ $i }}][product_id]" value="{{ $product['product_id'] ?? '' }}" maxlength="20" placeholder="e.g. BRD-001"
@@ -82,7 +90,6 @@
                     <div data-bundle-products-wrap data-row-index="{{ $i }}" data-self-id="{{ $product['id'] ?? '' }}" class="{{ $type === 'bundle' ? '' : 'hidden' }}">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Linked products &amp; quantity (auto-added with this bundle, included free)</span>
                         @php($linkedQtys = (array) ($product['bundle_product_ids'] ?? []))
-                        @php($productsById = collect($products ?? [])->keyBy(fn ($op) => is_array($op) ? ($op['id'] ?? null) : $op->id))
                         <input type="text" data-bundle-search data-no-dirty placeholder="Search products by name or ID…"
                             class="mb-1.5 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-xs outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                         <div data-bundle-list class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-slate-300 p-2">

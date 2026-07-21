@@ -36,15 +36,27 @@
         const reset = document.querySelector('[data-reset-button]')
         const form = document.getElementById('{{ $formId }}')
 
+        let dirty = false
+
         const markDirty = (e) => {
             if (e && e.target.closest('[data-no-dirty]')) return
             save.classList.remove('hidden')
             reset.classList.remove('hidden')
+            dirty = true
         }
         form.addEventListener('input', markDirty)
         form.addEventListener('change', markDirty)
         form.addEventListener('click', (e) => {
             if (e.target.closest('[data-add], [data-remove], [data-move]')) markDirty(e)
+        })
+
+        // Warn before leaving with unsaved edits (closed tab, back button,
+        // typed URL) — a real submit clears `dirty` first so Save/Reset never
+        // trigger this themselves.
+        window.addEventListener('beforeunload', (e) => {
+            if (! dirty) return
+            e.preventDefault()
+            e.returnValue = ''
         })
 
         // Reset opens a styled confirmation modal (not the native browser
@@ -56,7 +68,7 @@
 
         reset.addEventListener('click', openModal)
         modal.querySelector('[data-modal-cancel]').addEventListener('click', closeModal)
-        modal.querySelector('[data-modal-confirm]').addEventListener('click', () => location.reload())
+        modal.querySelector('[data-modal-confirm]').addEventListener('click', () => { dirty = false; location.reload() })
         // Dismiss on backdrop click or Escape, like the old modal.
         modal.addEventListener('click', (e) => { if (! e.target.closest('[data-modal-card]')) closeModal() })
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal() })
@@ -65,6 +77,7 @@
         // and back once the server redirects, which can take a moment on a
         // big blob. Without feedback, that gap reads as a dead button.
         form.addEventListener('submit', () => {
+            dirty = false
             save.disabled = true
             save.classList.add('cursor-not-allowed', 'opacity-60')
             save.textContent = 'Saving…'

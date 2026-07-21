@@ -19,14 +19,27 @@
 @section('content')
 @php($input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20')
 
+    {{-- On a validation failure Laravel flashes the submitted `products`
+         array back via old() automatically — but until now the page ignored
+         it and re-rendered fresh from the DB, silently discarding every edit
+         (including brand-new, not-yet-saved rows) just because one row had a
+         bad value. $oldProducts, when present, is rendered instead below so
+         the editor's work survives and the row(s) that failed keep the exact
+         values that triggered the error. --}}
+    @php($oldProducts = old('products'))
+
     @if($errors->any())
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p class="mb-1 font-semibold">Couldn't save — fix the highlighted field{{ $errors->count() > 1 ? 's' : '' }} below and save again.</p>
             <ul class="list-inside list-disc">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
         </div>
+        {{-- Field names with errors (e.g. "products.3.price"), for the script
+             below to open the right row's popup and highlight the field. --}}
+        <script id="product-form-error-fields" type="application/json">{!! json_encode($errors->keys()) !!}</script>
     @endif
 
     <form id="products-form" method="POST" action="{{ route('admin.products.sync') }}">
@@ -85,8 +98,11 @@
 
             <div data-repeater>
                 <div data-rows class="space-y-2">
-                    @foreach($products as $i => $product)
-                        @include('admin.products._product-row', ['i' => $i, 'product' => $product->toArray()])
+                    {{-- Same keys the validator's error bag used ("products.<i>.field"),
+                         so a failed row re-renders with exactly what was typed,
+                         new rows and all — see $oldProducts above. --}}
+                    @foreach($oldProducts ?? $products->all() as $i => $product)
+                        @include('admin.products._product-row', ['i' => $i, 'product' => is_array($product) ? $product : $product->toArray()])
                     @endforeach
                 </div>
                 {{-- Client-side pagination (10/20/50/100 rows per page), applied
@@ -168,6 +184,24 @@
                 .every((k) => fieldValue(row, k) === '')
             if (isNew && empty) row.querySelector('[data-remove]').click()
         }
+
+        // Confirm before removing a product that's already saved (has an id) —
+        // matches the confirm() Menu Categories delete already uses. Runs in
+        // the capture phase so it sees the click before _form-scripts' bubble
+        // handler removes the row; declining stops it from ever running.
+        // Blank/new rows (including the auto-discard in closeModal() above)
+        // have no id yet and are removed without a prompt.
+        productsForm.addEventListener('click', (e) => {
+            const remove = e.target.closest('[data-remove]')
+            if (!remove) return
+            const row = remove.closest('[data-row]')
+            if (!fieldValue(row, 'id')) return
+            const name = fieldValue(row, 'name') || 'this product'
+            if (!confirm(`Remove "${name}"? It will be archived once you save changes.`)) {
+                e.stopImmediatePropagation()
+                e.preventDefault()
+            }
+        }, true)
 
         // Registered after _form-scripts' click handler, so by the time the
         // [data-add] branch runs the new row already exists — open its popup.
@@ -382,5 +416,40 @@
 
         // Initial render: apply page 1 (all rows arrive visible from the server).
         applyProductSearch()
+
+        // ---- validation-error locating --------------------------------------
+        // On a failed save, the server flashes which fields were invalid
+        // ("products.<i>.field" — see the JSON blob above). With 70+ products
+        // possibly spread across filters/pages and collapsed inside popups,
+        // finding row <i> by eye is exactly the kind of thing worth automating:
+        // clear whatever's hiding it, open its popup, and focus the bad field.
+        const errorFieldsEl = document.getElementById('product-form-error-fields')
+        if (errorFieldsEl) {
+            const errorNames = JSON.parse(errorFieldsEl.textContent || '[]')
+                .map((key) => key.split('.').map((part, i) => (i === 0 ? part : `[${part}]`)).join(''))
+            const errorFields = errorNames
+                .map((name) => productsForm.querySelector(`[name="${CSS.escape(name)}"]`))
+                .filter(Boolean)
+
+            errorFields.forEach((field) => {
+                field.classList.add('!border-red-400', 'ring-2', 'ring-red-500/30')
+                field.closest('[data-row]')?.classList.add('ring-2', 'ring-red-400')
+            })
+
+            const firstField = errorFields[0]
+            const firstRow = firstField?.closest('[data-row]')
+            if (firstRow) {
+                searchInput.value = ''
+                statusFilter.value = 'all'
+                categoryFilter.value = ''
+                applyProductSearch()
+                const index = productRows().indexOf(firstRow)
+                if (index >= 0) productPage = Math.floor(index / pageSize) + 1
+                applyProductSearch()
+                openModal(firstRow)
+                firstField.scrollIntoView({ block: 'center' })
+                firstField.focus()
+            }
+        }
     </script>
 @endsection
