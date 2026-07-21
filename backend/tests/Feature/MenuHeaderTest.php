@@ -42,4 +42,18 @@ class MenuHeaderTest extends TestCase
 
         $response->assertOk()->assertSee('>Admin<', false);
     }
+
+    public function test_category_bar_is_sticky_on_mobile_and_a_floating_cart_button_exists(): void
+    {
+        $response = $this->get(route('menu'));
+
+        $response->assertOk()
+            // sticky below lg, turned back off (lg:static) so desktop's own
+            // height-locked layout (only the main column scrolls) is unchanged.
+            ->assertSee('sticky top-0 z-30', false)
+            ->assertSee('lg:static', false)
+            // reachable from anywhere on the page without scrolling to the header.
+            ->assertSee('id="open-cart-fab"', false)
+            ->assertSee('cart-count-icon', false);
+    }
 }

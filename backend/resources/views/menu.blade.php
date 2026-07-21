@@ -21,8 +21,13 @@
     <script id="menu-declared-categories-data" type="application/json">{!! json_encode($declaredCategories) !!}</script>
 
     <div class="flex min-h-screen flex-col lg:h-screen lg:flex-row lg:overflow-hidden">
-        {{-- categories sidebar --}}
-        <aside class="border-b border-navy-900/10 bg-navy-900 lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
+        {{-- categories sidebar — sticky at the top on mobile (where it's a
+             horizontal-scroll bar, not a sidebar) so switching categories
+             doesn't require scrolling back up; on lg+ it's already
+             effectively pinned since the whole page is height-locked and
+             only the main column scrolls (see the header's own comment
+             below), so sticky is turned back off there. --}}
+        <aside class="sticky top-0 z-30 border-b border-navy-900/10 bg-navy-900 lg:static lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
             <a href="/" class="hidden h-24 shrink-0 items-center justify-center px-4 lg:flex">
                 <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-20 w-auto">
             </a>
@@ -165,6 +170,19 @@
                 @include('partials.cart')
             </div>
         </div>
+
+        {{-- floating cart button (mobile) — reachable from anywhere on the
+             page without scrolling back up to the header's cart icon. Below
+             the drawer's z-50 so opening the drawer covers it; badge reuses
+             .cart-count-icon, the same class the desktop header cart icon
+             uses, so renderCart() updates it with no extra JS. --}}
+        <button type="button" id="open-cart-fab" aria-label="Open cart"
+            class="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/40 transition hover:scale-105 lg:hidden">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            <span class="cart-count-icon absolute -right-2 -top-2 hidden h-6 min-w-6 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-brand-600 ring-2 ring-brand-500">0</span>
+        </button>
     </div>
 
     {{-- Product detail modal (port of Menu.jsx's ProductMenuModal), filled by
@@ -366,15 +384,20 @@
 
         function qtyControls(p) {
             const qty = cart[p.id] || 0;
+            // ml-auto (not justify-between on the row — see renderGrid) keeps
+            // this pinned to the right when it fits next to the price, and
+            // lets it wrap to its own full-width row instead of being clipped
+            // by the card's overflow-hidden when it doesn't (narrow 2-column
+            // mobile cards + a longer price + "In cart · N" pill).
             if (p.status === 'sold_out') {
-                return '<span class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400">Sold out</span>';
+                return '<span class="ml-auto rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400">Sold out</span>';
             }
             if (qty === 0) {
-                return `<button type="button" data-add="${p.id}" class="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600">Add</button>`;
+                return `<button type="button" data-add="${p.id}" class="ml-auto rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600">Add</button>`;
             }
             // Quantity itself is only ever adjusted/removed in the cart panel;
             // the card just confirms it's in the cart and offers a quick +1.
-            return `<div class="flex items-center gap-1.5">
+            return `<div class="ml-auto flex items-center gap-1.5">
                 <span class="flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-50 px-2.5 py-1.5 text-xs font-semibold text-brand-600">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
                     In cart · ${qty}
@@ -515,7 +538,13 @@
                         ${bundleIncludesText(p)
                             ? `<p class="mt-1 line-clamp-2 text-xs font-medium text-brand-600">${bundleIncludesText(p)}</p>`
                             : `<p class="mt-1 line-clamp-2 text-xs text-slate-500">${p.description || ''}</p>`}
-                        <div class="mt-auto flex items-center justify-between pt-3">
+                        {{-- flex-wrap (not a fixed single row): on a narrow
+                             2-column mobile card, price + the qty controls
+                             (esp. the "In cart · N" pill) can be wider than
+                             the card — qtyControls' own ml-auto keeps it
+                             right-aligned whether it shares this line with
+                             the price or wraps to its own. --}}
+                        <div class="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-3">
                             <span class="flex items-baseline gap-1.5">
                                 <span class="text-lg font-bold text-brand-600">${peso(p.price)}</span>
                                 ${onSale ? `<span class="text-xs text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
@@ -808,6 +837,7 @@
 
         document.getElementById('menu-search').addEventListener('input', (e) => { query = e.target.value; renderGrid(); });
         document.getElementById('open-cart').addEventListener('click', () => document.getElementById('cart-drawer').classList.remove('hidden'));
+        document.getElementById('open-cart-fab').addEventListener('click', () => document.getElementById('cart-drawer').classList.remove('hidden'));
 
         // ---- account dropdown (mirrors Menu.jsx's MenuHeader: click to
         // toggle, outside-click or Escape closes) ----
