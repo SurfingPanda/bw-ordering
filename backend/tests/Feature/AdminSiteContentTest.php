@@ -120,6 +120,65 @@ class AdminSiteContentTest extends TestCase
             ->assertSee('Why franchise with us');
     }
 
+    public function test_invalid_franchise_email_is_rejected_and_the_edit_is_preserved(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->from(route('admin.content'))
+            ->put(route('admin.content.update'), [
+                'franchise' => [
+                    'hero' => ['title' => 'Partner with us'],
+                    'email' => 'not-an-email',
+                ],
+            ])
+            ->assertRedirect(route('admin.content'))
+            ->assertSessionHasErrors('franchise.email');
+
+        // The bad value never reached the DB...
+        $this->assertNull(SiteContent::find(1));
+        // ...but is flashed back so the editor doesn't have to retype the
+        // whole section (previously the whole form re-rendered from the DB
+        // on any failure, silently discarding every unsaved edit).
+        $this->assertSame('not-an-email', session()->getOldInput('franchise.email'));
+        $this->assertSame('Partner with us', session()->getOldInput('franchise.hero.title'));
+    }
+
+    public function test_failed_save_redisplays_the_submitted_value_instead_of_the_saved_one(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => ['franchise' => ['email' => 'old@bwsuperbakeshop.com']]]);
+
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->from(route('admin.content'))
+            ->put(route('admin.content.update'), [
+                'franchise' => [
+                    'hero' => ['title' => 'Partner with us'],
+                    'email' => 'not-an-email',
+                ],
+            ])
+            ->assertSessionHasErrors('franchise.email');
+
+        // Reloading the page shows what was just typed, not what's still
+        // saved in the DB — the view now honors old() over $content.
+        $this->get(route('admin.content'))
+            ->assertOk()
+            ->assertSee('not-an-email')
+            ->assertDontSee('old@bwsuperbakeshop.com');
+    }
+
+    public function test_non_numeric_bundle_price_is_rejected(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->put(route('admin.content.update'), [
+                'menuPromo' => [
+                    'slides' => [
+                        ['title' => 'Ube Bundle', 'bundlePrice' => '1o0'],
+                    ],
+                ],
+            ])
+            ->assertSessionHasErrors('menuPromo.slides.0.bundlePrice');
+
+        $this->assertNull(SiteContent::find(1));
+    }
+
     public function test_save_categories_persists_declared_list_and_images(): void
     {
         $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))

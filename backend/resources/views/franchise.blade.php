@@ -45,9 +45,9 @@
             <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
             <div class="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-                <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">{{ $hero['eyebrow'] ?? '' }}</span>
-                <h1 class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{{ $hero['title'] ?? '' }}</h1>
-                <p class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">{{ $hero['subtitle'] ?? '' }}</p>
+                <span data-editable="franchise.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">{{ $hero['eyebrow'] ?? '' }}</span>
+                <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{{ $hero['title'] ?? '' }}</h1>
+                <p data-editable="franchise.hero.subtitle" class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">{{ $hero['subtitle'] ?? '' }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Inquire about a franchise
@@ -69,11 +69,11 @@
                 <p class="mt-3 text-sm text-slate-500">We give you the brand, the systems, and the support — you bring the passion for your community.</p>
             </div>
             <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach($fr['perks'] ?? [] as $p)
+                @foreach($fr['perks'] ?? [] as $i => $p)
                     <div class="h-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg">
-                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">{{ $p['icon'] ?? '' }}</span>
-                        <h3 class="mt-4 text-base font-semibold text-navy-800">{{ $p['title'] ?? '' }}</h3>
-                        <p class="mt-2 text-sm text-slate-500">{{ $p['text'] ?? '' }}</p>
+                        <span data-editable="franchise.perks.{{ $i }}.icon" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">{{ $p['icon'] ?? '' }}</span>
+                        <h3 data-editable="franchise.perks.{{ $i }}.title" class="mt-4 text-base font-semibold text-navy-800">{{ $p['title'] ?? '' }}</h3>
+                        <p data-editable="franchise.perks.{{ $i }}.text" class="mt-2 text-sm text-slate-500">{{ $p['text'] ?? '' }}</p>
                     </div>
                 @endforeach
             </div>
@@ -90,11 +90,11 @@
                     <p class="mt-3 text-sm text-slate-500">A clear, guided path to opening your own branch.</p>
                 </div>
                 <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    @foreach($fr['steps'] ?? [] as $s)
+                    @foreach($fr['steps'] ?? [] as $i => $s)
                         <div class="h-full rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
-                            <span class="font-script text-3xl text-brand-500">{{ $s['n'] ?? '' }}</span>
-                            <h3 class="mt-2 text-base font-semibold text-navy-800">{{ $s['title'] ?? '' }}</h3>
-                            <p class="mt-2 text-sm text-slate-500">{{ $s['text'] ?? '' }}</p>
+                            <span data-editable="franchise.steps.{{ $i }}.n" class="font-script text-3xl text-brand-500">{{ $s['n'] ?? '' }}</span>
+                            <h3 data-editable="franchise.steps.{{ $i }}.title" class="mt-2 text-base font-semibold text-navy-800">{{ $s['title'] ?? '' }}</h3>
+                            <p data-editable="franchise.steps.{{ $i }}.text" class="mt-2 text-sm text-slate-500">{{ $s['text'] ?? '' }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -111,16 +111,16 @@
                 <p class="mt-3 text-sm text-slate-500">Indicative investment ranges — final figures depend on size, location, and build-out.</p>
             </div>
             <div class="mt-10 grid gap-5 lg:grid-cols-3">
-                @foreach($fr['packages'] ?? [] as $pkg)
+                @foreach($fr['packages'] ?? [] as $i => $pkg)
                     @php($featured = ! empty($pkg['featured']))
                     <div class="flex h-full flex-col rounded-2xl border p-6 shadow-sm transition hover:shadow-lg {{ $featured ? 'border-brand-400 ring-2 ring-brand-500/20' : 'border-slate-100 bg-white' }}">
                         @if($featured)
                             <span class="mb-3 w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600">Most popular</span>
                         @endif
-                        <h3 class="text-lg font-bold text-navy-800">{{ $pkg['name'] ?? '' }}</h3>
-                        <p class="mt-1 text-2xl font-bold text-brand-600">{{ $pkg['price'] ?? '' }}</p>
-                        <p class="mt-2 text-sm text-slate-500">{{ $pkg['blurb'] ?? '' }}</p>
-                        <ul class="mt-4 space-y-2 text-sm text-slate-600">
+                        <h3 data-editable="franchise.packages.{{ $i }}.name" class="text-lg font-bold text-navy-800">{{ $pkg['name'] ?? '' }}</h3>
+                        <p data-editable="franchise.packages.{{ $i }}.price" class="mt-1 text-2xl font-bold text-brand-600">{{ $pkg['price'] ?? '' }}</p>
+                        <p data-editable="franchise.packages.{{ $i }}.blurb" class="mt-2 text-sm text-slate-500">{{ $pkg['blurb'] ?? '' }}</p>
+                        <ul data-editable="franchise.packages.{{ $i }}.features" class="mt-4 space-y-2 text-sm text-slate-600">
                             @foreach($pkg['features'] ?? [] as $f)
                                 <li class="flex items-start gap-2"><span class="mt-0.5 text-brand-500">✓</span>{{ $f }}</li>
                             @endforeach
@@ -143,7 +143,7 @@
                     Inquire about a franchise
                 </a>
                 <p class="mt-4 text-xs text-navy-50/70">
-                    Or email <a href="mailto:{{ $email }}" class="font-semibold text-brand-400 hover:text-brand-300">{{ $email }}</a>
+                    Or email <a href="mailto:{{ $email }}" data-editable="franchise.email" class="font-semibold text-brand-400 hover:text-brand-300">{{ $email }}</a>
                 </p>
             </div>
         </section>
@@ -151,5 +151,8 @@
         {{-- footer --}}
         @include('partials.site-footer', ['f' => $footerContent, 'social' => $social])
     </div>
+    @if($editable ?? false)
+        @include('partials._editor-bridge')
+    @endif
 </body>
 </html>

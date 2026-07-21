@@ -16,7 +16,11 @@
         <div>
             <div class="flex items-center gap-2">
                 @if(!empty($f['logo']))
-                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-16 w-auto">
+                    {{-- Editor-uploaded, arbitrary aspect ratio — unlike the nav/
+                         maintenance-page logo (a fixed local asset), there's no
+                         single real width/height to declare here. A fixed box +
+                         object-contain reserves the space without needing one. --}}
+                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-24 w-48 object-contain object-left">
                 @endif
             </div>
             <p class="mt-4 max-w-xs text-sm text-navy-50/70">{{ $f['description'] }}</p>
@@ -33,11 +37,22 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
+        {{-- Each column is a collapsed accordion on mobile (all 3 columns'
+             links stacked open at once was the "too long" complaint — this
+             lets a visitor open just the one they came for) and reverts to
+             the always-open 3-across grid at sm:, where the height doesn't
+             cost anything a click needs to fix. --}}
+        <div class="divide-y divide-white/10 sm:grid sm:grid-cols-3 sm:gap-8 sm:divide-y-0">
             @foreach($f['columns'] ?? [] as $col)
                 <div>
-                    <h4 class="text-sm font-semibold text-white">{{ $col['title'] }}</h4>
-                    <ul class="mt-4 space-y-2 text-sm">
+                    <button type="button" data-footer-toggle
+                        class="flex w-full items-center justify-between py-4 text-left sm:pointer-events-none sm:py-0">
+                        <h4 class="text-sm font-semibold text-white">{{ $col['title'] }}</h4>
+                        <svg class="h-4 w-4 shrink-0 text-navy-50/50 transition-transform sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <ul data-footer-panel class="hidden space-y-2 pb-4 text-sm sm:block sm:pb-0 sm:pt-4">
                         @foreach($col['links'] ?? [] as $l)
                             <li>
                                 @php $url = $l['url'] ?? ''; @endphp
@@ -60,4 +75,19 @@
             <p>{{ $f['copyright'] }}</p>
         </div>
     </div>
+
+    <script>
+    (function () {
+        // Mobile-only accordion (the sm:pointer-events-none on the button
+        // means this listener simply never fires once sm: kicks in and the
+        // panel is forced open via sm:block regardless of the 'hidden' class).
+        document.querySelectorAll('#site-footer [data-footer-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var panel = btn.nextElementSibling;
+                panel.classList.toggle('hidden');
+                btn.querySelector('svg').classList.toggle('rotate-180');
+            });
+        });
+    })();
+    </script>
 </footer>

@@ -50,9 +50,8 @@ class LandingController extends Controller
             'title' => 'Custom cakes for birthdays & special occasions',
             'subtitle' => 'Make it unforgettable with a personalized cake, baked fresh and decorated just the way you want it.',
             'buttonLabel' => 'Order a custom cake',
-            'image' => '/images/custom-cakes.png',
-            'alt' => 'Custom tiered celebration cakes — wedding, themed, and princess designs',
-            'bannerLink' => '/menu',
+            'image' => '/images/custom-cake-tower.svg',
+            'alt' => 'A tall three-tier custom celebration cake with drip icing and a candle on top',
             'buttonLink' => '/custom-cake',
         ],
         'storeLocator' => [
@@ -106,6 +105,15 @@ class LandingController extends Controller
         'sold_out' => 'Sold Out',
     ];
 
+    /**
+     * Best Sellers / What's New render in a 4-wide grid (md:grid-cols-4) —
+     * cap at two full rows. Unlike the old CMS-curated card lists, these are
+     * every product with a given status, which is unbounded: an editor could
+     * flag 50 products best_seller and this section would otherwise render
+     * all 50 on the landing page.
+     */
+    private const LANDING_GRID_LIMIT = 8;
+
     public function index(Request $request)
     {
         // Site Editor live preview (?preview=1, editor session) shows the
@@ -152,12 +160,12 @@ class LandingController extends Controller
             ->get());
 
         $viewData['content'] = $content;
-        $viewData['bestSellers'] = $products->where('status', 'best_seller')->values()
+        $viewData['bestSellers'] = $products->where('status', 'best_seller')->take(self::LANDING_GRID_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         // What's New is likewise products-table-sourced: every product whose
         // status is "new" (set in the admin Products editor), not a
         // CMS-curated card list.
-        $viewData['whatsNewProducts'] = $products->where('status', 'new')->values()
+        $viewData['whatsNewProducts'] = $products->where('status', 'new')->take(self::LANDING_GRID_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         $viewData['categories'] = $this->categoriesFrom(
             $products,
@@ -165,7 +173,42 @@ class LandingController extends Controller
             (array) ($content['menuCategories'] ?? []),
         );
 
+        // Same cached list /stores' full locator uses (StoreController),
+        // trimmed to the fields the landing map preview's markers/popups
+        // need — see resources/js/landing-map.js.
+        $viewData['mapStores'] = app(StoreController::class)->cachedList()->map(fn ($s) => [
+            'name' => $s->name,
+            'address' => $s->address,
+            'hours' => $s->hours,
+            'latitude' => $s->latitude,
+            'longitude' => $s->longitude,
+        ])->values();
+        // The map script is loaded lazily (dynamic import(), triggered only
+        // once the section nears the viewport — see landing.blade.php) rather
+        // than via @vite(), so maplibre-gl's ~290KB never costs anything for
+        // visitors who don't scroll this far. That means resolving its URLs
+        // by hand instead of letting @vite() emit the tags.
+        $viewData['mapJsSrc'] = \Illuminate\Support\Facades\Vite::asset('resources/js/landing-map.js');
+        $viewData['mapCssHref'] = $this->viteEntryCssHref('resources/js/landing-map.js');
+
         return view('landing', $viewData);
+    }
+
+    /**
+     * The stylesheet a Vite entry pulls in transitively (here: landing-map.js
+     * → the shared maplibre-gl chunk → maplibre-gl.css), as a plain href —
+     * @vite()/Vite::asset() only ever resolve the entry's own JS URL, and
+     * there's no public API for "just the CSS this entry depends on" since
+     * normally @vite() emits both tags itself. In local dev (Vite dev server
+     * running) this returns null and that's correct: Vite's dev client
+     * injects imported CSS itself as the module loads, no <link> needed.
+     */
+    private function viteEntryCssHref(string $entry): ?string
+    {
+        $html = (string) app(\Illuminate\Foundation\Vite::class)([$entry]);
+        preg_match('/<link[^>]+href="([^"]+\.css)"/', $html, $m);
+
+        return $m[1] ?? null;
     }
 
     /** Map a Product row to the flat shape the product-card partial expects. */
@@ -174,6 +217,7 @@ class LandingController extends Controller
         $price = (float) $p->price;
 
         return [
+            'id' => $p->id,
             'name' => $p->name,
             'img' => $p->image_path,
             'tag' => self::STATUS_TAGS[$p->status] ?? null,
