@@ -29,6 +29,16 @@ class LandingControllerTest extends TestCase
         );
     }
 
+    public function test_nav_menu_and_order_now_open_straight_to_whats_new(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $expectedHref = '/menu?category=' . urlencode("What's New");
+        // Desktop nav "Menu", desktop "Order Now", mobile nav "Menu", mobile
+        // "Order Now" — all four, not just one of them.
+        $this->assertSame(4, substr_count($html, 'href="'.$expectedHref.'"'));
+    }
+
     public function test_store_locator_search_submits_to_the_real_stores_search(): void
     {
         // The teaser used to be a plain link to /stores that ignored whatever
