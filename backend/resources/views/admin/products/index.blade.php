@@ -40,9 +40,44 @@
         {{-- Field names with errors (e.g. "products.3.price"), for the script
              below to open the right row's popup and highlight the field. --}}
         <script id="product-form-error-fields" type="application/json">{!! json_encode($errors->keys()) !!}</script>
+
+        {{-- Popup version of the banner above, so a failed save can't be
+             missed (without it the redirect back looks like a successful
+             save at a glance). Same shell as the Reset confirm modal;
+             z-[90] sits above the row edit popups (z-50). --}}
+        <div id="save-error-modal" class="fixed inset-0 z-[90] flex items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-label="Couldn't save">
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" data-modal-card>
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                    </span>
+                    <h3 class="text-lg font-bold text-navy-800">Couldn't save your changes</h3>
+                </div>
+                <ul class="mt-4 max-h-48 list-inside list-disc space-y-1 overflow-y-auto rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <p class="mt-3 text-sm leading-relaxed text-slate-500">Nothing was saved yet — your edits are still here. The first problem field is highlighted for you.</p>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" data-error-dismiss class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                        Show me
+                    </button>
+                </div>
+            </div>
+        </div>
     @endif
 
-    <form id="products-form" method="POST" action="{{ route('admin.products.sync') }}">
+    {{-- novalidate: every row's fields live inside a closed (display:none)
+         popup, and native browser validation can't focus an invalid hidden
+         control — Chrome then blocks the submit with only a console warning,
+         so Save silently does nothing (e.g. any legacy ₱0-price row). The
+         server validates instead, and the error-locating script below opens
+         the offending row's popup and highlights the field. --}}
+    <form id="products-form" method="POST" action="{{ route('admin.products.sync') }}" novalidate>
         @csrf
         <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
             <h2 class="text-lg font-bold text-navy-800">Menu Products</h2>
@@ -450,6 +485,27 @@
                 firstField.scrollIntoView({ block: 'center' })
                 firstField.focus()
             }
+        }
+
+        // ---- "Couldn't save" popup ------------------------------------------
+        // Rendered (visible) only when the server bounced the save back with
+        // validation errors. Dismiss via the button, the backdrop, or Escape —
+        // underneath, the offending row's popup is already open with the bad
+        // field highlighted (see above).
+        const saveErrorModal = document.getElementById('save-error-modal')
+        if (saveErrorModal) {
+            const dismissSaveError = () => saveErrorModal.classList.add('hidden')
+            saveErrorModal.querySelector('[data-error-dismiss]').addEventListener('click', dismissSaveError)
+            saveErrorModal.addEventListener('click', (e) => {
+                if (!e.target.closest('[data-modal-card]')) dismissSaveError()
+            })
+            // Capture phase + stopPropagation so the first Escape closes only
+            // this popup, not also the row editor the script above opened.
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape' || saveErrorModal.classList.contains('hidden')) return
+                e.stopPropagation()
+                dismissSaveError()
+            }, true)
         }
     </script>
 @endsection
