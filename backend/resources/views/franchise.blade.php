@@ -2,6 +2,17 @@
      Content comes from the CMS blob's `franchise` key (Site Editor → Franchise). --}}
 @php
     $hero = $fr['hero'];
+    // Highlight the brand name within the (free-text, admin-editable) hero
+    // title — escape first, then wrap only that known literal substring in
+    // trusted markup, same script-font/brand-orange accent already used for
+    // single-word highlights elsewhere (e.g. stores.blade.php's "store").
+    // Falls back to the plain escaped title untouched if the phrase isn't
+    // in there verbatim (a custom title, a typo, etc.) rather than erroring.
+    $heroTitleHtml = preg_replace(
+        '/bw superbakeshop/i',
+        '<span class="font-script font-normal text-brand-400">$0</span>',
+        e($hero['title'] ?? ''),
+    );
     // Site Editor per-section toggles (franchise.visible.*); absent = shown.
     $frVisible = (array) ($fr['visible'] ?? []);
     $showSection = fn (string $key): bool => (bool) ($frVisible[$key] ?? true);
@@ -46,7 +57,7 @@
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
             <div class="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
                 <span data-editable="franchise.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">{{ $hero['eyebrow'] ?? '' }}</span>
-                <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{{ $hero['title'] ?? '' }}</h1>
+                <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{!! $heroTitleHtml !!}</h1>
                 <p data-editable="franchise.hero.subtitle" class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">{{ $hero['subtitle'] ?? '' }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">

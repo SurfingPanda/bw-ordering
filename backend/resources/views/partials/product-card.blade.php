@@ -60,14 +60,19 @@
             <span class="text-lg font-bold text-brand-600">{{ $p['price'] }}</span>
             {{-- Adds straight to the shared bw_cart (see landing.blade.php's
                  mini-cart script) instead of navigating to /menu — the landing
-                 grids used to fake an "add" by deep-linking there. --}}
-            <button type="button" data-add-to-cart="{{ $p['id'] ?? '' }}" onclick="event.stopPropagation()" aria-label="Add {{ $p['name'] }} to cart"
-                class="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            </button>
+                 grids used to fake an "add" by deep-linking there.
+                 data-cart-control is a re-render target: renderCardControls()
+                 swaps this button for an "In cart · N" pill once the product
+                 is actually in the cart, matching /menu's qtyControls(). --}}
+            <div data-cart-control="{{ $p['id'] ?? '' }}" onclick="event.stopPropagation()">
+                <button type="button" data-add-to-cart="{{ $p['id'] ?? '' }}" aria-label="Add {{ $p['name'] }} to cart"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 </div>

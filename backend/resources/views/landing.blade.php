@@ -621,12 +621,14 @@
             writeCart(cart);
             updateBadge();
             renderDrawer();
+            renderCardControls();
         }
         function removeLine(id) {
             delete cart[id];
             writeCart(cart);
             updateBadge();
             renderDrawer();
+            renderCardControls();
         }
 
         function renderDrawer() {
@@ -662,7 +664,7 @@
                             </button>
                         </li>`;
                     }).join('');
-                    list.querySelectorAll('[data-add]').forEach(function (b) { b.addEventListener('click', function () { add(b.dataset.add); renderDrawer(); }); });
+                    list.querySelectorAll('[data-add]').forEach(function (b) { b.addEventListener('click', function () { add(b.dataset.add); renderDrawer(); renderCardControls(); }); });
                     list.querySelectorAll('[data-dec]').forEach(function (b) { b.addEventListener('click', function () { dec(b.dataset.dec); }); });
                     list.querySelectorAll('[data-remove]').forEach(function (b) { b.addEventListener('click', function () { removeLine(b.dataset.remove); }); });
                 });
@@ -673,6 +675,30 @@
         }
 
         function openDrawer() { document.getElementById('mini-cart-drawer').classList.remove('hidden'); renderDrawer(); }
+
+        // Product-card "+" buttons (What's New / Best Sellers grids) — same
+        // "In cart · N" pill treatment as /menu's qtyControls(), so clicking
+        // + gives the same "yes, that's in your cart now" confirmation
+        // instead of silently doing nothing visible on the card itself.
+        // Re-run after every add/remove so every card on the page (not just
+        // the one just clicked) stays in sync with the shared cart.
+        function renderCardControls() {
+            document.querySelectorAll('[data-cart-control]').forEach(function (el) {
+                var id = el.dataset.cartControl;
+                var qty = cart[id] || 0;
+                el.innerHTML = qty === 0
+                    ? `<button type="button" data-add-to-cart="${id}" aria-label="Add to cart" class="flex h-9 w-9 items-center justify-center rounded-full bg-navy-800 text-white transition hover:bg-brand-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>`
+                    : `<div class="flex items-center gap-1.5">
+                        <span class="flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-600">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                            In cart · ${qty}
+                        </span>
+                        <button type="button" data-add-to-cart="${id}" aria-label="Add another" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-100 text-base font-bold text-navy-800 hover:bg-brand-500 hover:text-white">+</button>
+                       </div>`;
+                var btn = el.querySelector('[data-add-to-cart]');
+                if (btn) btn.addEventListener('click', function () { add(id, 1); renderCardControls(); openDrawer(); });
+            });
+        }
 
         document.querySelectorAll('[data-open-cart]').forEach(function (btn) { btn.addEventListener('click', openDrawer); });
 
@@ -690,13 +716,6 @@
             });
             fabObserver.observe(footerEl);
         }
-        document.querySelectorAll('[data-add-to-cart]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                add(btn.dataset.addToCart, 1);
-                openDrawer();
-            });
-        });
-
         // Proceeding to checkout hands off via bw_checkout, same as /menu's
         // .checkout-btn — only meaningful once there's a real session to
         // place the order under (see mini-cart-drawer.blade.php's $user gate).
@@ -713,6 +732,7 @@
         });
 
         updateBadge();
+        renderCardControls();
 
         // Shared product detail modal (partials/product-modal.blade.php),
         // populated from whichever card's data-* attrs was clicked. Only the
@@ -740,6 +760,7 @@
             footer.querySelector('[data-qty-plus]').addEventListener('click', function () { setQty(qty + 1); });
             footer.querySelector('[data-add-to-cart-modal]').addEventListener('click', function () {
                 add(d.id, qty);
+                renderCardControls();
                 pmModal.close();
                 openDrawer();
             });
