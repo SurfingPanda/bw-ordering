@@ -32,11 +32,12 @@
         </button>
         <div class="grid md:grid-cols-2">
             <span id="pm-img-container" class="relative block h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem]">
-                {{-- object-contain (not -cover): a portrait product photo
-                     (e.g. a tall bread bag) in this fairly short, wide box
-                     was getting cropped top and bottom. Letterboxing on
-                     bg-slate-100 shows the whole image instead. --}}
-                <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-contain">
+                {{-- object-cover (not -contain): contain avoided cropping
+                     portrait photos but left visible top/bottom letterbox
+                     gaps on bg-slate-100 for other aspect ratios — a filled
+                     box reads cleaner than a gap, even if it means cropping
+                     some images' edges. --}}
+                <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover">
                 <span id="pm-img-fallback" class="absolute inset-0 hidden items-center justify-center text-xs font-medium text-slate-400">no image</span>
             </span>
             <div class="flex flex-col p-8 sm:p-10">

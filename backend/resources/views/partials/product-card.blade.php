@@ -28,7 +28,11 @@
     data-allergens="{{ implode(',', $p['allergens'] ?? []) }}"
 >
     <div class="relative overflow-hidden">
-        <span class="relative block h-40 w-full overflow-hidden bg-slate-100 transition duration-300 group-hover:scale-105">
+        {{-- bg-white (not slate-100): several product photos are cutout PNGs
+             with real transparent margins — on a gray backdrop that shows up
+             as a visible seam around the subject even with object-cover;
+             white blends into the card body below instead. --}}
+        <span class="relative block h-40 w-full overflow-hidden bg-white transition duration-300 group-hover:scale-105">
             <img src="{{ $p['img'] ?: $fallbackImg }}" alt="{{ $p['name'] }}" loading="lazy" decoding="async" width="320" height="160"
                 class="h-full w-full object-cover"
                 onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
