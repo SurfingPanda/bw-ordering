@@ -4,113 +4,240 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
-// Sample bakery catalogue for fresh setups that don't import from Supabase
-// (use `php artisan products:import-from-supabase` for the real ~76 products).
-// Idempotent: keyed by name, so re-running updates instead of duplicating.
+// The real BW Bakeshop catalogue (PRODUCTCODE / DESCRIPTION / CATEGORY / SRP
+// from the 2026-07 price list). Idempotent: keyed by the unique product_id
+// code, so re-running updates name/category/price instead of duplicating —
+// and leaves admin-managed fields (description, image, status, featured…)
+// untouched on existing rows.
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach ($this->products() as $p) {
+        foreach ($this->products() as [$code, $name, $category, $price]) {
             Product::updateOrCreate(
-                ['name' => $p['name']],
-                $p + [
-                    'original_price' => $p['original_price'] ?? null,
-                    'features' => $p['features'] ?? [],
-                    'calories' => $p['calories'] ?? null,
-                    'is_featured' => $p['is_featured'] ?? false,
-                    'status' => $p['status'] ?? null,
-                    'archived_at' => null,
-                ]
+                ['product_id' => $code],
+                ['name' => $name, 'category' => $category, 'price' => $price]
             );
         }
+
+        // Same key the menu/API/admin share — don't leave a stale cached list.
+        Cache::forget('products.index');
     }
 
+    /**
+     * Rows are [product_id, name, category, price] — verbatim from the price
+     * list, including quirks ("PAS-PRO 411" with a space, double spaces in a
+     * few names, ₱0/₱1 placeholder prices, TEST/RND sample rows).
+     */
     private function products(): array
     {
-        $img = fn ($id) => "https://images.unsplash.com/photo-{$id}?auto=format&fit=crop&w=600&q=80";
-
         return [
-            // --- Cakes ---
-            [
-                'name' => 'Classic Mocha Cake', 'category' => 'Cake', 'price' => 650, 'original_price' => 720,
-                'description' => 'Moist chocolate sponge layered with mocha buttercream and a dusting of cocoa.',
-                'image_path' => $img('1565958011703-44f9829ba187'), 'calories' => 420, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'is_featured' => true, 'status' => 'best_seller',
-            ],
-            [
-                'name' => 'Ube Chiffon Cake', 'category' => 'Cake', 'price' => 720,
-                'description' => 'Light-as-air purple yam chiffon with sweet ube halaya swirl.',
-                'image_path' => $img('1488477181946-6428a0291777'), 'calories' => 380, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'status' => 'new',
-            ],
-            [
-                'name' => 'Red Velvet Slice', 'category' => 'Cake', 'price' => 150,
-                'description' => 'Velvety cocoa cake with tangy cream cheese frosting.',
-                'image_path' => $img('1586985289688-ca3cf47d3e6e'), 'calories' => 410, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'status' => 'new',
-            ],
-
-            // --- Breads ---
-            [
-                'name' => 'Soft Ensaymada', 'category' => 'Bread', 'price' => 45,
-                'description' => 'Buttery brioche topped with cheese and a sprinkle of sugar.',
-                'image_path' => $img('1509440159596-0249088772ff'), 'calories' => 290, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'status' => 'best_seller',
-            ],
-            [
-                'name' => 'Fresh Pandesal (12pcs)', 'category' => 'Bread', 'price' => 60,
-                'description' => 'The classic Filipino breakfast roll, baked fresh every morning.',
-                'image_path' => $img('1549931319-a545dcf3bc73'), 'calories' => 140, 'features' => ['Gluten', 'Soy'],
-            ],
-            [
-                'name' => 'Whole Wheat Loaf', 'category' => 'Bread', 'price' => 95,
-                'description' => 'Hearty whole-wheat sandwich loaf, soft and lightly sweet.',
-                'image_path' => $img('1598373182133-52452f7691ef'), 'calories' => 220, 'features' => ['Gluten', 'Soy'],
-            ],
-
-            // --- Pastries ---
-            [
-                'name' => 'Buttery Croissant', 'category' => 'Pastry', 'price' => 85,
-                'description' => 'Flaky, golden, 24-hour laminated croissant.',
-                'image_path' => $img('1555507036-ab1f4038808a'), 'calories' => 270, 'features' => ['Gluten', 'Milk'],
-                'status' => 'best_seller',
-            ],
-            [
-                'name' => 'Chocolate Danish', 'category' => 'Pastry', 'price' => 95,
-                'description' => 'Buttery danish pastry filled with rich dark chocolate.',
-                'image_path' => $img('1509365390695-33acd1f0c6c2'), 'calories' => 320, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'status' => 'new',
-            ],
-
-            // --- Cupcakes ---
-            [
-                'name' => 'Chocolate Cupcakes', 'category' => 'Cupcakes', 'price' => 180,
-                'description' => 'Box of rich chocolate cupcakes with fudge frosting.',
-                'image_path' => $img('1426869981800-95ebf51ce900'), 'calories' => 300, 'features' => ['Gluten', 'Eggs', 'Milk'],
-            ],
-
-            // --- Cookies ---
-            [
-                'name' => 'Assorted Cookies', 'category' => 'Cookies', 'price' => 220, 'original_price' => 260,
-                'description' => 'A dozen freshly baked cookies — choc chip, oatmeal, and double chocolate.',
-                'image_path' => $img('1499636136210-6f4ee915583e'), 'calories' => 150, 'features' => ['Gluten', 'Eggs', 'Milk'],
-                'is_featured' => true,
-            ],
-
-            // --- Beverages ---
-            [
-                'name' => 'Iced Americano', 'category' => 'Drinks', 'price' => 110,
-                'description' => 'Bold espresso over ice — the perfect pairing for any treat.',
-                'image_path' => $img('1517701550927-30cf4ba1dba5'), 'calories' => 15, 'features' => [],
-            ],
-            [
-                'name' => 'Hot Chocolate', 'category' => 'Drinks', 'price' => 120,
-                'description' => 'Velvety dark hot chocolate, topped with marshmallows.',
-                'image_path' => $img('1542990253-0d0f5be5f0ed'), 'calories' => 250, 'features' => ['Milk'],
-                'status' => 'sold_out',
-            ],
+            ['BHB-PRO-179', 'HOTDOG SANDWICH', 'SVN BREADS', 33.00],
+            ['BRE-PRO-001', 'CINNAMON BUN', 'BW BREADS', 39.00],
+            ['BRE-PRO-007', 'WHOLE WHEAT TUNA BUN', 'BW BREADS', 45.00],
+            ['BRE-PRO-024', 'UBE CHEESEDESAL', 'BW BREADS', 175.00],
+            ['BRE-PRO-024A', 'UBE CHEESE PILLOW PACK', 'BW BREADS', 15.00],
+            ['BRE-PRO-177', 'BW CHEESE BREAD X10', 'BW BREADS', 85.00],
+            ['BRE-PRO-178', 'BW SPANISH BREAD SINGLE', 'BW BREADS', 6.00],
+            ['BRE-PRO-601', 'CHEESY ENSAYMADA', 'BW BREADS', 40.00],
+            ['BRE-PRO-618', 'UBE ENSAYMADA', 'BW BREADS', 45.00],
+            ['BRE-PRO-939', 'BW PANDESAL X10', 'BW BREADS', 55.00],
+            ['BRE-PRO-944', 'WHOLE WHEAT PANDESAL', 'BW BREADS', 59.00],
+            ['BRE-PRO-945', 'ASADO BUN', 'BW BREADS', 39.00],
+            ['BRE-PRO-948', 'COFFEE BUN', 'BW BREADS', 32.00],
+            ['BRE-PRO-949', 'DULCE ENSAYMADA', 'BW BREADS', 45.00],
+            ['BRE-PRO-950', 'BW CHEESE BREAD SINGLE', 'BW BREADS', 6.00],
+            ['BRE-PRO-952', 'BRIOCHE BUN', 'BW BREADS', 54.00],
+            ['BRE-PRO-953', 'BRIOCHE BUN PER PC', 'BW BREADS', 10.00],
+            ['BRE-PRO-955', 'ASADO ROLL', 'BW BREADS', 199.00],
+            ['BRE-PRO-956', 'BW BURGER BUNS', 'BW BREADS', 25.00],
+            ['BRE-PRO-957', 'BW FOOTLONG BUNS', 'BW PREM BREADS', 41.00],
+            ['BRE-PRO-958', 'BW HOTDOG BUNS', 'BW BREADS', 39.00],
+            ['BRE-PRO-959', 'CINNAMON ROLL', 'BW BREADS', 79.00],
+            ['BRE-PRO-960', 'HOTDOG BUNS (4)', 'SVN BREADS', 15.00],
+            ['BRE-PRO-961', 'CHOCOLATE CINNAMON ROLL', 'BW BREADS', 85.00],
+            ['CAK-PRO-001', 'PARTY CAKES', 'BW CAKES', 1.00],
+            ['CHB-PRO-001', 'TRIPLE CHOCO MOUSSE', 'BW CHILLED BITES', 55.00],
+            ['CHB-PRO-002', 'HAM AND CHEESE SANDWICH DUET', 'BW CHILLED BITES', 27.00],
+            ['CHB-PRO-003', 'RED VELVET DESSERT CUP', 'BW CHILLED BITES', 55.00],
+            ['CHB-PRO-005', 'MINI LECHE FLAN', 'BW CHILLED BITES', 39.00],
+            ['CHB-PRO-006', 'BW DUBAI CHEWY COOKIE', 'BW CHILLED BITES', 159.00],
+            ['CHB-PRO-008', 'MATCHA CHEWY COOKIE', 'BW CHILLED BITES', 159.00],
+            ['CHB-PRO-009', 'PISTACHIO MOCHI', 'BW CHILLED BITES', 99.00],
+            ['CHB-PRO-010', 'PISTACHIO CHOCO BROWNIES', 'BW CHILLED BITES', 59.00],
+            ['DEL-PRO-001', 'BREAD CRUMBS (500g)', 'BW DELICACIES', 35.00],
+            ['DEL-PRO-002', 'TOASTED PASTILLAS', 'BW PASALUBONG', 99.00],
+            ['DEL-PRO-003', 'TOASTED BREAD (375g)', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-008', 'FLAVORED TOAST', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-011', 'BREAD CRUMBS (1kg)', 'BW DELICACIES', 60.00],
+            ['DEL-PRO-012', 'RAINBOW TOAST', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-017', 'BROWNIE BITES', 'BW DELICACIES', 132.00],
+            ['DEL-PRO-025', 'CLASSIC PIAYA', 'BW DELICACIES', 59.00],
+            ['DEL-PRO-053', 'BUTTER BISCUIT COOKIES', 'BW DELICACIES', 99.00],
+            ['DEL-PRO-053A', 'BUTTER BISCUIT PACK', 'BW DELICACIES', 28.00],
+            ['DEL-PRO-053B', 'BUTTER BISCUIT SMALL', 'BW DELICACIES', 28.00],
+            ['DEL-PRO-168', 'CRUNCHY BANANA CHIPS', 'BW DELICACIES', 129.00],
+            ['DEL-PRO-170', 'CHOCO CHIPS', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-171', 'CAKE CHIPS', 'BW DELICACIES', 35.00],
+            ['DEL-PRO-174', 'CROUTONS', 'BW DELICACIES', 35.00],
+            ['DEL-PRO-198', 'SHORTBREAD COOKIES', 'BW DELICACIES', 39.00],
+            ['DEL-PRO-205', 'EGGNOG COOKIE BITS', 'BW DELICACIES', 105.00],
+            ['DEL-PRO-206', 'CHEWY CARAMEL BAR', 'BW DELICACIES', 85.00],
+            ['DEL-PRO-207', 'FUDGE BROWNIES', 'BW DELICACIES', 85.00],
+            ['DEL-PRO-208', 'CRUNCHY MIXED BREAD CHIPS', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-209', 'CRUNCHY CHOCO CAKE CHIPS', 'BW DELICACIES', 55.00],
+            ['DEL-PRO-210', 'MINI CHOCO CHIPS', 'BW DELICACIES', 20.00],
+            ['DEL-PRO-212', 'GARLIC FLAVOR CHIPS', 'BW DELICACIES', 69.00],
+            ['DEL-PRO-213', 'CHEESE FLAVOR CHIPS', 'BW DELICACIES', 69.00],
+            ['DEL-PRO-214', 'SALTED EGG FLAVOR BREAD CHIPS', 'BW DELICACIES', 69.00],
+            ['DEL-PRO-215', 'CINNAMON BREAD STICK', 'BW PASTRIES', 100.00],
+            ['DEL-PRO-276', 'COOKIENAM', 'BW PASTRIES', 79.00],
+            ['DEL-PRO-284', 'BUTTER TOAST', 'BW BREADS', 39.00],
+            ['DNT-PRO-001', 'CHOCO BUTTERNUT DONUT', 'BW DONUTS', 32.00],
+            ['DNT-PRO-002', 'CHOCO LAVA DONUT', 'BW DONUTS', 32.00],
+            ['FRD-PRO-001', 'CHICKEN EMPANADA', 'BW BREADS', 35.00],
+            ['FRD-PRO-002', 'HAM-CHEESE SUPREME (KARIMAN)', 'BW BREADS', 27.00],
+            ['FRD-PRO-005', 'EGG TART', 'BW PASTRIES', 24.00],
+            ['FRO-CAK-003', 'DOUBLE CHOCO 7R', 'BW CAKES', 409.00],
+            ['FRO-CAK-005', 'DAHLIA CHOCOLATE CAKE', 'BW ROUND CAKES', 409.00],
+            ['FRO-CAK-006', 'DADS SPECIAL CHOCO CAKE 7R', 'BW PREM CAKES', 399.00],
+            ['FRO-CAK-009', 'MANGO ROYALE 7R', 'BW ROUND CAKES', 449.00],
+            ['FRO-CAK-010', 'TIRAMISU QUAD CAKE', 'BW CAKES', 119.00],
+            ['FRO-CAK-011', 'FAMOUS MOCHA 7R', 'BW CAKES', 349.00],
+            ['FRO-CAK-012', 'COOKIE CARAMEL QUAD CAKE', 'BW CAKES', 119.00],
+            ['FRO-CAK-013', 'FAMOUS MOCHA 8x11', 'BW CAKES', 549.00],
+            ['FRO-CAK-017', 'SINFUL CAKE SLICE', 'BW CAKES', 89.00],
+            ['FRO-CAK-018', 'SINFUL CAKE 8R', 'BW CAKES', 759.00],
+            ['FRO-CAK-019', 'HEAVENLY CARAMEL 7R', 'BW CAKES', 399.00],
+            ['FRO-CAK-024', 'LEMON CREAM 7R', 'BW CAKES', 379.00],
+            ['FRO-CAK-029', 'DOUBLE CHOCO 8x11', 'BW CAKES', 639.00],
+            ['FRO-CAK-047', 'DUO CAKE 7R (UBE-YEMA)', 'BW CAKES', 439.00],
+            ['FRO-CAK-053', 'CHOCOLATE SAKTO CAKE', 'BW CAKES', 235.00],
+            ['FRO-CAK-054', 'CUSTARD CAKE', 'BW CAKES', 219.00],
+            ['FRO-CAK-057', 'LITE CHOCOLATE SAKTO CAKE', 'BW CAKES', 259.00],
+            ['FRO-CAK-167', 'CREAMY YEMA CAKE', 'BW CAKES', 189.00],
+            ['FRO-CAK-196', 'SANS RIVAL SLICE CAKE', 'BW CAKES', 89.00],
+            ['FRO-CAK-236', 'RED VELVET SAKTO CAKE', 'BW CAKES', 235.00],
+            ['FRO-CAK-237', 'BLUEBERRY SAKTO CAKE', 'BW CAKES', 235.00],
+            ['FRO-CAK-244', 'DUO CAKE 8X11', 'BW CAKES', 629.00],
+            ['FRO-CAK-277', 'SANS RIVAL CAKE 8R', 'BW CAKES', 499.00],
+            ['FRO-CAK-278', 'SANS-RIVAL HALF', 'BW CAKES', 299.00],
+            ['FRO-CAK-731', 'CHOCO HALF ROLL', 'BW CAKES', 235.00],
+            ['FRO-CAK-737', 'BLISS CHOCOLATE CAKE  7R', 'BW CAKES', 399.00],
+            ['FRO-CAK-740', 'YLLANA CAKE 8X11', 'BW CAKES', 579.00],
+            ['FRO-CAK-741', 'BLACK FOREST CAKE', 'BW CAKES', 630.00],
+            ['FRO-CAK-744', 'ROSY CHOCOLATE CAKE', 'BW CAKES', 379.00],
+            ['FRO-CAK-747', 'CREAMY COOKIE DREAM CAKE 7R', 'BW CAKES', 599.00],
+            ['FRO-CAK-748', 'CARROT SAKTO CAKE', 'BW CAKES', 235.00],
+            ['FRO-CAK-844', 'SAKTO  CARROT CAKE', 'BW CAKES', 229.00],
+            ['FRO-CAK-846', 'DELISH VANILLA CAKE 7R', 'BW CAKES', 405.00],
+            ['FRO-CAK-847', 'C SAKTO CAKE LITE', 'BW SAKTO CAKES', 220.00],
+            ['GCP-PRO-002', 'CHICKEN BUN', 'BW PASTRIES', 42.00],
+            ['GCP-PRO-005', 'CHOCO BANANA LOAF', 'BW PASTRIES', 59.00],
+            ['GCP-PRO-007', 'TUNA ASADO', 'BW PASTRIES', 44.00],
+            ['GCP-PRO-008', 'PANDE MACAROONS', 'BW PASTRIES', 38.00],
+            ['GCP-PRO-010', 'BEEF FLAVORED PASTEL BUN', 'BW PASTRIES', 65.00],
+            ['GCP-PRO-011', 'KAPET PANDESAL', 'BW BEVERAGES', 55.00],
+            ['GYR-PRO-001', 'GYRIES SHAWARMA', 'BW GYRIES', 89.00],
+            ['GYR-PRO-002', 'GYRIES CHEESE', 'BW GYRIES', 10.00],
+            ['GYR-PRO-003', 'GYRIES MEAT', 'BW GYRIES', 15.00],
+            ['GYR-PRO-004', 'GYRIES VEGGIES', 'BW GYRIES', 10.00],
+            ['HOP-PRO-010', 'HOPIA PASTILLAS', 'BW CHINESE DELICACIES', 45.00],
+            ['HOP-PRO-762', 'HOPIA RED MONGO', 'BW CHINESE DELICACIES', 60.00],
+            ['HOP-PRO-786', 'HOPIA MONGO', 'BW CHINESE DELICACIES', 60.00],
+            ['HOP-PRO-809', 'HOPIA HAPON', 'BW CHINESE DELICACIES', 60.00],
+            ['HOP-PRO-816', 'HOPIA BABOY', 'BW DELICACIES', 55.00],
+            ['HOP-PRO-823', 'HOPIA UBE', 'BW CHINESE DELICACIES', 60.00],
+            ['HOP-PRO-824', 'PINEAPPLE CAKE - SINGLE', 'BW CHINESE DELICACIES', 29.00],
+            ['HOP-PRO-825', 'PINEAPPLE CAKE BUNDLE 14s', 'BW CHINESE DELICACIES', 379.00],
+            ['HOP-PRO-825A', 'PINEAPPLE CAKE (X5)', 'BW CHINESE DELICACIES', 120.00],
+            ['LOF-PRO-006', 'PREMIUM LOAF', 'BW LOAVES', 99.00],
+            ['LOF-PRO-083', 'LOAF  UBE', 'BW LOAVES', 75.00],
+            ['LOF-PRO-182', 'PETER PAN JUMBO', 'BW LOAVES', 85.00],
+            ['LOF-PRO-298A', 'LOAF RAISINS (REVAMP)', 'BW LOAVES', 57.00],
+            ['LOF-PRO-300', 'LOAF  CHOCO', 'BW LOAVES', 65.00],
+            ['LOF-PRO-472', 'LOAF  MONGO', 'BW LOAVES', 65.00],
+            ['LOF-PRO-496', 'WHOLE WHEAT BREAD', 'BW LOAVES', 75.00],
+            ['LOF-PRO-526', 'PETER PANPULLMAN', 'BW LOAVES', 69.00],
+            ['LOF-PRO-984', 'PETER PAN SAKTO', 'BW LOAVES', 59.00],
+            ['OCC-CAK-001', 'HOLLOWEEN CAKE', 'BW CAKES', 399.00],
+            ['OCC-CAK-100', 'DADTASTIC CHOCOLATE CAKE 7R', 'BW CAKES', 379.00],
+            ['OCC-CAK-101', 'HALLOWEEN CAKE', 'BW CAKES', 399.00],
+            ['OCC-CAK-102', 'WHITE CHRISTMAS VANILLA CAKE', 'BW CAKES', 399.00],
+            ['OCC-CAK-103', 'FATHERS DAY BEER MUG CAKE', 'BW CAKES', 299.00],
+            ['PAR-CAK-269', 'PARTY CUPCAKES', 'BW CAKES', 385.00],
+            ['PAS-PRO 411', 'HOLIDAY BROWNIES', 'BW PASTRIES', 1.00],
+            ['PAS-PRO-009', 'BUTTER MACAROONS X4', 'BW PASTRIES', 39.00],
+            ['PAS-PRO-052', 'EGG PIE', 'BW PASTRIES', 33.00],
+            ['PAS-PRO-053', 'EGG PIE LITE', 'BW PASTRIES', 39.00],
+            ['PAS-PRO-144', 'BUTTER CUPCAKE', 'BW PASTRIES', 23.00],
+            ['PAS-PRO-182', 'BW BANANA SLICE', 'BW PASTRIES', 23.00],
+            ['PAS-PRO-188', 'CHOCO MARBLE MAMON', 'BW PASTRIES', 34.00],
+            ['PAS-PRO-200', 'SPECIAL MAMON', 'BW PASTRIES', 30.00],
+            ['PAS-PRO-202', 'CHOCOLITE MAMON', 'BW BREADS', 39.00],
+            ['PAS-PRO-229', 'CHOCOLATE EGG PIE', 'BW PASTRIES', 39.00],
+            ['PAS-PRO-328', 'YEMA CAKE', 'BW PASTRIES', 23.00],
+            ['PAS-PRO-410', 'ORIGINAL BROWNIES', 'BW PASTRIES', 35.00],
+            ['PAS-PRO-411', 'HOLIDAY BROWNIES', 'BW PASTRIES', 129.00],
+            ['PAS-PRO-412', 'CHOCO FUDGE', 'BW PASTRIES', 39.00],
+            ['PAS-PRO-413', 'PREMIUM BROWNIES 4s', 'BW PASTRIES', 129.00],
+            ['PAS-PRO-414', 'GOLDEN MINI MAMON', 'BW PASTRIES', 35.00],
+            ['PAS-PRO-891', 'SPECIAL LECHE FLAN', 'BW PASTRIES', 129.00],
+            ['PAS-PRO-892', 'UBE EGG PIE', 'BW PASTRIES', 39.00],
+            ['PAS-PRO-894', 'CLASSIC CHOCO CRINKLES', 'BW PASTRIES', 35.00],
+            ['PAS-PRO-895', 'FLANTASTIC LECHE FLAN', 'BW PASTRIES', 159.00],
+            ['PAS-PRO-896', 'CARAMEL BITES', 'BW PASTRIES', 0.00],
+            ['PAS-PRO-898', 'CASHEW BOAT TART', 'BW PASTRIES', 20.00],
+            ['PAS-PRO-898A', 'CASHEW BOAT TART X15', 'BW PASTRIES', 249.00],
+            ['PAS-PRO-899', 'CHOCOLATE REVEL BITES PC', 'BW PASTRIES', 19.00],
+            ['PAS-PRO-899A', 'CHOCOLATE REVEL BITES X8', 'BW PASTRIES', 135.00],
+            ['PAS-PRO-901', 'CHAM CHAM CAKE', 'BW PASTRIES', 24.00],
+            ['PAS-PRO-902', 'TIGER ROLL CAKE', 'BW PASTRIES', 45.00],
+            ['PAS-PRO-903', 'SULIT CUPCAKES', 'BW PASTRIES', 12.00],
+            ['PAS-PRO-905', 'SPECIAL MADELEINES', 'BW PASTRIES', 89.00],
+            ['PAS-PRO-906', 'CHOCOLATE CROISSANT', 'BW PASTRIES', 65.00],
+            ['PC-SVN-PRO-021', '711 PAN DE COCO', 'BW BREADS', 22.13],
+            ['PRM-BRD-002', 'CHOCOLATE CROISSANT', 'BW PASTRIES', 65.00],
+            ['PRM-PRO-101', 'EGG TART X2', 'BW PASTRIES', 48.00],
+            ['PRM-PRO-108', 'MAMON BUNDLE', 'BW PASTRIES', 126.00],
+            ['PRM-PRO-119', 'EGG PIE + BANANA SLICE', 'BW PASTRIES', 52.00],
+            ['PRM-PRO-306', 'GYRIES SHAWARMA X2', 'BW GYRIES', 179.00],
+            ['PRM-PRO-309', 'FBC HEAVENLY CARAMEL 7R', 'BW CAKES', 571.00],
+            ['PRM-PRO-331', 'FBC CREAMY COOKIE DREAM CAKE 7R', 'BW CAKES', 771.00],
+            ['PRM-PRO-333', 'FBC DUO CAKE 8X11', 'BW CAKES', 801.00],
+            ['PRM-PRO-56', 'BISCOCHO X 2', 'BW PASALUBONG', 110.00],
+            ['PRM-PRO-57', 'SULIT CUPCAKE X 2', 'BW PASALUBONG', 24.00],
+            ['PRM-PRO-58', 'FBC - UBE YEMA DUO 8X11', 'BW CAKES', 801.00],
+            ['PRM-PRO-59', 'CHAM CHAM CAKE X 2', 'BW PASALUBONG', 46.00],
+            ['PRM-PRO-60', 'TRIO 2 UBE 1 MONGO', 'BW PASTRIES', 215.00],
+            ['PRM-PRO-61', 'TRIO 2 MONGO 1 UBE', 'BW PASTRIES', 181.00],
+            ['PRM-PRO-62', 'REVEL BITES X 2', 'BW PASALUBONG', 258.00],
+            ['PRM-PRO-63', 'BUTTER BISCUITS PLUS', 'BW PASALUBONG', 127.00],
+            ['PRM-PRO-64', 'PASALUBONG BITES X 3', 'BW PASALUBONG', 242.00],
+            ['PRM-PRO-65', 'TOASTED BREAD X 3', 'BW PASALUBONG', 105.00],
+            ['PRM-PRO-66', 'REVEL BITES + BOAT TART', 'BW PASALUBONG', 379.00],
+            ['PRM-PRO-89', 'BISCOCHO X CHEESE CHIPS', 'BW PASALUBONG', 124.00],
+            ['PRM-PRO-90', 'BLUSH CHOCOLATE MOIST CAKE', 'BW PREM CAKES', 399.00],
+            ['PRO-HNC-001', 'HAM AND CHEESE X2', 'BW FRIED BREADS', 30.00],
+            ['RM-SUP-8311', 'EGG YOLK', 'BW MERCHANDISE', 2.00],
+            ['RND-PRO-001', 'RND SAMPLE', 'BW CAKES', 1.00],
+            ['ROL-CAK-008', 'UBE ROLL', 'BW CAKES', 379.00],
+            ['ROL-CAK-014', 'VANILLA 12 ROLL', 'BW CAKES', 190.00],
+            ['ROL-CAK-342', 'BRAZO DE MERCEDES', 'BW CAKES', 349.00],
+            ['ROL-CAK-342A', 'BRAZO DE MERCEDEZ (HALF ROLL)', 'BW CAKES', 239.00],
+            ['ROL-CAK-343', 'UBE BRAZO DE MERCEDES', 'BW CAKES', 239.00],
+            ['ROL-CAK-365', 'SUPREME CHOCOLATE ROLL', 'BW CAKES', 379.00],
+            ['ROL-CAK-441', '4 in 1 ROLL CAKE', 'BW CAKES', 399.00],
+            ['ROL-CAK-442', '4 IN 1 SYMPHONY ROLL CAKE', 'BW ROLL CAKES', 399.00],
+            ['SVN-PRO-001', 'HOTDOG BUNS (8)', 'SVN BREADS', 25.00],
+            ['SVN-PRO-007', 'CHEESE BREAD BIG', 'BW SVN BREADS', 45.31],
+            ['SVN-PRO-008', 'CHEESE BREAD MINI', 'BW SVN BREADS', 21.74],
+            ['SVN-PRO-014', 'EGG PANDESAL', 'BW SVN BREADS', 26.64],
+            ['SVN-PRO-019', 'MOCHA MAMON', 'BW PASTRIES', 32.00],
+            ['SVN-PRO-022', 'UBE MAMON', 'BW PASTRIES', 32.00],
+            ['TOA-PRO-251', 'BISCOCHO', 'BW PASALUBONG', 55.00],
         ];
     }
 }

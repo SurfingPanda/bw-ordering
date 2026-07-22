@@ -52,6 +52,27 @@
     display: none;
 }
 
+/* Slim, trackless scrollbar for scrollable panels with rounded corners (the
+   edit/product modals): the default chunky scrollbar's opaque track + arrow
+   buttons paint over the border-radius and square off the panel's edges.
+   Chrome 121+/Firefox use the two standard properties (and then ignore the
+   ::-webkit-* rules); the ::-webkit-* rules cover older Chromium. */
+.scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent; /* slate-300 thumb */
+}
+.scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+.scrollbar-slim::-webkit-scrollbar-button {
+    display: none;
+}
+
 /* Animated backdrop: the base gradient slowly pans while two soft
    brand-colored glows drift behind the content. */
 @keyframes bg-pan {
