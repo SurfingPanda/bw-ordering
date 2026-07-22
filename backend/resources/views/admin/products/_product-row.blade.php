@@ -37,7 +37,7 @@
     <div data-modal class="hidden">
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-navy-900/50"></div>
-            <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+            <div class="scrollbar-slim relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6">
                 <div class="mb-4 flex items-center justify-between">
                     <h3 class="text-base font-bold text-navy-800">Edit product</h3>
                     <button type="button" data-modal-close aria-label="Close" class="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-navy-700">✕</button>
