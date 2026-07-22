@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,5 +20,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Throttled auth form posts (429 from throttle:5,1) return to the form
+        // with a friendly message in its existing error slot instead of the
+        // bare "429 Too Many Requests" error page. API clients still get the
+        // plain JSON 429.
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            $seconds = (int) ($e->getHeaders()['Retry-After'] ?? 60);
+
+            return back()
+                ->withErrors(['email' => "Too many attempts. Please wait {$seconds} seconds and try again."])
+                ->withInput($request->except(['password', 'password_confirmation', '_token']));
+        });
     })->create();
