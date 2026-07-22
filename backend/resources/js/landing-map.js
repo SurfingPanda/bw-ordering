@@ -100,8 +100,23 @@ const collapseAttribution = () => {
     el?.classList.remove('maplibregl-compact-show')
     el?.removeAttribute('open')
 }
-collapseAttribution()
-map.on('resize', collapseAttribution)
+map.on('resize', collapseAttribution) // MapLibre re-expands it on map.resize()
+
+// The credits arrive asynchronously (as each tile source's metadata loads), and
+// MapLibre auto-expands the compact control the first time they do — so a
+// collapse at startup is a no-op. Catch that first auto-expansion instead,
+// then unbind so the "ⓘ" button behaves as a normal toggle.
+const collapseOnFirstShow = () => {
+    const el = mapContainer.querySelector('.maplibregl-ctrl-attrib')
+    if (!el?.classList.contains('maplibregl-compact-show')) return
+    collapseAttribution()
+    map.off('sourcedata', collapseOnFirstShow)
+    map.off('styledata', collapseOnFirstShow)
+    map.off('terrain', collapseOnFirstShow)
+}
+map.on('sourcedata', collapseOnFirstShow)
+map.on('styledata', collapseOnFirstShow)
+map.on('terrain', collapseOnFirstShow)
 
 map.on('load', () => {
     map.setTerrain({ source: 'terrain-dem', exaggeration: 1.4 })
