@@ -40,12 +40,13 @@ class CheckoutController extends Controller
             return redirect()->route('menu', ['staff' => 'blocked']);
         }
 
-        // The session user only keeps id/email/name — the contact number lives
-        // in Supabase user_metadata, so fetch it to prefill "Mobile Number".
+        // The session user only keeps id/email/name — contact number and
+        // saved address live in Supabase user_metadata, so fetch once to
+        // prefill "Mobile Number" and the delivery address textarea.
         $token = (string) $request->session()->get('supabase_access_token');
-        $contactNumber = $token !== ''
-            ? (string) data_get($auth->fetchUser($token), 'user_metadata.contact_number', '')
-            : '';
+        $authedUser = $token !== '' ? $auth->fetchUser($token) : null;
+        $contactNumber = (string) data_get($authedUser, 'user_metadata.contact_number', '');
+        $savedAddress = (string) data_get($authedUser, 'user_metadata.address', '');
 
         $step = 'form';
         $order = null;
@@ -91,6 +92,7 @@ class CheckoutController extends Controller
             'vouchers' => app(VoucherController::class)->active(),
             'user' => $user,
             'contactNumber' => $contactNumber,
+            'savedAddress' => $savedAddress,
         ]);
     }
 

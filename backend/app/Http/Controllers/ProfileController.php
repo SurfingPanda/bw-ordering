@@ -25,11 +25,20 @@ class ProfileController extends Controller
         $raw = $token !== '' ? $this->auth->fetchUser($token) : null;
         $meta = (array) ($raw['user_metadata'] ?? []);
 
+        // Identities carry one entry per linked sign-in method (google,
+        // facebook, email); GoTrue lists the password identity as "email".
+        // Used only for the read-only "how you sign in" badge below.
+        $providers = collect((array) ($raw['identities'] ?? []))
+            ->pluck('provider')->filter()->unique()->values()->all();
+
         return view('profile', ['profile' => [
             'email' => $raw['email'] ?? ($sessionUser['email'] ?? ''),
             'name' => $meta['full_name'] ?? $meta['name'] ?? ($sessionUser['name'] ?? ''),
             'contact' => (string) ($meta['contact_number'] ?? ''),
+            'address' => (string) ($meta['address'] ?? ''),
             'avatar' => trim((string) ($meta['avatar_url'] ?? '')),
+            'memberSince' => $raw['created_at'] ?? null,
+            'providers' => $providers,
         ]]);
     }
 
@@ -42,6 +51,7 @@ class ProfileController extends Controller
         $data = $request->validateWithBag('info', [
             'name' => 'required|string|min:2|max:120',
             'contact_number' => 'required|string|max:20',
+            'address' => 'nullable|string|max:500',
         ], [], ['contact_number' => 'contact number']);
 
         // Same rules as the old lib/phone.js: strip anything that isn't a
@@ -62,6 +72,7 @@ class ProfileController extends Controller
         [, $error] = $this->auth->updateUser($token, ['data' => [
             'full_name' => trim($data['name']),
             'contact_number' => $contact, // user-entered form, for display
+            'address' => trim((string) ($data['address'] ?? '')),
         ]]);
         if ($error) {
             return back()->withErrors(['name' => $error], 'info')->withInput();

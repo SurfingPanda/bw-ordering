@@ -323,7 +323,7 @@
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-bold text-navy-800">Store Locator</h2>
-                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The dark “stores near you” strip on the landing page. The “Find a store” button itself is shown/hidden in the Buttons section (storeLocatorFind).</p>
+                    <p class="mb-5 mt-0.5 text-sm text-slate-500">The “stores near you” section on the landing page — this copy and search box sit next to a live map of your actual branches (pulled from Find a Store, not editable here). The “Find a store” button itself is shown/hidden in the Buttons section (storeLocatorFind).</p>
                 </div>
                 <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
                     <span class="text-xs font-medium text-slate-500">Show on page</span>
