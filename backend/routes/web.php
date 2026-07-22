@@ -39,17 +39,17 @@ Route::post('/custom-cake', [CustomCakeController::class, 'store'])->name('custo
 Route::redirect('/dashboard', '/menu');
 
 Route::get('/login', [SessionController::class, 'create'])->name('login');
-Route::post('/login', [SessionController::class, 'store']);
+Route::post('/login', [SessionController::class, 'store'])->middleware('throttle:5,1');
 Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 
 Route::get('/register', [RegistrationController::class, 'create'])->name('register');
-Route::post('/register', [RegistrationController::class, 'store']);
+Route::post('/register', [RegistrationController::class, 'store'])->middleware('throttle:5,1');
 
 // Forgot/reset password (port of the SPA's ForgotPassword.jsx/ResetPassword.jsx):
 // Supabase emails a recovery link that lands on /reset-password with the token
 // in the URL #fragment — see Auth\PasswordResetController.
 Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
-Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email')->middleware('throttle:5,1');
 Route::get('/reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
 Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
 
