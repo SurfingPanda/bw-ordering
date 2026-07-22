@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\SiteContent;
 use App\Services\OrderCreationService;
 use App\Services\PayMongoService;
 use Illuminate\Http\Request;
@@ -23,6 +24,14 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $user = $this->supabaseUser($request);
+
+        // Admin kill switch (Site Editor → Buttons → "Proceed to checkout") —
+        // same gate as the Blade checkout (CheckoutController::store).
+        $content = (array) app(SiteContentController::class)->cachedData();
+        if (SiteContent::buttonState((array) ($content['buttons'] ?? []), 'menuCheckout') !== 'on') {
+            return response()->json(['message' => 'Checkout is temporarily unavailable.'], 503);
+        }
+
         $data = $request->validate(OrderCreationService::rules());
 
         $order = $this->orders->create($data, $user);

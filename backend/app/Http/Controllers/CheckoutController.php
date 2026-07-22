@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\SiteContent;
 use App\Services\OrderCreationService;
 use App\Services\PayMongoService;
 use App\Services\QrphService;
@@ -82,6 +83,13 @@ class CheckoutController extends Controller
 
         $content = (array) app(SiteContentController::class)->cachedData();
 
+        // Admin kill switch (Site Editor → Buttons → "Proceed to checkout"):
+        // block the fresh checkout form, but let a customer returning from
+        // PayMongo ($step === 'payment') still see/retry that placed order.
+        if ($step === 'form' && SiteContent::buttonState((array) ($content['buttons'] ?? []), 'menuCheckout') !== 'on') {
+            return redirect()->route('menu', ['checkout' => 'unavailable']);
+        }
+
         return view('checkout', [
             'step' => $step,
             'order' => $order,
@@ -111,6 +119,12 @@ class CheckoutController extends Controller
         // Same guard as show() — staff accounts can't place orders.
         if ($this->effectiveRole($user['email'] ?? null) !== null) {
             return redirect()->route('menu', ['staff' => 'blocked']);
+        }
+
+        // Admin kill switch — no new orders while checkout is off/disabled.
+        $content = (array) app(SiteContentController::class)->cachedData();
+        if (SiteContent::buttonState((array) ($content['buttons'] ?? []), 'menuCheckout') !== 'on') {
+            return redirect()->route('menu', ['checkout' => 'unavailable']);
         }
 
         $items = json_decode((string) $request->input('items_json', '[]'), true);

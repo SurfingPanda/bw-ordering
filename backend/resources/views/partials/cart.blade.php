@@ -23,6 +23,19 @@
             <p class="mt-4 rounded-xl bg-slate-100 px-4 py-3 text-center text-xs font-medium text-slate-500">
                 Staff accounts can't place orders — use a customer account to check out.
             </p>
+        @elseif(($checkoutState ?? 'on') !== 'on')
+            {{-- Admin kill switch (Site Editor → Buttons → "Proceed to
+                 checkout"): Disabled shows an inert button, Hidden drops it —
+                 CheckoutController refuses new orders server-side either way. --}}
+            @if($checkoutState === 'disabled')
+                <button type="button" disabled
+                    class="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-slate-300 py-3 text-center text-sm font-semibold text-white">
+                    Proceed to Checkout
+                </button>
+            @endif
+            <p class="{{ $checkoutState === 'disabled' ? 'mt-2' : 'mt-4' }} rounded-xl bg-slate-100 px-4 py-3 text-center text-xs font-medium text-slate-500">
+                Checkout is temporarily unavailable. Please check back soon.
+            </p>
         @elseif($user)
             <button type="button" class="checkout-btn mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                 Proceed to Checkout

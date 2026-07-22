@@ -38,6 +38,10 @@ class MenuController extends Controller
             // Staff browse but don't buy — hides the checkout button (the
             // CheckoutController enforces the same rule server-side).
             'isStaffAccount' => $this->effectiveRole($email) !== null,
+            // Admin kill switch (Site Editor → Buttons → "Proceed to
+            // checkout"): 'on' | 'disabled' (inert button) | 'off' (hidden).
+            // CheckoutController refuses new orders unless it's 'on'.
+            'checkoutState' => SiteContent::buttonState((array) ($content['buttons'] ?? []), 'menuCheckout'),
             // Editor-controlled "What's New" promo banner + category badge
             // images (content.menuPromo / content.menuCategoryImages) —
             // mirrors Menu.jsx's MenuPromoBanner and CategorySidebar.

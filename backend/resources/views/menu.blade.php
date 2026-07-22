@@ -134,6 +134,11 @@
                             Staff accounts can't place orders. Browse freely — checkout is for customer accounts.
                         </div>
                     @endif
+                    @if(request('checkout') === 'unavailable')
+                        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            Checkout is temporarily unavailable — your cart is saved, please try again later.
+                        </div>
+                    @endif
                     <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h1 id="category-title" class="text-2xl font-bold text-navy-800">Our Menu</h1>
