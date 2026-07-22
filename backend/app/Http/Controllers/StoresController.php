@@ -14,14 +14,16 @@ class StoresController extends Controller
 {
     public function index(Request $request)
     {
-        // CMS footer/social so this page shares the landing page's footer
-        // (same key-by-key default fallback LandingController::index applies).
-        $content = (array) app(SiteContentController::class)->cachedData();
+        // Site Editor live preview (?preview=1, editor session) shows the
+        // unsaved draft, same as LandingController — otherwise the "Find a
+        // Store Page" tab's edits would never appear in the preview iframe.
+        $content = (array) ($this->previewDraft($request) ?? app(SiteContentController::class)->cachedData());
 
         return view('stores', [
             'stores' => app(StoreController::class)->cachedList(),
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
+            'hero' => array_merge(LandingController::DEFAULT_CONTENT['storesPage'], (array) ($content['storesPage'] ?? [])),
         ]);
     }
 }

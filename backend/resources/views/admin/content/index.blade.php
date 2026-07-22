@@ -351,6 +351,23 @@
             </div>
         </section>
 
+        {{-- ============ Find a Store Page (the /stores page's own hero) ============ --}}
+        <section data-panel="storesPage" class="{{ $panel }}">
+            @php($sp = (array) ($content['storesPage'] ?? []))
+            <h2 class="text-lg font-bold text-navy-800">Find a Store Page</h2>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The dark hero at the top of the full /stores page (distinct from the “Store Locator” teaser on the landing page above). The branches themselves are managed on the separate Find a Store page.</p>
+            <div class="space-y-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                    <input type="text" name="storesPage[title]" value="{{ $sp['title'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                    <textarea name="storesPage[subtitle]" rows="3" class="{{ $input }}">{{ $sp['subtitle'] ?? '' }}</textarea>
+                </label>
+            </div>
+        </section>
+
         {{-- ============ Sweet Deals (newsletter) ============ --}}
         <section data-panel="newsletter" class="{{ $panel }}">
             @php($nl = (array) ($content['newsletter'] ?? []))
@@ -846,7 +863,7 @@
         // Sidebar tabs are real ?section= links (from _editor-nav) intercepted
         // below, so Stores/Vouchers/Products items — plain links to their own
         // pages — just navigate.
-        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', customCakeForm: '/custom-cake' }
+        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', customCakeForm: '/custom-cake', storesPage: '/stores' }
         // Sections whose previewed page ships partials/_editor-bridge — only
         // these get pointer-events enabled in the preview iframe (see
         // swapPreview's `editable` param and Controller::isEditablePreview).

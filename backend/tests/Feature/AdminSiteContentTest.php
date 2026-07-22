@@ -225,4 +225,41 @@ class AdminSiteContentTest extends TestCase
 
         $this->assertSame(1, Product::where('category', 'Pastries')->count());
     }
+
+    public function test_stores_page_hero_defaults_render_on_the_public_page(): void
+    {
+        $this->get('/stores')
+            ->assertOk()
+            ->assertSee('Find a store')
+            ->assertSee('60+ branches nationwide. Search for the BW Superbakeshop nearest you.');
+    }
+
+    public function test_saving_the_stores_page_hero_updates_the_public_page(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->put(route('admin.content.update'), [
+                'storesPage' => [
+                    'title' => 'Our branches',
+                    'subtitle' => 'Come say hi at any of our locations.',
+                ],
+            ])
+            ->assertRedirect();
+
+        $data = SiteContent::find(1)->data;
+        $this->assertSame('Our branches', $data['storesPage']['title']);
+
+        $this->get('/stores')
+            ->assertOk()
+            ->assertSee('Our branches')
+            ->assertSee('Come say hi at any of our locations.');
+    }
+
+    public function test_the_find_a_store_page_tab_appears_in_the_editor(): void
+    {
+        $this->withSession($this->asUser('editor@bwsuperbakeshop.com'))
+            ->get(route('admin.content'))
+            ->assertOk()
+            ->assertSee('Find a Store Page')
+            ->assertSee('name="storesPage[title]"', false);
+    }
 }

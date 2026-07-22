@@ -28,6 +28,7 @@
             ['key' => 'authPanel', 'label' => 'Login Page', 'icon' => 'login'],
             ['key' => 'social', 'label' => 'Social Links', 'icon' => 'share'],
             ['key' => 'stores', 'label' => 'Find a Store', 'icon' => 'pin', 'count' => $navCounts['stores'] ?? null, 'href' => route('admin.stores.index')],
+            ['key' => 'storesPage', 'label' => 'Find a Store Page', 'icon' => 'pin'],
             ['key' => 'franchise', 'label' => 'Franchise', 'icon' => 'briefcase'],
             ['key' => 'footer', 'label' => 'Footer', 'icon' => 'layout'],
             ['key' => 'buttons', 'label' => 'Buttons', 'icon' => 'toggle'],

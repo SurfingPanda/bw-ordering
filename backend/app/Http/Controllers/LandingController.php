@@ -60,6 +60,12 @@ class LandingController extends Controller
             'placeholder' => 'Enter your city or area',
             'visible' => true,
         ],
+        // The /stores page's own hero — distinct from storeLocator above,
+        // which is just the landing page's teaser section.
+        'storesPage' => [
+            'title' => 'Find a store',
+            'subtitle' => '60+ branches nationwide. Search for the BW Superbakeshop nearest you.',
+        ],
         'newsletter' => [
             'title' => 'Get sweet deals in your inbox 🍰',
             'subtitle' => 'Subscribe for exclusive promos, new treats, and special occasion offers.',

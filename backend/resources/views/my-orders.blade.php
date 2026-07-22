@@ -7,12 +7,13 @@
     @include('partials.favicon')
     @vite('resources/css/app.css')
 </head>
-<body class="min-h-screen bg-navy-50/40 text-navy-800">
+<body class="min-h-screen bg-brand-50 text-navy-800">
 
 @php
     $statusLabel = ['pending' => 'Order Placed', 'preparing' => 'Preparing', 'completed' => 'Delivered', 'cancelled' => 'Cancelled'];
     $statusStyle = ['pending' => 'bg-amber-100 text-amber-700', 'preparing' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-green-100 text-green-700', 'cancelled' => 'bg-red-100 text-red-700'];
     $paymentLabel = ['qrph' => 'QRPH', 'cash' => 'Cash on Pickup', 'paymongo' => 'Online (PayMongo)'];
+    $deliverySpeedLabel = ['standard' => 'Standard delivery', 'express' => 'Express delivery'];
     $isActive = fn ($o) => in_array($o->status, ['pending', 'preparing'], true);
     $trackIndex = fn ($status) => ['pending' => 0, 'preparing' => 1, 'completed' => 3][$status] ?? 0;
     $track = [['label' => 'Order Placed', 'icon' => '🧾'], ['label' => 'Preparing', 'icon' => '👨‍🍳'], ['label' => 'Out for Delivery', 'icon' => '🛵'], ['label' => 'Delivered', 'icon' => '📦']];
@@ -153,10 +154,36 @@
                         </div>
                     </div>
 
-                    <div class="order-details mt-3 hidden border-t border-slate-100 pt-3 text-xs text-slate-600">
-                        @if($order->address)<p><span class="font-semibold text-navy-700">📍 Deliver to:</span> {{ $order->address }}</p>@endif
-                        @if($order->fulfillment_branch)<p><span class="font-semibold text-navy-700">{{ $order->delivery_type === 'pickup' ? '🏪 Pick up at:' : '🏬 Delivered by:' }}</span> {{ $order->fulfillment_branch }}</p>@endif
-                        @if($order->notes)<p class="mt-1"><span class="font-semibold text-navy-700">📝 Notes:</span> {{ $order->notes }}</p>@endif
+                    <div class="order-details mt-3 hidden border-t border-slate-100 pt-4 text-xs text-slate-600">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-1">
+                                @if($order->address)<p><span class="font-semibold text-navy-700">📍 Deliver to:</span> {{ $order->address }}</p>@endif
+                                @if($order->fulfillment_branch)<p><span class="font-semibold text-navy-700">{{ $order->delivery_type === 'pickup' ? '🏪 Pick up at:' : '🏬 Delivered by:' }}</span> {{ $order->fulfillment_branch }}</p>@endif
+                                @if($order->delivery_type !== 'pickup' && $order->delivery_speed)
+                                    <p><span class="font-semibold text-navy-700">⏱ Speed:</span> {{ $deliverySpeedLabel[$order->delivery_speed] ?? ucfirst($order->delivery_speed) }}</p>
+                                @endif
+                                @if($order->notes)<p><span class="font-semibold text-navy-700">📝 Notes:</span> {{ $order->notes }}</p>@endif
+                                <p><span class="font-semibold text-navy-700">👤 Ordered by:</span> {{ $order->customer_name }}</p>
+                                @if($order->customer_phone)<p><span class="font-semibold text-navy-700">📞 Contact:</span> {{ $order->customer_phone }}</p>@endif
+                                @if($order->customer_email)<p><span class="font-semibold text-navy-700">✉️ Email:</span> {{ $order->customer_email }}</p>@endif
+                                @if($order->payment_ref)<p><span class="font-semibold text-navy-700">🧾 Payment ref:</span> {{ $order->payment_ref }}</p>@endif
+                            </div>
+                            {{-- Price breakdown — every figure is the server-computed value
+                                 actually stored on the order (OrderCreationService), not
+                                 recalculated here, so it can never drift from what was charged. --}}
+                            <div class="space-y-1 rounded-xl bg-slate-50 p-3">
+                                <div class="flex justify-between"><span>Subtotal</span><span class="font-medium text-navy-800">₱{{ number_format($order->subtotal, 2) }}</span></div>
+                                @if($order->voucher)
+                                    <div class="flex justify-between text-green-700"><span>Voucher ({{ $order->voucher }})</span><span class="font-medium">−₱{{ number_format($order->discount, 2) }}</span></div>
+                                @endif
+                                <div class="flex justify-between">
+                                    <span>Delivery fee</span>
+                                    <span class="font-medium {{ $order->delivery == 0 ? 'text-green-700' : 'text-navy-800' }}">{{ $order->delivery_type === 'pickup' ? '—' : ($order->delivery == 0 ? 'FREE' : '₱'.number_format($order->delivery, 2)) }}</span>
+                                </div>
+                                <div class="flex justify-between"><span>VAT (12%)</span><span class="font-medium text-navy-800">₱{{ number_format($order->vat, 2) }}</span></div>
+                                <div class="flex justify-between border-t border-slate-200 pt-1 text-sm font-bold text-navy-800"><span>Total</span><span>₱{{ number_format($order->total, 2) }}</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mt-4 flex flex-wrap items-center gap-2">
@@ -170,6 +197,13 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        {{-- Paginated client-side (all orders are already in the DOM for
+             instant filter/search — see MyOrdersController) so a customer
+             with a long order history isn't handed one giant scroll. --}}
+        <div class="mt-6 text-center">
+            <button type="button" id="load-more" class="hidden rounded-full border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-navy-700 shadow-sm transition hover:border-brand-400 hover:text-brand-600"></button>
         </div>
     @endif
 
@@ -269,24 +303,44 @@
         });
     }
 
+    // Client-side pagination: every order card is already in the DOM (see
+    // MyOrdersController's comment on why filtering stays client-side), so
+    // a customer with dozens of orders was just handed one long page to
+    // scroll through. `visibleCount` caps how many *matching* cards are
+    // actually shown; "Load more" bumps it. Resets to PAGE_SIZE whenever
+    // the tab or search changes so pagination always applies to the
+    // current result set, not the unfiltered total.
+    const PAGE_SIZE = 5;
+    let visibleCount = PAGE_SIZE;
+
     function applyFilters() {
         const q = (document.getElementById('order-search')?.value || '').trim().toLowerCase();
-        let shown = 0;
-        document.querySelectorAll('.order-card').forEach(card => {
+        const cards = Array.from(document.querySelectorAll('.order-card'));
+        const matches = cards.filter(card => {
             const status = card.dataset.status;
             const isActiveOrder = card.dataset.active === '1';
             const byTab = tab === 'all' || (tab === 'active' ? isActiveOrder : status === tab);
             const byText = !q || card.dataset.search.includes(q);
-            const show = byTab && byText;
-            card.classList.toggle('hidden', !show);
-            if (show) shown++;
+            return byTab && byText;
         });
+
+        cards.forEach(card => card.classList.add('hidden'));
+        matches.slice(0, visibleCount).forEach(card => card.classList.remove('hidden'));
+
         const noMatch = document.getElementById('no-match');
-        if (noMatch) noMatch.classList.toggle('hidden', shown !== 0);
+        if (noMatch) noMatch.classList.toggle('hidden', matches.length !== 0);
+
+        const remaining = matches.length - visibleCount;
+        const loadMore = document.getElementById('load-more');
+        if (loadMore) {
+            loadMore.classList.toggle('hidden', remaining <= 0);
+            if (remaining > 0) loadMore.textContent = `Load more orders (${remaining} more)`;
+        }
     }
 
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { tab = btn.dataset.tab; paintTabs(); applyFilters(); }));
-    document.getElementById('order-search')?.addEventListener('input', applyFilters);
+    document.getElementById('load-more')?.addEventListener('click', () => { visibleCount += PAGE_SIZE; applyFilters(); });
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { tab = btn.dataset.tab; visibleCount = PAGE_SIZE; paintTabs(); applyFilters(); }));
+    document.getElementById('order-search')?.addEventListener('input', () => { visibleCount = PAGE_SIZE; applyFilters(); });
 
     document.querySelectorAll('.toggle-details').forEach(btn => btn.addEventListener('click', () => {
         const details = btn.closest('.order-card').querySelector('.order-details');
