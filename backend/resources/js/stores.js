@@ -123,16 +123,30 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
 
-// The compact attribution opens expanded, and MapLibre re-expands it on every
-// map.resize(). Collapse it to the small "ⓘ" button so the license credits
+// Collapse the attribution to the small "ⓘ" button so the license credits
 // don't cover the map; clicking the button still toggles the full list open.
 const collapseAttribution = () => {
     const el = mapContainer.querySelector('.maplibregl-ctrl-attrib')
     el?.classList.remove('maplibregl-compact-show')
     el?.removeAttribute('open')
 }
-collapseAttribution()
-map.on('resize', collapseAttribution)
+map.on('resize', collapseAttribution) // MapLibre re-expands it on map.resize()
+
+// The credits arrive asynchronously (as each tile source's metadata loads), and
+// MapLibre auto-expands the compact control the first time they do — so a
+// collapse at startup is a no-op. Catch that first auto-expansion instead,
+// then unbind so the "ⓘ" button behaves as a normal toggle.
+const collapseOnFirstShow = () => {
+    const el = mapContainer.querySelector('.maplibregl-ctrl-attrib')
+    if (!el?.classList.contains('maplibregl-compact-show')) return
+    collapseAttribution()
+    map.off('sourcedata', collapseOnFirstShow)
+    map.off('styledata', collapseOnFirstShow)
+    map.off('terrain', collapseOnFirstShow)
+}
+map.on('sourcedata', collapseOnFirstShow)
+map.on('styledata', collapseOnFirstShow)
+map.on('terrain', collapseOnFirstShow)
 
 map.on('load', () => {
     // Real 3D terrain relief from the DEM.
