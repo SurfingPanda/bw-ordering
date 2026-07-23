@@ -38,10 +38,21 @@ class SessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $result = $this->auth->passwordGrant($credentials['email'], $credentials['password']);
+        [$result, $reason] = $this->auth->passwordGrant($credentials['email'], $credentials['password']);
         if (! $result) {
+            // A registered-but-unverified account gets a specific prompt (with
+            // a "resend" option), not the misleading "invalid password" — the
+            // login view keys off the flashed `unconfirmed_email`.
+            if ($reason === 'email_not_confirmed') {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->with('unconfirmed_email', $credentials['email']);
+            }
+
             throw ValidationException::withMessages([
-                'email' => 'Invalid email or password.',
+                'email' => $reason === 'unavailable'
+                    ? "We couldn't reach the sign-in service. Please try again in a moment."
+                    : 'Invalid email or password.',
             ]);
         }
 

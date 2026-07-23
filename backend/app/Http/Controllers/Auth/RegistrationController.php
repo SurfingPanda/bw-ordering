@@ -84,4 +84,28 @@ class RegistrationController extends Controller
         // auto-created session before redirecting to /login).
         return redirect()->route('login')->with('status', 'Account created! Please sign in.');
     }
+
+    /**
+     * Re-send the signup confirmation email — reached from the login page's
+     * "please confirm your email first" prompt (SessionController::store
+     * flashes `unconfirmed_email` when GoTrue rejects an unverified login).
+     */
+    public function resendConfirmation(Request $request)
+    {
+        $data = $request->validate(['email' => ['required', 'email']]);
+
+        // Land the confirmation link on the site root (always in Supabase's
+        // Redirect URLs allow-list — see the deploy checklist in CLAUDE.md),
+        // same as the original signup email.
+        $error = $this->auth->resendConfirmation($data['email'], url('/'));
+        if ($error) {
+            return back()->withErrors(['email' => $error])->withInput();
+        }
+
+        // Keep the "confirm your email" context on screen so they can resend
+        // again if it doesn't arrive, alongside the success note.
+        return redirect()->route('login')
+            ->with('status', 'Confirmation email sent — please check your inbox (and spam folder).')
+            ->with('unconfirmed_email', $data['email']);
+    }
 }

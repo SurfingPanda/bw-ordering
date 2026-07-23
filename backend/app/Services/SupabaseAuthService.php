@@ -34,22 +34,48 @@ class SupabaseAuthService
     }
 
     /**
-     * Password-grant login against Supabase's GoTrue API. Returns
-     * ['access_token', 'refresh_token', 'expires_in', 'user' => [id,email,name]]
-     * on success, or null if the credentials were rejected.
+     * Password-grant login against Supabase's GoTrue API.
+     *
+     * Returns [result, reason]. On success `result` is the token array
+     * (['access_token', 'refresh_token', 'expires_in', 'user' => [...]]) and
+     * `reason` is 'ok'. On failure `result` is null and `reason` says why, so
+     * the caller can tell a registered-but-unverified account apart from a
+     * wrong password:
+     *   'email_not_confirmed' — valid credentials, address not yet verified
+     *   'invalid_credentials' — wrong email/password (or no such user)
+     *   'unavailable'         — GoTrue unreachable / unexpected response
+     *
+     * @return array{0: ?array, 1: string}
      */
-    public function passwordGrant(string $email, string $password): ?array
+    public function passwordGrant(string $email, string $password): array
     {
-        $resp = $this->http()->post('/auth/v1/token?grant_type=password', [
-            'email' => $email,
-            'password' => $password,
-        ]);
-
-        if ($resp->failed()) {
-            return null;
+        try {
+            $resp = $this->http()->post('/auth/v1/token?grant_type=password', [
+                'email' => $email,
+                'password' => $password,
+            ]);
+        } catch (\Throwable) {
+            return [null, 'unavailable'];
         }
 
-        return $this->tokenResult($resp->json());
+        if ($resp->failed()) {
+            // GoTrue reports an unverified address distinctly from bad
+            // credentials — surface that so the caller can prompt for
+            // confirmation instead of the misleading "invalid password".
+            // Handles both the modern (error_code) and legacy
+            // (error_description) GoTrue error shapes.
+            $code = (string) ($resp->json('error_code') ?? '');
+            $desc = strtolower((string) ($resp->json('msg') ?? $resp->json('error_description') ?? ''));
+            if ($code === 'email_not_confirmed' || str_contains($desc, 'not confirmed')) {
+                return [null, 'email_not_confirmed'];
+            }
+
+            return [null, $resp->status() === 400 ? 'invalid_credentials' : 'unavailable'];
+        }
+
+        $result = $this->tokenResult($resp->json());
+
+        return $result ? [$result, 'ok'] : [null, 'unavailable'];
     }
 
     /** Exchange a refresh token for a new access/refresh token pair. */
@@ -162,6 +188,35 @@ class SupabaseAuthService
         }
         if ($resp->failed()) {
             return 'Unable to send the reset link. Please try again.';
+        }
+
+        return null;
+    }
+
+    /**
+     * POST /auth/v1/resend — re-send the signup confirmation email to an
+     * address that registered but never verified it. Like sendPasswordReset,
+     * GoTrue answers 200 regardless of whether the address exists or is
+     * already confirmed, so this never reveals account state; an error comes
+     * back only for transport/rate-limit failures. Returns an error message,
+     * or null on success.
+     */
+    public function resendConfirmation(string $email, string $redirectTo): ?string
+    {
+        try {
+            $resp = $this->http()->post('/auth/v1/resend?redirect_to='.urlencode($redirectTo), [
+                'type' => 'signup',
+                'email' => $email,
+            ]);
+        } catch (\Throwable) {
+            return 'Could not reach the authentication service. Please try again.';
+        }
+
+        if ($resp->status() === 429) {
+            return 'Too many requests. Please wait a moment and try again.';
+        }
+        if ($resp->failed()) {
+            return 'Unable to resend the confirmation email. Please try again.';
         }
 
         return null;

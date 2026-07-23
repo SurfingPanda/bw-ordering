@@ -84,6 +84,59 @@ class OAuthLoginTest extends TestCase
         ])->assertRedirect(route('complete-profile'));
     }
 
+    public function test_logging_out_and_back_in_without_a_number_still_gates_on_complete_profile(): void
+    {
+        config(['supabase.jwt_secret' => 'test-secret']);
+        $jwt = fn () => $this->makeJwt([
+            'sub' => 'google-user-id',
+            'email' => 'newcustomer@example.com',
+            'exp' => time() + 3600,
+            'user_metadata' => ['full_name' => 'New Customer'], // still no contact_number
+        ], 'test-secret');
+
+        // First sign-up: gated on complete-profile, same as the test above.
+        $this->post('/auth/callback', [
+            'access_token' => $jwt(), 'refresh_token' => 'refresh-1', 'expires_in' => 3600,
+        ])->assertRedirect(route('complete-profile'));
+
+        // They bail out via complete-profile's "Log out" escape hatch instead
+        // of adding a number.
+        $this->post('/logout')->assertRedirect('/');
+        $this->assertGuest();
+
+        // Signing back in with Google again (still no number saved) must
+        // re-gate on complete-profile — not silently let them through because
+        // a previous request already redirected them there once.
+        $this->post('/auth/callback', [
+            'access_token' => $jwt(), 'refresh_token' => 'refresh-2', 'expires_in' => 3600,
+        ])->assertRedirect(route('complete-profile'));
+    }
+
+    public function test_logging_out_and_back_in_after_adding_a_number_goes_straight_to_menu(): void
+    {
+        config(['supabase.jwt_secret' => 'test-secret']);
+
+        $this->post('/auth/callback', [
+            'access_token' => $this->makeJwt([
+                'sub' => 'google-user-id', 'email' => 'newcustomer@example.com', 'exp' => time() + 3600,
+                'user_metadata' => ['full_name' => 'New Customer'],
+            ], 'test-secret'),
+            'refresh_token' => 'refresh-1', 'expires_in' => 3600,
+        ])->assertRedirect(route('complete-profile'));
+
+        $this->post('/logout')->assertRedirect('/');
+
+        // This time the token Supabase hands back carries the number they
+        // added last session (simulating a real second GoTrue exchange).
+        $this->post('/auth/callback', [
+            'access_token' => $this->makeJwt([
+                'sub' => 'google-user-id', 'email' => 'newcustomer@example.com', 'exp' => time() + 3600,
+                'user_metadata' => ['full_name' => 'New Customer', 'contact_number' => '09171234567'],
+            ], 'test-secret'),
+            'refresh_token' => 'refresh-2', 'expires_in' => 3600,
+        ])->assertRedirect(route('menu'));
+    }
+
     public function test_a_garbage_token_never_signs_in(): void
     {
         config(['supabase.jwt_secret' => 'test-secret', 'supabase.url' => '', 'supabase.anon_key' => '']);

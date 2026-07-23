@@ -46,6 +46,28 @@
                         </div>
                     @enderror
 
+                    {{-- Registered but never clicked the confirmation link: GoTrue
+                         refuses the password login, so instead of the misleading
+                         "invalid password" we prompt for confirmation + offer a
+                         resend (SessionController::store flashes unconfirmed_email). --}}
+                    @if(session('unconfirmed_email'))
+                        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <p class="font-semibold">Confirm your email to sign in</p>
+                            <p class="mt-1 text-amber-700">
+                                We sent a confirmation link to
+                                <span class="font-medium">{{ session('unconfirmed_email') }}</span>.
+                                Click it to activate your account, then sign in here.
+                            </p>
+                            <form method="POST" action="{{ route('confirmation.resend') }}" class="mt-2">
+                                @csrf
+                                <input type="hidden" name="email" value="{{ session('unconfirmed_email') }}">
+                                <button type="submit" class="font-semibold text-brand-600 underline-offset-2 transition hover:underline">
+                                    Resend confirmation email
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+
                     @if(request('oauth') === 'failed')
                         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                             Social sign-in didn't complete. Please try again.
