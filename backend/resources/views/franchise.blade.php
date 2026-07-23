@@ -146,7 +146,7 @@
         @endif
 
         {{-- CTA --}}
-        <section class="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="rounded-3xl bg-gradient-to-r from-navy-800 to-navy-900 px-8 py-12 text-center text-white shadow-xl sm:px-12">
                 <h2 class="text-2xl font-bold sm:text-3xl">Ready to start your own branch?</h2>
                 <p class="mx-auto mt-2 max-w-md text-sm text-navy-50/80">Tell us about yourself and your location. Our franchising team will reply with the full kit and next steps.</p>
