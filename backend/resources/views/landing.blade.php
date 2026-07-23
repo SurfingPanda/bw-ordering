@@ -115,8 +115,8 @@
                 </div>
             </div>
             <span class="animate-wiggle mt-10 inline-block text-6xl" role="img" aria-label="Under construction">🚧</span>
-            <h1 class="mt-8 font-brand text-4xl font-bold sm:text-5xl">{{ $m['title'] }}</h1>
-            <p class="mt-4 max-w-md text-base leading-relaxed text-navy-50/70">{{ $m['message'] }}</p>
+            <h1 class="mt-8 font-brand text-4xl font-bold sm:text-5xl" style="{{ \App\Models\SiteContent::typographyStyle($m['typography'] ?? []) }}">{{ $m['title'] }}</h1>
+            <p class="mt-4 max-w-md text-base leading-relaxed text-navy-50/70" style="{{ \App\Models\SiteContent::typographyStyle($m['typography'] ?? []) }}">{{ $m['message'] }}</p>
             @if(count($activeSocials))
                 <div class="mt-8 flex gap-3">
                     @foreach($activeSocials as $s)
@@ -135,7 +135,7 @@
         {{-- Announcement bar (Site Editor toggle; absent = shown) --}}
         @if($content['announcementVisible'] ?? true)
             <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
-                <p class="px-4 py-2">{{ $content['announcement'] }}</p>
+                <p class="px-4 py-2" style="{{ \App\Models\SiteContent::typographyStyle($content['announcementTypography'] ?? []) }}">{{ $content['announcement'] }}</p>
             </div>
         @endif
 
@@ -249,11 +249,12 @@
              none, or via the Site Editor toggle) --}}
         @if(($content['whatsNew']['visible'] ?? true) && !empty($whatsNewProducts))
             <section id="whats-new" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+                @php $whatsNewTypography = \App\Models\SiteContent::typographyStyle($content['whatsNew']['typography'] ?? []); @endphp
                 <div class="mx-auto max-w-2xl text-center" data-reveal>
-                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
-                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $content['whatsNew']['title'] ?? '' }}</h2>
+                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
+                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['title'] ?? '' }}</h2>
                     @if(!empty($content['whatsNew']['subtitle']))
-                        <p class="mt-3 text-sm text-slate-500">{{ $content['whatsNew']['subtitle'] }}</p>
+                        <p class="mt-3 text-sm text-slate-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['subtitle'] }}</p>
                     @endif
                 </div>
                 <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
@@ -354,13 +355,14 @@
                     <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async" width="480" height="720"
                         class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl sm:block sm:right-10 sm:h-[420px] lg:right-16 lg:h-[500px]">
                 @endif
+                @php $customCakeTypography = \App\Models\SiteContent::typographyStyle($cc['typography'] ?? []); @endphp
                 <div class="relative z-10 max-w-md">
                     @if(!empty($cc['eyebrow']))
-                        <p class="font-script text-2xl text-white/90">{{ $cc['eyebrow'] }}</p>
+                        <p class="font-script text-2xl text-white/90" style="{{ $customCakeTypography }}">{{ $cc['eyebrow'] }}</p>
                     @endif
-                    <h2 class="mt-2 text-3xl font-bold sm:text-4xl">{{ $cc['title'] }}</h2>
+                    <h2 class="mt-2 text-3xl font-bold sm:text-4xl" style="{{ $customCakeTypography }}">{{ $cc['title'] }}</h2>
                     @if(!empty($cc['subtitle']))
-                        <p class="mt-3 text-sm text-white/90">{{ $cc['subtitle'] }}</p>
+                        <p class="mt-3 text-sm text-white/90" style="{{ $customCakeTypography }}">{{ $cc['subtitle'] }}</p>
                     @endif
                     @if($promoState !== 'off')
                         @php
@@ -401,9 +403,10 @@
                         </svg>
                         Store Locator
                     </span>
-                    <h2 class="mt-5 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $sl['title'] ?? '' }}</h2>
+                    @php $storeLocatorTypography = \App\Models\SiteContent::typographyStyle($sl['typography'] ?? []); @endphp
+                    <h2 class="mt-5 text-3xl font-bold text-navy-800 sm:text-4xl" style="{{ $storeLocatorTypography }}">{{ $sl['title'] ?? '' }}</h2>
                     @if(!empty($sl['subtitle']))
-                        <p class="mt-3 text-sm text-slate-500">{{ $sl['subtitle'] }}</p>
+                        <p class="mt-3 text-sm text-slate-500" style="{{ $storeLocatorTypography }}">{{ $sl['subtitle'] }}</p>
                     @endif
                     @if($storeState !== 'off')
                         @php $storeOff = $storeState === 'disabled'; @endphp
@@ -497,9 +500,10 @@
         @if($n['visible'] ?? true)
         <section id="newsletter" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="rounded-3xl border border-brand-100 bg-white px-8 py-12 text-center shadow-sm sm:px-12" data-reveal>
-                <h2 class="text-2xl font-bold text-navy-800 sm:text-3xl">{{ $n['title'] }}</h2>
+                @php $newsletterTypography = \App\Models\SiteContent::typographyStyle($n['typography'] ?? []); @endphp
+                <h2 class="text-2xl font-bold text-navy-800 sm:text-3xl" style="{{ $newsletterTypography }}">{{ $n['title'] }}</h2>
                 @if(!empty($n['subtitle']))
-                    <p class="mt-2 text-sm text-slate-600">{{ $n['subtitle'] }}</p>
+                    <p class="mt-2 text-sm text-slate-600" style="{{ $newsletterTypography }}">{{ $n['subtitle'] }}</p>
                 @endif
                 @if($newsState !== 'off')
                     @php $newsOff = $newsState === 'disabled'; @endphp
@@ -507,6 +511,7 @@
                         <input type="email" required @if($newsOff) disabled @endif placeholder="{{ $n['placeholder'] }}"
                             class="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed">
                         <button type="submit" @if($newsOff) disabled @endif
+                            style="{{ $newsletterTypography }}"
                             class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
                             {{ $n['buttonLabel'] }}
                         </button>

@@ -52,7 +52,7 @@ class SiteContentController extends Controller
      * neither edits nor overwrites them).
      */
     private const MANAGED_KEYS = [
-        'maintenance', 'announcement', 'announcementVisible', 'banners', 'bannersVisible',
+        'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
         'whatsNew', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator', 'storesPage',
         'footer', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
@@ -254,6 +254,7 @@ class SiteContentController extends Controller
 
         $updates['announcement'] = (string) ($updates['announcement'] ?? '');
         $updates['announcementVisible'] = $request->boolean('announcementVisible');
+        $updates['announcementTypography'] = SiteContent::normalizeTypography($updates['announcementTypography'] ?? null);
 
         // List sections — reindex (repeater rows may submit non-sequential
         // keys after add/remove) and turn per-item "one per line" textareas
@@ -264,12 +265,18 @@ class SiteContentController extends Controller
         // Per-section "Show on page" toggles ("0"/"1" hidden+checkbox pairs).
         $updates['whatsNew'] = (array) ($updates['whatsNew'] ?? []);
         $updates['whatsNew']['visible'] = $request->boolean('whatsNew.visible');
+        $updates['whatsNew']['typography'] = SiteContent::normalizeTypography($updates['whatsNew']['typography'] ?? null);
         $updates['customCake'] = (array) ($updates['customCake'] ?? []);
         $updates['customCake']['visible'] = $request->boolean('customCake.visible');
+        $updates['customCake']['typography'] = SiteContent::normalizeTypography($updates['customCake']['typography'] ?? null);
         $updates['newsletter'] = (array) ($updates['newsletter'] ?? []);
         $updates['newsletter']['visible'] = $request->boolean('newsletter.visible');
+        $updates['newsletter']['typography'] = SiteContent::normalizeTypography($updates['newsletter']['typography'] ?? null);
         $updates['storeLocator'] = (array) ($updates['storeLocator'] ?? []);
         $updates['storeLocator']['visible'] = $request->boolean('storeLocator.visible');
+        $updates['storeLocator']['typography'] = SiteContent::normalizeTypography($updates['storeLocator']['typography'] ?? null);
+        $updates['storesPage'] = (array) ($updates['storesPage'] ?? []);
+        $updates['storesPage']['typography'] = SiteContent::normalizeTypography($updates['storesPage']['typography'] ?? null);
 
         // Custom Cake Page wizard: repeater rows → clean arrays (blank rows
         // drop out; a bad hex falls back to a neutral cream).
@@ -287,6 +294,7 @@ class SiteContentController extends Controller
 
             return $name === '' ? null : ['name' => $name, 'hex' => $hex];
         }, (array) ($ccf['colors'] ?? []))));
+        $ccf['typography'] = SiteContent::normalizeTypography($ccf['typography'] ?? null);
         $updates['customCakeForm'] = $ccf;
         $updates['newsletter'] = (array) ($updates['newsletter'] ?? []);
         $updates['payment'] = (array) ($updates['payment'] ?? []);
@@ -294,11 +302,13 @@ class SiteContentController extends Controller
         // Unchecked checkboxes don't submit — coerce to real booleans.
         $updates['authPanel']['showGoogle'] = $request->boolean('authPanel.showGoogle');
         $updates['authPanel']['showFacebook'] = $request->boolean('authPanel.showFacebook');
+        $updates['authPanel']['typography'] = SiteContent::normalizeTypography($updates['authPanel']['typography'] ?? null);
         $updates['social'] = (array) ($updates['social'] ?? []);
         $updates['buttons'] = (array) ($updates['buttons'] ?? []);
 
         $updates['maintenance'] = (array) ($updates['maintenance'] ?? []);
         $updates['maintenance']['enabled'] = $request->boolean('maintenance.enabled');
+        $updates['maintenance']['typography'] = SiteContent::normalizeTypography($updates['maintenance']['typography'] ?? null);
 
         $updates['menuPromo'] = (array) ($updates['menuPromo'] ?? []);
         $updates['menuPromo']['enabled'] = $request->boolean('menuPromo.enabled');
@@ -320,6 +330,7 @@ class SiteContentController extends Controller
 
         $fr = (array) ($updates['franchise'] ?? []);
         $fr['hero'] = (array) ($fr['hero'] ?? []);
+        $fr['hero']['typography'] = SiteContent::normalizeTypography($fr['hero']['typography'] ?? null);
         // Per-section show/hide toggles ("0"/"1" via hidden+checkbox pairs).
         $fr['visible'] = array_map(fn ($v) => (bool) $v, (array) ($fr['visible'] ?? []));
         $fr['perks'] = array_values((array) ($fr['perks'] ?? []));

@@ -84,6 +84,26 @@
             field.querySelectorAll('[data-image-pane]').forEach((pane) => {
                 pane.classList.toggle('hidden', pane.dataset.imagePane !== mode.dataset.imageMode)
             })
+            return
+        }
+        // Typography panel's Alignment/Transform segmented button groups —
+        // same active-state toggle as the image Upload/Use-link pair above,
+        // generalized to N sibling buttons sharing one hidden input.
+        const option = e.target.closest('[data-segmented-option]')
+        if (option) {
+            const field = option.closest('[data-segmented-field]')
+            const input = field.querySelector('[data-segmented-input]')
+            const next = input.value === option.dataset.segmentedOption ? '' : option.dataset.segmentedOption
+            input.value = next
+            field.querySelectorAll('[data-segmented-option]').forEach((btn) => {
+                const active = btn.dataset.segmentedOption === next
+                btn.classList.toggle('bg-navy-800', active)
+                btn.classList.toggle('text-white', active)
+                btn.classList.toggle('bg-white', !active)
+                btn.classList.toggle('text-navy-700', !active)
+                btn.classList.toggle('hover:bg-slate-50', !active)
+            })
+            input.dispatchEvent(new Event('input', { bubbles: true }))
         }
     })
 
@@ -122,15 +142,33 @@
     })
 
     document.addEventListener('input', (e) => {
-        if (!e.target.matches('[data-image-url]')) return
-        const field = e.target.closest('[data-image-field]')
-        const img = field.querySelector('[data-image-preview]')
-        const empty = field.querySelector('[data-image-empty]')
-        const value = e.target.value.trim()
-        img.src = value || ''
-        img.classList.toggle('hidden', !value)
-        empty.classList.toggle('hidden', !!value)
-        empty.classList.toggle('flex', !value)
-        field.querySelector('[data-image-remove]')?.classList.toggle('hidden', !value)
+        if (e.target.matches('[data-image-url]')) {
+            const field = e.target.closest('[data-image-field]')
+            const img = field.querySelector('[data-image-preview]')
+            const empty = field.querySelector('[data-image-empty]')
+            const value = e.target.value.trim()
+            img.src = value || ''
+            img.classList.toggle('hidden', !value)
+            empty.classList.toggle('hidden', !!value)
+            empty.classList.toggle('flex', !value)
+            field.querySelector('[data-image-remove]')?.classList.toggle('hidden', !value)
+            return
+        }
+        // Typography panel's Opacity slider — live "N%" readout next to the label.
+        if (e.target.matches('[data-opacity-range]')) {
+            e.target.closest('label').querySelector('[data-opacity-readout]').textContent = e.target.value
+            return
+        }
+        // Typography panel's Color swatch ↔ hex text field, kept in sync both ways.
+        if (e.target.matches('[data-color-swatch]')) {
+            e.target.closest('[data-typography-color]').querySelector('[data-color-hex]').value = e.target.value
+            return
+        }
+        if (e.target.matches('[data-color-hex]')) {
+            const hex = e.target.value.trim()
+            if (/^#[0-9a-f]{6}$/i.test(hex)) {
+                e.target.closest('[data-typography-color]').querySelector('[data-color-swatch]').value = hex
+            }
+        }
     })
 </script>

@@ -20,11 +20,12 @@
     </div>
     <div class="relative z-10 flex flex-col items-center px-10 pb-10 pt-12 text-center text-white">
         <img src="{{ $ap['logo'] }}" alt="BW Superbakeshop" class="h-36 w-auto drop-shadow-lg">
+        @php $authPanelTypography = \App\Models\SiteContent::typographyStyle($ap['typography'] ?? []); @endphp
         @if($ap['tagline'])
-            <p class="mt-6 text-sm font-medium text-navy-50/90">{{ $ap['tagline'] }}</p>
+            <p class="mt-6 text-sm font-medium text-navy-50/90" style="{{ $authPanelTypography }}">{{ $ap['tagline'] }}</p>
         @endif
         @if($ap['script'])
-            <p class="font-script text-xl text-brand-400">{{ $ap['script'] }}</p>
+            <p class="font-script text-xl text-brand-400" style="{{ $authPanelTypography }}">{{ $ap['script'] }}</p>
         @endif
     </div>
     @if($ap['image'])

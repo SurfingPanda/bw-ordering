@@ -56,9 +56,10 @@
             <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
             <div class="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-                <span data-editable="franchise.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">{{ $hero['eyebrow'] ?? '' }}</span>
-                <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{!! $heroTitleHtml !!}</h1>
-                <p data-editable="franchise.hero.subtitle" class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">{{ $hero['subtitle'] ?? '' }}</p>
+                @php $franchiseHeroTypography = \App\Models\SiteContent::typographyStyle($hero['typography'] ?? []); @endphp
+                <span data-editable="franchise.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400" style="{{ $franchiseHeroTypography }}">{{ $hero['eyebrow'] ?? '' }}</span>
+                <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl" style="{{ $franchiseHeroTypography }}">{!! $heroTitleHtml !!}</h1>
+                <p data-editable="franchise.hero.subtitle" class="mx-auto mt-5 max-w-xl text-base text-navy-50/80" style="{{ $franchiseHeroTypography }}">{{ $hero['subtitle'] ?? '' }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Inquire about a franchise

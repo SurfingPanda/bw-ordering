@@ -85,6 +85,7 @@
             <div id="announcement-preview" class="overflow-hidden rounded-lg bg-navy-900 px-4 py-2 text-center text-xs font-medium text-white">
                 {{ ($content['announcement'] ?? '') !== '' ? $content['announcement'] : '—' }}
             </div>
+            @include('admin.content._typography-panel', ['name' => 'announcementTypography', 'value' => $content['announcementTypography'] ?? []])
         </section>
 
         {{-- ============ Promo Banners ============ --}}
@@ -146,6 +147,7 @@
                     <textarea name="whatsNew[subtitle]" rows="3" class="{{ $input }}">{{ $content['whatsNew']['subtitle'] ?? '' }}</textarea>
                 </label>
             </div>
+            @include('admin.content._typography-panel', ['name' => 'whatsNew[typography]', 'value' => $content['whatsNew']['typography'] ?? []])
         </section>
 
         {{-- ============ Custom Cake ============ --}}
@@ -195,6 +197,7 @@
                     </label>
                 </div>
             </div>
+            @include('admin.content._typography-panel', ['name' => 'customCake[typography]', 'value' => $cc['typography'] ?? []])
         </section>
 
         {{-- ============ Custom Cake Page (the /custom-cake wizard) ============ --}}
@@ -215,6 +218,7 @@
                     <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
                     <textarea name="customCakeForm[subtitle]" rows="3" class="{{ $input }}">{{ $ccf['subtitle'] ?? '' }}</textarea>
                 </label>
+                @include('admin.content._typography-panel', ['name' => 'customCakeForm[typography]', 'value' => $ccf['typography'] ?? []])
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <span class="mb-1 block text-xs font-medium text-slate-500">Occasions</span>
@@ -349,6 +353,7 @@
                     <input type="text" name="storeLocator[placeholder]" value="{{ $sl['placeholder'] ?? '' }}" class="{{ $input }}">
                 </label>
             </div>
+            @include('admin.content._typography-panel', ['name' => 'storeLocator[typography]', 'value' => $sl['typography'] ?? []])
         </section>
 
         {{-- ============ Find a Store Page (the /stores page's own hero) ============ --}}
@@ -366,6 +371,7 @@
                     <textarea name="storesPage[subtitle]" rows="3" class="{{ $input }}">{{ $sp['subtitle'] ?? '' }}</textarea>
                 </label>
             </div>
+            @include('admin.content._typography-panel', ['name' => 'storesPage[typography]', 'value' => $sp['typography'] ?? []])
         </section>
 
         {{-- ============ Sweet Deals (newsletter) ============ --}}
@@ -406,6 +412,7 @@
                     </label>
                 </div>
             </div>
+            @include('admin.content._typography-panel', ['name' => 'newsletter[typography]', 'value' => $nl['typography'] ?? []])
         </section>
 
         {{-- ============ Franchise ============ --}}
@@ -446,6 +453,7 @@
                         <span class="mb-1 block text-xs font-medium text-slate-500">Inquiry email</span>
                         <input type="email" name="franchise[email]" value="{{ $fr['email'] ?? '' }}" class="{{ $input }}">
                     </label>
+                    @include('admin.content._typography-panel', ['name' => 'franchise[hero][typography]', 'value' => $frHero['typography'] ?? []])
                 </div>
             </div>
 
@@ -633,6 +641,7 @@
                     <span class="mb-1 block text-xs font-medium text-slate-500">Script line</span>
                     <input type="text" name="authPanel[script]" value="{{ $ap['script'] ?? '' }}" class="{{ $input }}">
                 </label>
+                @include('admin.content._typography-panel', ['name' => 'authPanel[typography]', 'value' => $ap['typography'] ?? []])
 
                 {{-- Social sign-in buttons on Login/Register — hide either (or
                      both, which also hides the "or" divider). --}}
@@ -708,6 +717,7 @@
                         <span class="mb-1 block text-xs font-medium text-slate-500">Message</span>
                         <textarea name="maintenance[message]" rows="3" class="{{ $input }}">{{ $mt['message'] ?? '' }}</textarea>
                     </label>
+                    @include('admin.content._typography-panel', ['name' => 'maintenance[typography]', 'value' => $mt['typography'] ?? []])
                 </div>
             </div>
 

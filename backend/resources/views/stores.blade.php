@@ -55,9 +55,10 @@
                         <path d="M3 9l1.5-5h15L21 9" /><path d="M4 9v11h16V9" /><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" /><path d="M9 20v-5h6v5" />
                     </svg>
                 </span>
-                <h1 class="mt-5 text-4xl font-bold text-white sm:text-5xl">{{ $hero['title'] }}</h1>
+                @php $storesPageTypography = \App\Models\SiteContent::typographyStyle($hero['typography'] ?? []); @endphp
+                <h1 class="mt-5 text-4xl font-bold text-white sm:text-5xl" style="{{ $storesPageTypography }}">{{ $hero['title'] }}</h1>
                 @if(!empty($hero['subtitle']))
-                    <p class="mx-auto mt-4 max-w-md text-base text-navy-50/80">{{ $hero['subtitle'] }}</p>
+                    <p class="mx-auto mt-4 max-w-md text-base text-navy-50/80" style="{{ $storesPageTypography }}">{{ $hero['subtitle'] }}</p>
                 @endif
                 <div class="relative mx-auto mt-7 max-w-md">
                     <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
