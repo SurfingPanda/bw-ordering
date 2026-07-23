@@ -41,8 +41,9 @@
 
                         <div>
                             <label class="mb-1 block text-sm font-medium text-navy-800">Contact number</label>
-                            <input type="tel" name="contact_number" required inputmode="tel" autocomplete="tel" maxlength="20"
-                                value="{{ old('contact_number') }}" placeholder="e.g. 0917 123 4567" data-phone-input
+                            <input type="tel" name="contact_number" required inputmode="tel" autocomplete="tel" maxlength="13"
+                                pattern="(09\d{9}|\+639\d{9})" title="Enter an 11-digit PH mobile number, e.g. 09123456789"
+                                value="{{ old('contact_number') }}" placeholder="09123456789" data-phone-input
                                 class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                         </div>
 
@@ -81,10 +82,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Phone numbers only: keep digits plus the few valid symbols (lib/phone.js).
+            // PH mobile numbers only: digits, plus a single leading + for the
+            // international form — capped to how many digits a real PH
+            // number can have (11 local / 12 after the +), and a local
+            // number must start with 09, so a wrong keystroke there is
+            // simply dropped instead of accepted.
             document.querySelectorAll('[data-phone-input]').forEach(function (input) {
                 input.addEventListener('input', function () {
-                    var clean = input.value.replace(/[^\d+\-\s()]/g, '');
+                    var intl = input.value.trim().startsWith('+');
+                    var digits = input.value.replace(/\D/g, '').slice(0, intl ? 12 : 11);
+                    if (!intl) {
+                        if (digits[0] && digits[0] !== '0') digits = '';
+                        else if (digits[1] && digits[1] !== '9') digits = digits.slice(0, 1);
+                    }
+                    var clean = (intl ? '+' : '') + digits;
                     if (clean !== input.value) input.value = clean;
                 });
             });

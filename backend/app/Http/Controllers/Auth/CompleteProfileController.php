@@ -43,17 +43,16 @@ class CompleteProfileController extends Controller
             'contact_number' => 'required|string|max:20',
         ], [], ['contact_number' => 'contact number']);
 
-        // Same rules as the old lib/phone.js: strip anything that isn't a
-        // digit or common phone symbol, then require at least 7 digits.
-        $contact = trim((string) preg_replace('/[^\d+\-\s()]/', '', $data['contact_number']));
-        $digits = preg_replace('/\D/', '', $contact);
-        if (strlen($digits) < 7) {
-            return back()->withErrors(['contact_number' => 'Please enter a valid contact number.'])->withInput();
+        // PH mobile numbers only: local 11-digit (09XXXXXXXXX) or
+        // international (+639XXXXXXXXX) form.
+        $phone = SupabaseAuthService::normalizePhContactNumber($data['contact_number']);
+        if (! $phone) {
+            return back()->withErrors(['contact_number' => 'Please enter a valid 11-digit PH mobile number, e.g. 09123456789.'])->withInput();
         }
+        ['contact' => $contact, 'normalized' => $normalized] = $phone;
 
         // Claim the normalized number first — the UNIQUE constraint on
         // profiles.contact_number is the gatekeeper, exactly like the SPA.
-        $normalized = str_starts_with($contact, '+') ? "+{$digits}" : $digits;
         if ($error = $this->auth->claimContactNumber((string) ($user['id'] ?? ''), $normalized)) {
             return back()->withErrors(['contact_number' => $error])->withInput();
         }

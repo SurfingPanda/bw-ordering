@@ -46,14 +46,13 @@ class RegistrationController extends Controller
             'password.confirmed' => 'Passwords do not match.',
         ], ['contact_number' => 'contact number']);
 
-        // Same rules as the old lib/phone.js: strip anything that isn't a
-        // digit or common phone symbol, then require at least 7 digits.
-        $contact = trim((string) preg_replace('/[^\d+\-\s()]/', '', $data['contact_number']));
-        $digits = preg_replace('/\D/', '', $contact);
-        if (strlen($digits) < 7) {
-            return back()->withErrors(['contact_number' => 'Please enter a valid contact number.'])->withInput();
+        // PH mobile numbers only: local 11-digit (09XXXXXXXXX) or
+        // international (+639XXXXXXXXX) form.
+        $phone = SupabaseAuthService::normalizePhContactNumber($data['contact_number']);
+        if (! $phone) {
+            return back()->withErrors(['contact_number' => 'Please enter a valid 11-digit PH mobile number, e.g. 09123456789.'])->withInput();
         }
-        $normalized = str_starts_with($contact, '+') ? "+{$digits}" : $digits;
+        ['contact' => $contact, 'normalized' => $normalized] = $phone;
 
         // Reject duplicate numbers before creating the account (the
         // contact_number_taken RPC, fail-closed like the old register form).

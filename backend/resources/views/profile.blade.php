@@ -129,8 +129,9 @@
             </div>
             <div>
                 <label for="contact_number" class="mb-1 block text-sm font-medium text-navy-800">Contact number</label>
-                <input type="tel" id="contact_number" name="contact_number" required inputmode="tel" autocomplete="tel" maxlength="20"
-                    value="{{ old('contact_number', $profile['contact']) }}" placeholder="e.g. 0917 123 4567"
+                <input type="tel" id="contact_number" name="contact_number" required inputmode="tel" autocomplete="tel" maxlength="13"
+                    pattern="(09\d{9}|\+639\d{9})" title="Enter an 11-digit PH mobile number, e.g. 09123456789"
+                    value="{{ old('contact_number', $profile['contact']) }}" placeholder="09123456789"
                     class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
             </div>
             <div data-address-repeater>
@@ -208,10 +209,19 @@
 </main>
 
 <script>
-    // Same behaviors as the old Profile.jsx: keep the contact field to valid
-    // phone characters, and one eye toggle that shows/hides both password fields.
+    // PH mobile numbers only: digits, plus a single leading + for the
+    // international form — capped to how many digits a real PH number can
+    // have (11 local / 12 after the +), and a local number must start with
+    // 09, so a wrong keystroke there is simply dropped instead of accepted.
+    // Also runs one eye toggle that shows/hides both password fields.
     document.getElementById('contact_number').addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^\d+\-\s()]/g, '');
+        var intl = e.target.value.trim().startsWith('+');
+        var digits = e.target.value.replace(/\D/g, '').slice(0, intl ? 12 : 11);
+        if (!intl) {
+            if (digits[0] && digits[0] !== '0') digits = '';
+            else if (digits[1] && digits[1] !== '9') digits = digits.slice(0, 1);
+        }
+        e.target.value = (intl ? '+' : '') + digits;
     });
 
     document.getElementById('toggle-password').addEventListener('click', function () {

@@ -227,6 +227,32 @@ class SupabaseAuthService
         return null;
     }
 
+    /**
+     * Validate + normalize a PH mobile number, entered either as the local
+     * 11-digit form (09XXXXXXXXX) or the international form (+639XXXXXXXXX).
+     * Returns ['contact' => user-entered form, 'normalized' => digits-only or
+     * +-prefixed digits, for the profiles table's UNIQUE constraint], or null
+     * if it's neither shape.
+     */
+    public static function normalizePhContactNumber(string $raw): ?array
+    {
+        // Keep the user's own formatting (spaces/dashes/parens) for display —
+        // same allowlist as the old lib/phone.js — only $digits below drives
+        // the actual PH-format check.
+        $contact = trim(preg_replace('/[^\d+\-\s()]/', '', $raw));
+        $digits = preg_replace('/\D/', '', $contact);
+        $isLocal = (bool) preg_match('/^09\d{9}$/', $digits);
+        $isIntl = str_starts_with($contact, '+') && (bool) preg_match('/^639\d{9}$/', $digits);
+        if (! $isLocal && ! $isIntl) {
+            return null;
+        }
+
+        return [
+            'contact' => $contact,
+            'normalized' => $isIntl ? "+{$digits}" : $digits,
+        ];
+    }
+
     private function tokenResult(?array $body): ?array
     {
         if (! $body || empty($body['access_token']) || empty($body['user']['id'])) {
