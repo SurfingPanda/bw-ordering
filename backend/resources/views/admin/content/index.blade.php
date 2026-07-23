@@ -892,9 +892,9 @@
                             </div>
 
                             <div class="mt-3">
-                                @include('admin.content._image-field', ['name' => "menuCategoryImages[$cat]", 'value' => $categoryImages[$cat] ?? '', 'fieldLabel' => 'Category image'])
+                                @include('admin.content._image-field', ['name' => "menuCategoryImages[$cat]", 'value' => $categoryImages[$cat] ?? '', 'fieldLabel' => 'Category image', 'crop' => 'circle'])
                                 <p class="mt-1 text-[0.7rem] text-slate-400">
-                                    The badge shown on the menu sidebar and the landing category grid — this is the only source; without one the category shows “no image”. Square works best (~400 × 400 px).
+                                    The badge shown on the menu sidebar and the landing category grid — this is the only source; without one the category shows “no image”. Shown as a circle, so after choosing an image you can drag/zoom it to pick what's centered.
                                 </p>
                             </div>
 

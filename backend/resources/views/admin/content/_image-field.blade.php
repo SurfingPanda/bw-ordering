@@ -2,8 +2,11 @@
      Use link toggle — upload posts to /admin/uploads and fills the URL in;
      link shows the URL input directly. The URL input keeps the name either
      way, so the value always submits. Vars: $name (input name), $value,
-     $fieldLabel, $wide (optional). Wiring: admin/content/_form-scripts. --}}
-<div data-image-field>
+     $fieldLabel, $wide (optional), $crop (optional — pass 'circle' to open
+     the pan/zoom cropper before uploading, for images displayed as a round
+     badge elsewhere; omit for everything else, which uploads as-is like
+     before). Wiring: admin/content/_form-scripts. --}}
+<div data-image-field @if(!empty($crop)) data-image-crop="{{ $crop }}" @endif>
     <span class="mb-1 block text-xs font-medium text-slate-500">{{ $fieldLabel }}</span>
     <div class="flex items-start gap-3">
         <div class="shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 {{ !empty($wide) ? 'h-16 w-32' : 'h-16 w-16' }}">
