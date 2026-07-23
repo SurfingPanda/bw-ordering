@@ -90,7 +90,7 @@ class LandingController extends Controller
                     ['label' => 'Delicacies', 'url' => '/menu'],
                 ]],
                 ['title' => 'Company', 'links' => [
-                    ['label' => 'About Us', 'url' => ''],
+                    ['label' => 'About Us', 'url' => '/about'],
                     ['label' => 'Our Stores', 'url' => '/stores'],
                     ['label' => 'Contact', 'url' => ''],
                 ]],

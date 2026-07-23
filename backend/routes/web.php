@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SiteContentController as AdminSiteContentControll
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Auth\CompleteProfileController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
@@ -29,6 +30,7 @@ Route::get('/', [LandingController::class, 'index']);
 Route::get('/menu', [MenuController::class, 'index'])->name('menu');
 Route::get('/stores', [StoresController::class, 'index'])->name('stores');
 Route::get('/franchise', [FranchiseController::class, 'index'])->name('franchise');
+Route::get('/about', [AboutController::class, 'index'])->name('about');
 
 // Legal pages — linked from the site footer.
 Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('privacy-policy');
