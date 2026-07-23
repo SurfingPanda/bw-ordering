@@ -47,7 +47,12 @@ class CheckoutController extends Controller
         $token = (string) $request->session()->get('supabase_access_token');
         $authedUser = $token !== '' ? $auth->fetchUser($token) : null;
         $contactNumber = (string) data_get($authedUser, 'user_metadata.contact_number', '');
-        $savedAddress = (string) data_get($authedUser, 'user_metadata.address', '');
+        // Profile now supports several labeled addresses (Home/Work/etc.) —
+        // this single textarea just prefills with the first one. Falls back
+        // to the old unlabeled `address` string for accounts that saved
+        // theirs before that feature existed and haven't resaved since.
+        $savedAddresses = (array) data_get($authedUser, 'user_metadata.addresses', []);
+        $savedAddress = (string) ($savedAddresses[0]['address'] ?? data_get($authedUser, 'user_metadata.address', ''));
 
         $step = 'form';
         $order = null;

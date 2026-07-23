@@ -52,18 +52,23 @@
 
     {{-- identity summary: gradient banner + avatar overlapping it, plus the
          "member since" / "how you sign in" details that were missing before --}}
-    <section class="overflow-hidden rounded-3xl bg-white shadow-sm">
-        <div class="h-20 bg-gradient-to-r from-brand-500 to-brand-600 sm:h-24"></div>
-        <div class="-mt-10 flex flex-col items-center gap-4 px-6 pb-6 text-center sm:-mt-10 sm:flex-row sm:items-end sm:text-left">
+    <section class="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100">
+        <div class="relative h-24 overflow-hidden bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600 sm:h-28">
+            {{-- soft glow blobs for depth, same decorative language as the
+                 login page / maintenance screen backdrops elsewhere in the app --}}
+            <div aria-hidden="true" class="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-white/20 blur-3xl"></div>
+            <div aria-hidden="true" class="pointer-events-none absolute -bottom-16 -left-8 h-40 w-40 rounded-full bg-navy-900/20 blur-3xl"></div>
+        </div>
+        <div class="-mt-3 flex flex-col items-center gap-4 px-6 pb-6 text-center sm:-mt-3 sm:flex-row sm:items-end sm:text-left">
             @if($profile['avatar'])
                 {{-- Fall back to initials if the avatar (e.g. a stale/blocked Google
                      photo URL) fails to load, so we never show a broken-image icon. --}}
                 <img src="{{ $profile['avatar'] }}" alt="{{ $profile['name'] }}" referrerpolicy="no-referrer"
                     onerror="this.remove(); const i = document.getElementById('avatar-initials'); i.classList.remove('hidden'); i.classList.add('flex');"
-                    class="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-white">
+                    class="h-20 w-20 shrink-0 rounded-full object-cover shadow-lg ring-4 ring-white">
             @endif
             <span id="avatar-initials"
-                class="{{ $profile['avatar'] ? 'hidden' : 'flex' }} h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy-700 to-navy-900 text-2xl font-bold text-white ring-4 ring-white">
+                class="{{ $profile['avatar'] ? 'hidden' : 'flex' }} h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy-700 to-navy-900 text-2xl font-bold text-white shadow-lg ring-4 ring-white">
                 {{ $initials }}
             </span>
             <div class="min-w-0 flex-1 sm:pb-1">
@@ -72,14 +77,14 @@
             </div>
             <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:pb-1">
                 @if($memberSince)
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-3 py-1.5 text-xs font-semibold text-navy-700">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 shadow-sm ring-1 ring-brand-100">
                         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         Member since {{ $memberSince }}
                     </span>
                 @endif
                 @foreach($profile['providers'] as $p)
                     @continue(!isset($providerMeta[$p]))
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-3 py-1.5 text-xs font-semibold text-navy-700">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-3 py-1.5 text-xs font-semibold text-navy-700 shadow-sm ring-1 ring-navy-100">
                         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" aria-hidden="true">{!! $providerMeta[$p]['icon'] !!}</svg>
                         {{ $providerMeta[$p]['label'] }}
                     </span>
@@ -109,7 +114,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('profile.info') }}" novalidate class="mt-4 space-y-4">
+        <form id="account-details-form" method="POST" action="{{ route('profile.info') }}" novalidate class="mt-4 space-y-4">
             @csrf
             <div>
                 <label class="mb-1 block text-sm font-medium text-navy-800">Email</label>
@@ -128,14 +133,23 @@
                     value="{{ old('contact_number', $profile['contact']) }}" placeholder="e.g. 0917 123 4567"
                     class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
             </div>
-            <div>
-                <label for="address" class="mb-1 block text-sm font-medium text-navy-800">Delivery address</label>
-                <textarea id="address" name="address" rows="2" maxlength="500" placeholder="House / unit no., street, barangay, city"
-                    class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">{{ old('address', $profile['address']) }}</textarea>
-                <p class="mt-1 text-xs text-slate-400">Saved here so checkout can prefill it — you can still edit it per order.</p>
+            <div data-address-repeater>
+                <div class="mb-1.5 flex items-center justify-between">
+                    <span class="block text-sm font-medium text-navy-800">Delivery addresses</span>
+                    <button type="button" data-add-address class="text-xs font-semibold text-brand-600 transition hover:underline">+ Add address</button>
+                </div>
+                <div data-address-rows class="space-y-2">
+                    @foreach(old('addresses', $profile['addresses']) as $i => $addr)
+                        @include('profile._address-row', ['i' => $i, 'addr' => $addr])
+                    @endforeach
+                </div>
+                <template data-address-template>
+                    @include('profile._address-row', ['i' => '__IDX__', 'addr' => ['label' => '', 'address' => '']])
+                </template>
+                <p class="mt-2 text-xs text-slate-400">Saved here so checkout can prefill it — you can still edit it per order. Add one for each place you order to, e.g. Home, Work, Partner's place.</p>
             </div>
-            <button type="submit"
-                class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 focus:ring-2 focus:ring-brand-500/40">
+            <button type="submit" data-save-button disabled
+                class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none">
                 Save changes
             </button>
         </form>
@@ -208,6 +222,41 @@
         document.getElementById('eye-closed').classList.toggle('hidden', !show);
         this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     });
+
+    // "Account details" form: the Save button starts disabled/greyed out and
+    // only lights up once something in the form actually changes (typing,
+    // adding/removing an address) — so it's never left implying there's
+    // something new to save when there isn't.
+    (function () {
+        const form = document.getElementById('account-details-form');
+        const saveButton = form.querySelector('[data-save-button]');
+        const rows = form.querySelector('[data-address-rows]');
+        const template = form.querySelector('[data-address-template]');
+        let addressIndex = rows.children.length;
+
+        const markDirty = () => { saveButton.disabled = false; };
+
+        form.addEventListener('input', markDirty);
+        form.addEventListener('change', markDirty);
+
+        form.querySelector('[data-add-address]').addEventListener('click', () => {
+            const html = template.innerHTML.split('__IDX__').join(String(addressIndex++));
+            rows.insertAdjacentHTML('beforeend', html);
+            markDirty();
+        });
+
+        rows.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('[data-remove-address]');
+            if (!removeBtn) return;
+            removeBtn.closest('[data-address-row]').remove();
+            markDirty();
+        });
+
+        form.addEventListener('submit', () => {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving…';
+        });
+    })();
 </script>
 </body>
 </html>

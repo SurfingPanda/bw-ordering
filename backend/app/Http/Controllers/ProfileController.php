@@ -35,11 +35,30 @@ class ProfileController extends Controller
             'email' => $raw['email'] ?? ($sessionUser['email'] ?? ''),
             'name' => $meta['full_name'] ?? $meta['name'] ?? ($sessionUser['name'] ?? ''),
             'contact' => (string) ($meta['contact_number'] ?? ''),
-            'address' => (string) ($meta['address'] ?? ''),
+            'addresses' => $this->readAddresses($meta),
             'avatar' => trim((string) ($meta['avatar_url'] ?? '')),
             'memberSince' => $raw['created_at'] ?? null,
             'providers' => $providers,
         ]]);
+    }
+
+    /**
+     * Labeled addresses (Home/Work/Partner/etc.) live under user_metadata's
+     * `addresses` key as an array of {label, address}. Older accounts only
+     * ever saved a single unlabeled `address` string — read that as one
+     * label-less entry so nothing saved before this feature existed appears
+     * to have vanished.
+     */
+    private function readAddresses(array $meta): array
+    {
+        $addresses = (array) ($meta['addresses'] ?? []);
+        if (! $addresses && trim((string) ($meta['address'] ?? '')) !== '') {
+            $addresses = [['label' => '', 'address' => (string) $meta['address']]];
+        }
+
+        return collect($addresses)
+            ->map(fn ($a) => ['label' => (string) ($a['label'] ?? ''), 'address' => (string) ($a['address'] ?? '')])
+            ->values()->all();
     }
 
     /** Name + contact number (the "Account details" form). */
@@ -51,8 +70,18 @@ class ProfileController extends Controller
         $data = $request->validateWithBag('info', [
             'name' => 'required|string|min:2|max:120',
             'contact_number' => 'required|string|max:20',
-            'address' => 'nullable|string|max:500',
+            'addresses' => 'nullable|array',
+            'addresses.*.label' => 'nullable|string|max:60',
+            'addresses.*.address' => 'nullable|string|max:500',
         ], [], ['contact_number' => 'contact number']);
+
+        // Repeater rows may include ones the visitor added then left blank —
+        // drop anything with no address text (a label alone isn't a saved
+        // address), then reindex.
+        $addresses = collect($data['addresses'] ?? [])
+            ->map(fn ($a) => ['label' => trim((string) ($a['label'] ?? '')), 'address' => trim((string) ($a['address'] ?? ''))])
+            ->filter(fn ($a) => $a['address'] !== '')
+            ->values()->all();
 
         // Same rules as the old lib/phone.js: strip anything that isn't a
         // digit or common phone symbol, then require at least 7 digits.
@@ -72,7 +101,7 @@ class ProfileController extends Controller
         [, $error] = $this->auth->updateUser($token, ['data' => [
             'full_name' => trim($data['name']),
             'contact_number' => $contact, // user-entered form, for display
-            'address' => trim((string) ($data['address'] ?? '')),
+            'addresses' => $addresses,
         ]]);
         if ($error) {
             return back()->withErrors(['name' => $error], 'info')->withInput();
