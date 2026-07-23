@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'supabase' => \App\Http\Middleware\SupabaseAuth::class,
             'supabase.session' => \App\Http\Middleware\EnsureSupabaseSession::class,
         ]);
+        // Global, not opt-in per route: a maintenance toggle should hold for
+        // every page by default, including ones added later, rather than
+        // relying on each new route remembering to add it.
+        $middleware->web(append: [\App\Http\Middleware\CheckMaintenanceMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Throttled auth form posts (429 from throttle:5,1) return to the form
