@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SiteContentController as PublicSiteContentController;
+use App\Models\ContactMessage;
 use App\Models\Product;
 use App\Models\SiteContent;
 use App\Models\Store;
@@ -145,6 +146,7 @@ class SiteContentController extends Controller
             'products' => Product::whereNull('archived_at')->count(),
             'vouchers' => Voucher::count(),
             'stores' => Store::count(),
+            'contactMessages' => ContactMessage::where('status', 'new')->count(),
         ];
     }
 

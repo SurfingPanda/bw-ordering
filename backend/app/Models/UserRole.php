@@ -16,7 +16,7 @@ class UserRole extends Model
 
     /** Admin sections that can be granted per user beyond the role defaults
      *  (see Controller::ROLE_SECTIONS for what each role gets by default). */
-    public const SECTIONS = ['orders', 'custom-cakes', 'products', 'content', 'stores', 'vouchers'];
+    public const SECTIONS = ['orders', 'custom-cakes', 'contact-messages', 'products', 'content', 'stores', 'vouchers'];
 
     protected function casts(): array
     {

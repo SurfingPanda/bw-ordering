@@ -39,7 +39,7 @@
     // follow the account's access: role defaults + per-user grants from
     // Users & Roles (see Controller::editorNavAccess). Pages that don't pass
     // $navAccess fall back to showing everything to admins.
-    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true] : []);
+    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true] : []);
     $adminItems = [];
     if (! empty($navAccess['users'])) {
         $adminItems[] = ['key' => 'users', 'label' => 'Users & Roles', 'icon' => 'users', 'href' => route('admin.users')];
@@ -49,6 +49,9 @@
     }
     if (! empty($navAccess['customCakes'])) {
         $adminItems[] = ['key' => 'customCakes', 'label' => 'Custom Cakes', 'icon' => 'cake', 'href' => route('admin.custom-cakes')];
+    }
+    if (! empty($navAccess['contactMessages'])) {
+        $adminItems[] = ['key' => 'contactMessages', 'label' => 'Contact Messages', 'icon' => 'mail', 'count' => $navCounts['contactMessages'] ?? null, 'href' => route('admin.contact-messages')];
     }
     if ($adminItems) {
         $navGroups[] = ['label' => 'Management', 'items' => $adminItems];

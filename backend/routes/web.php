@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\CustomCakeController as AdminCustomCakeController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomCakeController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\LandingController;
@@ -39,6 +41,10 @@ Route::get('/terms-of-service', [LegalController::class, 'terms'])->name('terms-
 // Custom cake inquiry wizard (public — guests can ask for a quote).
 Route::get('/custom-cake', [CustomCakeController::class, 'show'])->name('custom-cake');
 Route::post('/custom-cake', [CustomCakeController::class, 'store'])->name('custom-cake.store');
+
+// Contact form (public — guests can send a message too).
+Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
 
 // The SPA's Dashboard.jsx was literally `return <Menu/>` — signed-in customers
 // land on the menu. Kept as a redirect because old links/OAuth callbacks still
@@ -102,6 +108,11 @@ Route::middleware('supabase.session')->group(function () {
     Route::get('/admin/custom-cakes', [AdminCustomCakeController::class, 'index'])->name('admin.custom-cakes');
     Route::post('/admin/custom-cakes/{customCakeRequest}/status', [AdminCustomCakeController::class, 'updateStatus'])->name('admin.custom-cakes.status');
     Route::get('/admin/custom-cakes/{customCakeRequest}/reference', [AdminCustomCakeController::class, 'reference'])->name('admin.custom-cakes.reference');
+
+    // Contact form submissions — staff review queue (new/read/replied).
+    Route::get('/admin/contact-messages', [AdminContactController::class, 'index'])->name('admin.contact-messages');
+    Route::post('/admin/contact-messages/{contactMessage}/status', [AdminContactController::class, 'updateStatus'])->name('admin.contact-messages.status');
+
     // Users / role manager (port of AdminUsers.jsx — admin only). One POST
     // saves a row's role + extra access grants together (the Edit modal).
     Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users');
