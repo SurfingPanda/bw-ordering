@@ -74,7 +74,10 @@
                     </p>
                 </div>
                 <div class="relative">
-                    <img src="/images/cake.png" alt="" loading="lazy" decoding="async" class="mx-auto w-full max-w-sm">
+                    {{-- Web-sized copy of "Full Moymoy 2.png" (the source
+                         export is 15 MB / 4394px — see the resize note in
+                         the git history). --}}
+                    <img src="/images/mascot-chef.png" alt="bw Superbakeshop chef mascot" loading="lazy" decoding="async" width="800" height="711" class="mx-auto w-full max-w-sm">
                 </div>
             </div>
         </section>
