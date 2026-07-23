@@ -44,22 +44,6 @@
             </div>
         </section>
 
-        {{-- stats — reuses the real franchise trust figures; hidden if none are set yet. --}}
-        @if(count($stats))
-        <section class="border-b border-slate-100 bg-navy-50/40 py-10">
-            <div class="mx-auto flex max-w-3xl flex-wrap justify-center gap-x-10 gap-y-6 px-4 sm:px-6">
-                @foreach($stats as $s)
-                    @if(!empty($s['value']))
-                        <div class="text-center">
-                            <p class="text-2xl font-bold text-brand-600 sm:text-3xl">{{ $s['value'] }}</p>
-                            <p class="mt-1 text-xs font-medium text-slate-500 sm:text-sm">{{ $s['label'] ?? '' }}</p>
-                        </div>
-                    @endif
-                @endforeach
-            </div>
-        </section>
-        @endif
-
         {{-- our story --}}
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="grid items-center gap-10 lg:grid-cols-2">
@@ -74,7 +58,10 @@
                     </p>
                 </div>
                 <div class="relative">
-                    <img src="/images/cake.png" alt="" loading="lazy" decoding="async" class="mx-auto w-full max-w-sm">
+                    {{-- Web-sized copy of "Full Moymoy 2.png" (the source
+                         export is 15 MB / 4394px — see the resize note in
+                         the git history). --}}
+                    <img src="/images/mascot-chef.png" alt="bw Superbakeshop chef mascot" loading="lazy" decoding="async" width="1100" height="977" class="mx-auto w-full max-w-lg">
                 </div>
             </div>
         </section>
