@@ -49,7 +49,7 @@ class OAuthLoginTest extends TestCase
             'sub' => 'google-user-id',
             'email' => 'customer@example.com',
             'exp' => time() + 3600,
-            'user_metadata' => ['full_name' => 'Google Customer'],
+            'user_metadata' => ['full_name' => 'Google Customer', 'contact_number' => '09171234567'],
         ], 'test-secret');
 
         $response = $this->post('/auth/callback', [
@@ -58,10 +58,30 @@ class OAuthLoginTest extends TestCase
             'expires_in' => 3600,
         ]);
 
-        $response->assertOk()->assertSee('Signing you in…');
+        // A direct server-side redirect — no client-side bridge page/CDN
+        // dependency in the way of actually landing the user somewhere.
+        $response->assertRedirect(route('menu'));
         $this->assertSame('customer@example.com', session('supabase_user.email'));
         $this->assertSame($jwt, session('supabase_access_token'));
         $this->assertSame('refresh-123', session('supabase_refresh_token'));
+    }
+
+    public function test_a_first_time_google_sign_up_without_a_number_goes_to_complete_profile(): void
+    {
+        config(['supabase.jwt_secret' => 'test-secret']);
+        $jwt = $this->makeJwt([
+            'sub' => 'google-user-id',
+            'email' => 'newcustomer@example.com',
+            'exp' => time() + 3600,
+            // Google sign-ups never carry a contact_number in user_metadata.
+            'user_metadata' => ['full_name' => 'New Customer'],
+        ], 'test-secret');
+
+        $this->post('/auth/callback', [
+            'access_token' => $jwt,
+            'refresh_token' => 'refresh-123',
+            'expires_in' => 3600,
+        ])->assertRedirect(route('complete-profile'));
     }
 
     public function test_a_garbage_token_never_signs_in(): void

@@ -49,18 +49,15 @@ class SessionController extends Controller
 
         $redirectTo = $request->session()->pull('url.intended', $this->landingRoute($result['user']['email']));
         // Customers without a contact number go straight to the intake step
-        // (staff landing routes are exempt, mirroring the old AdminRoute).
-        if (empty($result['user']['contact_number']) && $redirectTo === route('menu')) {
+        // (staff accounts are exempt, mirroring the old AdminRoute) —
+        // checked by role, not by matching the computed redirect against
+        // /menu, so this still fires even when `url.intended` points
+        // somewhere else (e.g. they were bounced to /login from /checkout).
+        if (empty($result['user']['contact_number']) && ! $this->isAdmin($result['user']['email']) && ! $this->isEditor($result['user']['email'])) {
             $redirectTo = route('complete-profile');
         }
 
-        return view('auth.bridge', [
-            'action' => 'login',
-            'accessToken' => $result['access_token'],
-            'refreshToken' => $result['refresh_token'],
-            'redirectTo' => $redirectTo,
-            'message' => 'Signing you in…',
-        ]);
+        return redirect($redirectTo);
     }
 
     /** Kick off Google/Facebook sign-in via Supabase's OAuth authorize endpoint. */
@@ -111,18 +108,14 @@ class SessionController extends Controller
 
         $redirectTo = $request->session()->pull('url.intended', $this->landingRoute($user['email'] ?? null));
         // First-time Google/Facebook sign-ins have no phone number yet — send
-        // them to the intake step (staff landing routes are exempt).
-        if (empty($user['contact_number']) && $redirectTo === route('menu')) {
+        // them to the intake step (staff accounts are exempt) — checked by
+        // role, not by matching the computed redirect against /menu, so this
+        // still fires even when `url.intended` points somewhere else.
+        if (empty($user['contact_number']) && ! $this->isAdmin($user['email'] ?? null) && ! $this->isEditor($user['email'] ?? null)) {
             $redirectTo = route('complete-profile');
         }
 
-        return view('auth.bridge', [
-            'action' => 'login',
-            'accessToken' => $data['access_token'],
-            'refreshToken' => $data['refresh_token'],
-            'redirectTo' => $redirectTo,
-            'message' => 'Signing you in…',
-        ]);
+        return redirect($redirectTo);
     }
 
     public function destroy(Request $request)
@@ -136,11 +129,7 @@ class SessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return view('auth.bridge', [
-            'action' => 'logout',
-            'redirectTo' => '/',
-            'message' => 'Signing you out…',
-        ]);
+        return redirect('/');
     }
 
     private function establishSession(Request $request, array $result): void
