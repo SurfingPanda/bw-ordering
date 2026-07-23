@@ -7,8 +7,10 @@
     does (see the mini-cart script in landing.blade.php).
 
     Expects $user (nullable, from LandingController) to decide whether the
-    footer CTA goes straight to checkout or asks the guest to sign in first —
-    same guard /menu's cart panel uses (partials/cart.blade.php).
+    footer CTA goes straight to checkout or asks the guest to sign in first,
+    and $btn (defined in landing.blade.php, in scope via @include) for the
+    admin checkout kill switch — same guards /menu's cart panel uses
+    (partials/cart.blade.php).
 --}}
 <div id="mini-cart-drawer" class="fixed inset-0 z-[70] hidden">
     <div class="absolute inset-0 bg-black/40" onclick="document.getElementById('mini-cart-drawer').classList.add('hidden')"></div>
@@ -31,7 +33,22 @@
         <div class="mini-cart-footer border-t border-slate-100 px-5 py-4">
             <div class="mini-cart-totals space-y-1.5 text-sm"></div>
 
-            @if($user)
+            @php($checkoutState = $btn('menuCheckout'))
+            @if($checkoutState !== 'on')
+                {{-- Admin kill switch (Site Editor → Buttons → "Proceed to
+                     checkout"): Disabled shows an inert button, Hidden drops it —
+                     CheckoutController refuses new orders server-side either way.
+                     Same guard as partials/cart.blade.php's checkout-btn. --}}
+                @if($checkoutState === 'disabled')
+                    <button type="button" disabled
+                        class="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-slate-300 py-3 text-center text-sm font-semibold text-white">
+                        Proceed to Checkout
+                    </button>
+                @endif
+                <p class="{{ $checkoutState === 'disabled' ? 'mt-2' : 'mt-4' }} rounded-xl bg-slate-100 px-4 py-3 text-center text-xs font-medium text-slate-500">
+                    Checkout is temporarily unavailable. Please check back soon.
+                </p>
+            @elseif($user)
                 <a href="{{ route('checkout') }}" class="mini-checkout-btn mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-center text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                     Proceed to Checkout
                 </a>
