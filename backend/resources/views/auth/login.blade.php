@@ -52,7 +52,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('login') }}" class="space-y-4">
+                    <form id="login-form" method="POST" action="{{ route('login') }}" class="space-y-4">
                         @csrf
 
                         <div>
@@ -62,7 +62,7 @@
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                     <circle cx="12" cy="7" r="4" />
                                 </svg>
-                                <input type="email" name="email" autocomplete="email" required value="{{ old('email') }}" placeholder="Enter your email"
+                                <input type="email" name="email" id="login-email" autocomplete="email" required value="{{ old('email') }}" placeholder="Enter your email"
                                     class="w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                             </div>
                         </div>
@@ -81,7 +81,7 @@
 
                         <div class="flex items-center justify-between text-sm">
                             <label class="flex items-center gap-2 text-slate-600">
-                                <input type="checkbox" name="remember" class="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500">
+                                <input type="checkbox" name="remember" id="login-remember" class="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500">
                                 Remember me
                             </label>
                             <a href="{{ route('password.request') }}" class="font-medium text-brand-600 hover:text-brand-500">Forgot Password?</a>
@@ -136,5 +136,35 @@
             </div>
         </div>
     </div>
+
+    <script>
+    (function () {
+        // "Remember me" only ever remembers the email, never the password —
+        // the password field's autocomplete="current-password" already lets
+        // the browser's own password manager offer to fill that in securely;
+        // this app has no business holding onto it itself.
+        var STORAGE_KEY = 'bw_remembered_email';
+        var form = document.getElementById('login-form');
+        var emailField = document.getElementById('login-email');
+        var rememberBox = document.getElementById('login-remember');
+
+        var remembered = '';
+        try { remembered = window.localStorage.getItem(STORAGE_KEY) || ''; } catch (e) {}
+        if (remembered) {
+            if (!emailField.value) emailField.value = remembered;
+            rememberBox.checked = true;
+        }
+
+        form.addEventListener('submit', function () {
+            try {
+                if (rememberBox.checked) {
+                    window.localStorage.setItem(STORAGE_KEY, emailField.value.trim());
+                } else {
+                    window.localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (e) {}
+        });
+    })();
+    </script>
 </body>
 </html>
