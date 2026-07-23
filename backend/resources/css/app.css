@@ -126,6 +126,29 @@
 }
 .animate-wiggle { animation: wiggle 1.8s ease-in-out infinite; transform-origin: bottom center; }
 
+/* Teleprompter-style looping ticker for a row of items that doesn't fit at
+   narrow widths (e.g. the franchise page's trust stats on mobile) — the
+   caller duplicates its content exactly once so the -50% translate lands
+   back on an identical copy, making the loop seamless. */
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 16s linear infinite; }
+
+/* Slow, subtle bob for a grid of "scattered" cards (franchise testimonials)
+   — much gentler and slower than .animate-float so a whole grid of them
+   reads as quietly alive rather than distracting. Sets transform only (not
+   the separate rotate/translate properties), so callers are free to pair it
+   with a static Tailwind rotate utility or a hover translate-y of their own
+   without the two fighting over the same property. Give each card its own
+   animation-delay inline so they do not all bob in lockstep. */
+@keyframes card-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.animate-card-float { animation: card-float 6s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
     .animate-pop-in,
     .animate-float,
@@ -134,7 +157,9 @@
     .animate-bg-pan,
     .animate-drift,
     .animate-drift-slow,
-    .animate-bakery-float {
+    .animate-bakery-float,
+    .animate-marquee,
+    .animate-card-float {
         animation: none;
     }
 }

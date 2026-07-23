@@ -452,6 +452,33 @@
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-start justify-between gap-3">
                     <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Trust Stats</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">A numbers strip under the hero (e.g. branch count, years in business, payback period). Only shows once at least one stat is added — use real figures only.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][stats]" value="0">
+                            <input type="checkbox" name="franchise[visible][stats]" value="1" class="peer sr-only" @checked($frVis['stats'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div data-repeater>
+                    <div data-rows class="space-y-2">
+                        @foreach(array_values((array) ($fr['stats'] ?? [])) as $i => $item)
+                            @include('admin.content._stat-row')
+                        @endforeach
+                    </div>
+                    <template>@include('admin.content._stat-row', ['i' => '__IDX__', 'item' => []])</template>
+                    <button type="button" data-add class="{{ $addBtn }}">+ Add stat</button>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
                         <h2 class="text-lg font-bold text-navy-800">Franchise — Perks</h2>
                         <p class="mb-5 mt-0.5 text-sm text-slate-500">The “Why franchise with us” cards.</p>
                     </div>
@@ -473,6 +500,33 @@
                     </div>
                     <template>@include('admin.content._perk-row', ['i' => '__IDX__', 'item' => []])</template>
                     <button type="button" data-add class="{{ $addBtn }}">+ Add perk</button>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — Testimonials</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">Quotes from real franchisees. Only shows once at least one testimonial is added — don't invent quotes or names.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][testimonials]" value="0">
+                            <input type="checkbox" name="franchise[visible][testimonials]" value="1" class="peer sr-only" @checked($frVis['testimonials'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div data-repeater>
+                    <div data-rows class="space-y-2">
+                        @foreach(array_values((array) ($fr['testimonials'] ?? [])) as $i => $item)
+                            @include('admin.content._testimonial-row')
+                        @endforeach
+                    </div>
+                    <template>@include('admin.content._testimonial-row', ['i' => '__IDX__', 'item' => []])</template>
+                    <button type="button" data-add class="{{ $addBtn }}">+ Add testimonial</button>
                 </div>
             </div>
 
@@ -525,6 +579,33 @@
                     </div>
                     <template>@include('admin.content._package-row', ['i' => '__IDX__', 'item' => []])</template>
                     <button type="button" data-add class="{{ $addBtn }}">+ Add package</button>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">Franchise — FAQs</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">Common questions and answers, shown above the closing CTA. Only shows once at least one FAQ is added.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="franchise[visible][faqs]" value="0">
+                            <input type="checkbox" name="franchise[visible][faqs]" value="1" class="peer sr-only" @checked($frVis['faqs'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div data-repeater>
+                    <div data-rows class="space-y-2">
+                        @foreach(array_values((array) ($fr['faqs'] ?? [])) as $i => $item)
+                            @include('admin.content._faq-row')
+                        @endforeach
+                    </div>
+                    <template>@include('admin.content._faq-row', ['i' => '__IDX__', 'item' => []])</template>
+                    <button type="button" data-add class="{{ $addBtn }}">+ Add FAQ</button>
                 </div>
             </div>
         </section>
