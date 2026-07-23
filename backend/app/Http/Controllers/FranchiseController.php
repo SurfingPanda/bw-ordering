@@ -21,6 +21,14 @@ class FranchiseController extends Controller
             'subtitle' => 'Partner with a trusted, decades-old brand and turn your community’s love for fresh bread and cakes into a thriving business.',
         ],
         'email' => 'franchise@bwsuperbakeshop.com',
+        // Trust stats, franchisee testimonials, and FAQs ship empty — unlike
+        // perks/steps/packages, there's no honest generic copy to seed these
+        // with (real numbers and real quotes only), so each section stays
+        // hidden (see franchise.blade.php's count() checks) until an editor
+        // fills them in from the Site Editor.
+        'stats' => [],
+        'testimonials' => [],
+        'faqs' => [],
         'perks' => [
             ['icon' => '🧡', 'title' => 'A Trusted Name', 'text' => 'Partner with an established bakeshop brand and a loyal, ever-growing customer base.'],
             ['icon' => '👨‍🍳', 'title' => 'Training & Support', 'text' => 'Hands-on training, proven recipes, and day-to-day operations guidance from our team.'],

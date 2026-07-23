@@ -99,6 +99,8 @@ class LandingController extends Controller
                     ['label' => 'Delivery Info', 'url' => ''],
                     ['label' => 'Returns', 'url' => ''],
                     ['label' => 'FAQs', 'url' => ''],
+                    ['label' => 'Privacy Policy', 'url' => '/privacy-policy'],
+                    ['label' => 'Terms of Service', 'url' => '/terms-of-service'],
                 ]],
             ],
         ],

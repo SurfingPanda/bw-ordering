@@ -98,6 +98,9 @@ class SiteContentController extends Controller
                     'subtitle' => 'Partner with a trusted, decades-old brand and turn your community’s love for fresh bread and cakes into a thriving business.',
                 ],
                 'email' => 'franchise@bwsuperbakeshop.com',
+                'stats' => [],
+                'testimonials' => [],
+                'faqs' => [],
                 'perks' => [
                     ['icon' => '🧡', 'title' => 'A Trusted Name', 'text' => 'Partner with an established bakeshop brand and a loyal, ever-growing customer base.'],
                     ['icon' => '👨‍🍳', 'title' => 'Training & Support', 'text' => 'Hands-on training, proven recipes, and day-to-day operations guidance from our team.'],
@@ -335,6 +338,9 @@ class SiteContentController extends Controller
         $fr['visible'] = array_map(fn ($v) => (bool) $v, (array) ($fr['visible'] ?? []));
         $fr['perks'] = array_values((array) ($fr['perks'] ?? []));
         $fr['steps'] = array_values((array) ($fr['steps'] ?? []));
+        $fr['stats'] = array_values((array) ($fr['stats'] ?? []));
+        $fr['testimonials'] = array_values((array) ($fr['testimonials'] ?? []));
+        $fr['faqs'] = array_values((array) ($fr['faqs'] ?? []));
         $fr['packagesEnabled'] = $request->boolean('franchise.packagesEnabled');
         $fr['packages'] = array_values(array_map(function ($pkg) {
             $pkg = (array) $pkg;
