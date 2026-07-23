@@ -15,6 +15,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomCakeController;
 use App\Http\Controllers\FranchiseController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MyOrdersController;
 use App\Http\Controllers\ProfileController;
@@ -28,6 +29,10 @@ Route::get('/', [LandingController::class, 'index']);
 Route::get('/menu', [MenuController::class, 'index'])->name('menu');
 Route::get('/stores', [StoresController::class, 'index'])->name('stores');
 Route::get('/franchise', [FranchiseController::class, 'index'])->name('franchise');
+
+// Legal pages — linked from the site footer.
+Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('privacy-policy');
+Route::get('/terms-of-service', [LegalController::class, 'terms'])->name('terms-of-service');
 
 // Custom cake inquiry wizard (public — guests can ask for a quote).
 Route::get('/custom-cake', [CustomCakeController::class, 'show'])->name('custom-cake');
