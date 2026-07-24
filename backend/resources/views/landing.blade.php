@@ -293,7 +293,7 @@
                          literal file size" approach as the hero banner above,
                          since an editor-uploaded replacement can be any ratio. --}}
                     <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async" width="480" height="720"
-                        class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl sm:block sm:right-10 sm:h-[420px] lg:right-16 lg:h-[500px]">
+                        class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl lg:block lg:right-16 lg:h-[500px]">
                 @endif
                 @php $customCakeTypography = \App\Models\SiteContent::typographyStyle($cc['typography'] ?? []); @endphp
                 <div class="relative z-10 max-w-md">
