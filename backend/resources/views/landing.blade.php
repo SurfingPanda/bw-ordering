@@ -254,16 +254,20 @@
                 <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">What are you craving today?</h2>
                 <p class="mt-3 text-sm text-slate-500">Browse our full range of freshly baked goodies for every occasion.</p>
             </div>
+            {{-- Same placeholder image + "no image" onerror fallback the
+                 product cards use (partials/product-card.blade.php), so a
+                 category with no photo shows the same thing a product does
+                 instead of a bare grey "no image" circle. --}}
+            @php $fallbackImg = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png'; @endphp
             <div class="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
                 @foreach(array_slice($categories, 0, 6) as $c)
                     <div data-reveal data-reveal-delay="{{ $loop->index * 80 }}">
                     <a href="/menu?category={{ urlencode($c['name']) }}" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
                         <span class="h-28 w-28 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-100 transition group-hover:ring-brand-200">
-                            @if(!empty($c['img']))
-                                <img src="{{ $c['img'] }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" width="112" height="112" class="h-full w-full object-cover transition duration-300 group-hover:scale-110">
-                            @else
-                                <span class="flex h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
-                            @endif
+                            <img src="{{ $c['img'] ?: $fallbackImg }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" width="112" height="112"
+                                class="h-full w-full object-cover transition duration-300 group-hover:scale-110"
+                                onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
+                            <span class="hidden h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
                         </span>
                         <span class="text-lg font-semibold text-navy-700">{{ $c['name'] }}</span>
                     </a>
