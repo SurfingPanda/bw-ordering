@@ -86,9 +86,9 @@ class SiteContentController extends Controller
             'payment' => ['qrPayload' => '', 'qrImage' => ''],
             'authPanel' => [
                 'logo' => '/images/logo (1).png',
-                'tagline' => 'Freshly baked. Made with love.',
-                'script' => 'Ordered with ease.',
-                'image' => '/images/cake.png',
+                'tagline' => '',
+                'script' => '',
+                'image' => '/images/Full Moymoy 2.png',
                 'showGoogle' => true,
                 'showFacebook' => true,
             ],
