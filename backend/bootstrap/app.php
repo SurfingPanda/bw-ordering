@@ -64,9 +64,23 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // Any other expired form: back to it with a friendly note (and
-            // the typed input preserved) instead of the bare 419 page.
+            // the typed input preserved) instead of the bare 419 page. Most
+            // pages (checkout, custom-cake, the Site Editor content form,
+            // login/register/contact) render a generic $errors->all() loop
+            // in the default bag, so any key lands fine there — but
+            // ProfileController is the one place in the app using named
+            // error bags (`info`/`password`, one per form on that page), and
+            // the default bag is never checked on profile.blade.php, so a
+            // message flashed there would silently vanish. Route it into the
+            // matching bag; add a case here if another named-bag form shows up.
+            $bag = match (true) {
+                $request->is('profile/info') => 'info',
+                $request->is('profile/password') => 'password',
+                default => 'default',
+            };
+
             return back()
-                ->withErrors(['email' => 'Your session expired — please try submitting again.'])
+                ->withErrors(['email' => 'Your session expired — please try submitting again.'], $bag)
                 ->withInput($request->except(['password', 'password_confirmation', '_token']));
         });
     })->create();
