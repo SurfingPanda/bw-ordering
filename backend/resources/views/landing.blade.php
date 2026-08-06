@@ -199,7 +199,7 @@
                 </div>
                 <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
                     @foreach($whatsNewProducts as $p)
-                        <div data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
+                        <div class="product-card-wrap" data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
                             @include('partials.product-card', ['product' => $p])
                         </div>
                     @endforeach
@@ -226,7 +226,7 @@
                 </div>
                 <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
                     @foreach($bestSellers as $p)
-                        <div data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
+                        <div class="product-card-wrap" data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
                             @include('partials.product-card', ['product' => $p])
                         </div>
                     @endforeach
@@ -556,6 +556,7 @@
             document.querySelectorAll('.mini-cart-badge, .mini-cart-count').forEach(function (el) {
                 el.textContent = n;
                 el.classList.toggle('hidden', n === 0);
+                el.classList.toggle('flex', n > 0);
             });
         }
 

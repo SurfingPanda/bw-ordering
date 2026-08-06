@@ -31,6 +31,7 @@
             ['key' => 'storesPage', 'label' => 'Find a Store Page', 'icon' => 'pin'],
             ['key' => 'franchise', 'label' => 'Franchise', 'icon' => 'briefcase'],
             ['key' => 'footer', 'label' => 'Footer', 'icon' => 'layout'],
+            ['key' => 'legal', 'label' => 'Legal Pages', 'icon' => 'layout'],
             ['key' => 'buttons', 'label' => 'Buttons', 'icon' => 'toggle'],
         ]],
     ];

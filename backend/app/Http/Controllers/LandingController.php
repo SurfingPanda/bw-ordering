@@ -77,6 +77,26 @@ class LandingController extends Controller
             'tiktok' => '',
             'x' => '',
         ],
+        'legal' => [
+            'privacy' => [
+                'title' => 'Privacy Policy',
+                'description' => 'How BW Superbakeshop collects, uses, and protects your personal information.',
+                'lastUpdated' => 'August 6, 2026',
+                'body' => "Information we collect\nWhen you create an account, place an order, or submit a custom cake inquiry, we collect information such as your name, email address, contact number, delivery address, and order details.\n\nHow we use your information\nWe use your information to process and fulfill orders, communicate order and account updates, respond to inquiries, and improve our products and services. We do not sell your personal information to third parties.\n\nPayments and authentication\nOnline payments are processed by PayMongo. Account authentication is handled by Supabase. We do not store your full card or e-wallet credentials, and passwords are not stored in our application database.\n\nYour choices\nYou may update your account information at any time or contact us to request correction or deletion of your personal data, subject to records we are required to keep.",
+            ],
+            'terms' => [
+                'title' => 'Terms of Service',
+                'description' => 'The terms and conditions for ordering from and using BW Superbakeshop.',
+                'lastUpdated' => 'August 6, 2026',
+                'body' => "Acceptance of terms\nBy using BW Superbakeshop's website to browse, order, or submit a custom cake inquiry, you agree to these Terms of Service.\n\nOrders and pricing\nAll prices are shown in Philippine Peso and may change without notice. Order totals, delivery fees, and applicable vouchers are calculated and confirmed at checkout.\n\nPayment, delivery, and pickup\nOnline payments are confirmed by our payment gateway before an order is marked paid. Delivery availability, fees, and pickup times depend on the chosen store and order.\n\nCancellations and refunds\nCancellation and refund requests are handled case by case. Please contact the store handling your order as soon as possible if you need to change it.",
+            ],
+            'dataDeletion' => [
+                'title' => 'Data Deletion Request',
+                'description' => 'How to request deletion of your BW Superbakeshop account and personal data.',
+                'lastUpdated' => 'August 6, 2026',
+                'body' => "Requesting deletion\nTo request deletion of your BW Superbakeshop account and personal data, contact us using the contact details on our Contact page. Please include the email address and contact number associated with your account so we can verify your request.\n\nWhat we delete\nAfter we verify your request, we will delete or anonymize personal data that is no longer needed for a legitimate business or legal purpose.\n\nRecords we may retain\nWe may retain limited information where required for tax, accounting, fraud prevention, dispute resolution, or other legal obligations. Retained records are kept only for the required period.\n\nRequest status\nWe will confirm receipt of your request and let you know once it has been completed or if we need additional information to verify your identity.",
+            ],
+        ],
         'footer' => [
             'logo' => '/images/logo (1).png',
             'brand' => 'Superbakeshop',
@@ -99,8 +119,6 @@ class LandingController extends Controller
                     ['label' => 'Delivery Info', 'url' => ''],
                     ['label' => 'Returns', 'url' => ''],
                     ['label' => 'FAQs', 'url' => ''],
-                    ['label' => 'Privacy Policy', 'url' => '/privacy-policy'],
-                    ['label' => 'Terms of Service', 'url' => '/terms-of-service'],
                 ]],
             ],
         ],

@@ -652,6 +652,40 @@
             </div>
         </section>
 
+        {{-- ============ Legal Pages ============ --}}
+        <section data-panel="legal" class="hidden space-y-5">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <h2 class="text-lg font-bold text-navy-800">Legal Pages</h2>
+                <p class="mb-5 mt-0.5 text-sm text-slate-500">Edit the public Privacy Policy, Terms of Service, and Data Deletion pages linked in the site footer. Keep the copy accurate to your actual data and order-handling practices.</p>
+                @php($legalPages = ['privacy' => 'Privacy Policy', 'terms' => 'Terms of Service', 'dataDeletion' => 'Data Deletion'])
+                @foreach($legalPages as $key => $label)
+                    @php($legal = (array) ($content['legal'][$key] ?? []))
+                    <fieldset class="{{ $loop->first ? '' : 'mt-8 border-t border-slate-100 pt-8' }}">
+                        <legend class="text-base font-semibold text-navy-800">{{ $label }}</legend>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-medium text-slate-500">Page title</span>
+                                <input type="text" name="legal[{{ $key }}][title]" value="{{ $legal['title'] ?? '' }}" class="{{ $input }}">
+                            </label>
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-medium text-slate-500">Last updated</span>
+                                <input type="text" name="legal[{{ $key }}][lastUpdated]" value="{{ $legal['lastUpdated'] ?? '' }}" placeholder="August 6, 2026" class="{{ $input }}">
+                            </label>
+                        </div>
+                        <label class="mt-4 block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Search description</span>
+                            <input type="text" name="legal[{{ $key }}][description]" value="{{ $legal['description'] ?? '' }}" class="{{ $input }}">
+                        </label>
+                        <label class="mt-4 block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Page content</span>
+                            <textarea name="legal[{{ $key }}][body]" rows="14" class="{{ $input }}">{{ $legal['body'] ?? '' }}</textarea>
+                            <span class="mt-1 block text-xs text-slate-400">Use a blank line between sections. The first line of each section is shown as its heading.</span>
+                        </label>
+                    </fieldset>
+                @endforeach
+            </div>
+        </section>
+
         {{-- ============ Menu Promo ============ --}}
         <section data-panel="menuPromo" class="{{ $panel }}">
             <h2 class="text-lg font-bold text-navy-800">Menu Promo Banner</h2>

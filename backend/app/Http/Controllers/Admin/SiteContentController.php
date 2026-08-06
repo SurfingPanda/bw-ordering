@@ -55,7 +55,7 @@ class SiteContentController extends Controller
     private const MANAGED_KEYS = [
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
         'whatsNew', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator', 'storesPage',
-        'footer', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
+        'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
 
     /**
@@ -159,7 +159,9 @@ class SiteContentController extends Controller
         // DEFAULT_CONTENT, so a fresh site's form starts from what the public
         // pages already render (and its first save persists that) instead of
         // starting blank and blanking the site.
-        $content = array_merge(self::defaults(), (array) app(PublicSiteContentController::class)->cachedData());
+        $defaults = self::defaults();
+        $content = array_merge($defaults, (array) app(PublicSiteContentController::class)->cachedData());
+        $content['legal'] = array_replace_recursive($defaults['legal'], (array) ($content['legal'] ?? []));
         $products = Product::whereNull('archived_at')->orderBy('category')->orderBy('name')->get();
 
         $counts = [];
@@ -362,6 +364,15 @@ class SiteContentController extends Controller
             return $col;
         }, $columns);
         $updates['footer'] = $fo;
+
+        $legal = (array) ($updates['legal'] ?? []);
+        foreach (['privacy', 'terms', 'dataDeletion'] as $page) {
+            $legal[$page] = array_map(
+                fn ($value) => trim((string) $value),
+                (array) ($legal[$page] ?? [])
+            );
+        }
+        $updates['legal'] = $legal;
 
         return $updates;
     }

@@ -552,10 +552,11 @@
             grid.innerHTML = rows.slice(0, gridLimit).map(p => {
                 const soldOut = p.status === 'sold_out';
                 const onSale = p.original_price != null && Number(p.original_price) > Number(p.price);
+                const productInfo = p.calories != null ? `${p.calories} cal` : '';
                 return `
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
-                    class="flex cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
-                    <div class="relative h-40 w-full overflow-hidden bg-slate-100 sm:h-48 animate-pulse">
+                    class="product-card group relative flex cursor-pointer flex-col rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
+                    <div class="relative h-40 w-full overflow-hidden rounded-t-2xl bg-slate-100 sm:h-48 animate-pulse">
                         {{-- object-contain (not -cover): portrait product photos
                              (tall bread bags, etc.) in this short, wide box were
                              getting cropped top and bottom — see the product
@@ -564,6 +565,7 @@
                         <img data-img-fallback src="${p.image_path || FALLBACK_IMG}" alt="${p.name}" loading="lazy" class="h-full w-full object-contain ${soldOut ? 'opacity-60 grayscale' : ''}">
                         ${p.status ? `<span class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide ${soldOut ? 'bg-slate-700/90 text-white' : 'bg-white/90 text-brand-600'}">${STATUS_LABEL[p.status] || p.status}</span>` : ''}
                     </div>
+                    ${productInfo ? `<div class="calorie-bubble pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-10 scale-95 rounded-full bg-navy-900/95 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-xl transition duration-200 group-hover:scale-100 group-hover:opacity-100 group-focus:scale-100 group-focus:opacity-100">${productInfo}</div>` : ''}
                     <div class="flex flex-1 flex-col p-4">
                         <h3 class="text-sm font-semibold text-navy-800">${p.name}</h3>
                         ${bundleIncludesText(p)

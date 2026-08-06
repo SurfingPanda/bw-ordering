@@ -14,7 +14,7 @@
     $fallbackImg = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
 @endphp
 <div
-    class="product-card-trigger group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
+    class="product-card-trigger product-card group relative cursor-pointer rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500"
     role="button"
     tabindex="0"
     aria-label="View {{ $p['name'] }}"
@@ -27,7 +27,7 @@
     data-calories="{{ $p['calories'] ?? '' }}"
     data-allergens="{{ implode(',', $p['allergens'] ?? []) }}"
 >
-    <div class="relative overflow-hidden">
+    <div class="relative overflow-hidden rounded-t-2xl">
         {{-- bg-white (not slate-100): several product photos are cutout PNGs
              with real transparent margins — on a gray backdrop that shows up
              as a visible seam around the subject even with object-cover;
@@ -44,22 +44,17 @@
             </span>
         @endif
     </div>
+    @if(($p['calories'] ?? null) !== null)
+        {{-- The card itself opens the product modal, so this is a
+             pointer-events-free hover/focus preview rather than another
+             button competing with the card's click target. It must be outside
+             the image wrapper, which clips its image to rounded corners. --}}
+        <div class="calorie-bubble pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-10 scale-95 rounded-full bg-navy-900/95 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-xl transition duration-200 group-hover:scale-100 group-hover:opacity-100 group-focus:scale-100 group-focus:opacity-100">
+            {{ $p['calories'] }} cal
+        </div>
+    @endif
     <div class="p-4">
         <h3 class="text-sm font-semibold text-navy-800">{{ $p['name'] }}</h3>
-        @if(($p['calories'] ?? null) !== null || !empty($p['allergens']))
-            <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                @if(($p['calories'] ?? null) !== null)
-                    <span class="inline-flex items-center rounded-full bg-navy-50 px-2 py-0.5 text-[10px] font-semibold text-navy-700">
-                        {{ $p['calories'] }} cal
-                    </span>
-                @endif
-                @foreach($p['allergens'] ?? [] as $a)
-                    <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700" title="Contains {{ $a }}">
-                        {{ $a }}
-                    </span>
-                @endforeach
-            </div>
-        @endif
         <div class="mt-3 flex items-center justify-between">
             <span class="text-lg font-bold text-brand-600">{{ $p['price'] }}</span>
             {{-- Adds straight to the shared bw_cart (see landing.blade.php's

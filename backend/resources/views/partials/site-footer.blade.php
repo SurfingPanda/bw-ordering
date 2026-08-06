@@ -73,6 +73,13 @@
     <div class="border-t border-white/10">
         <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-navy-50/60 sm:flex-row sm:px-6">
             <p>{{ $f['copyright'] }}</p>
+            <nav aria-label="Legal" class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-navy-50/70">
+                <a href="{{ route('privacy-policy') }}" class="transition hover:text-brand-400">Privacy Policy</a>
+                <span aria-hidden="true">&nbsp;|&nbsp;</span>
+                <a href="{{ route('terms-of-service') }}" class="transition hover:text-brand-400">Terms of Service</a>
+                <span aria-hidden="true">&nbsp;|&nbsp;</span>
+                <a href="{{ route('data-deletion') }}" class="transition hover:text-brand-400">Data Deletion</a>
+            </nav>
         </div>
     </div>
 

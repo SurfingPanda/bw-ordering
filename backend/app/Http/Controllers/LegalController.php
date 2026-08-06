@@ -14,12 +14,29 @@ class LegalController extends Controller
 {
     public function privacy(Request $request)
     {
-        return view('legal.privacy-policy', $this->sharedData($request));
+        return $this->page($request, 'privacy');
     }
 
     public function terms(Request $request)
     {
-        return view('legal.terms-of-service', $this->sharedData($request));
+        return $this->page($request, 'terms');
+    }
+
+    public function dataDeletion(Request $request)
+    {
+        return $this->page($request, 'dataDeletion');
+    }
+
+    private function page(Request $request, string $key)
+    {
+        $shared = $this->sharedData($request);
+
+        return view('legal.page', $shared + [
+            'page' => array_merge(
+                LandingController::DEFAULT_CONTENT['legal'][$key],
+                (array) (($shared['content']['legal'] ?? [])[$key] ?? [])
+            ),
+        ]);
     }
 
     private function sharedData(Request $request): array
@@ -27,6 +44,7 @@ class LegalController extends Controller
         $content = SiteContent::find(1)?->data ?? [];
 
         return [
+            'content' => $content,
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
         ];

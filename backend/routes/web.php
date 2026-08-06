@@ -37,6 +37,7 @@ Route::get('/about', [AboutController::class, 'index'])->name('about');
 // Legal pages — linked from the site footer.
 Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('privacy-policy');
 Route::get('/terms-of-service', [LegalController::class, 'terms'])->name('terms-of-service');
+Route::get('/data-deletion', [LegalController::class, 'dataDeletion'])->name('data-deletion');
 
 // Custom cake inquiry wizard (public — guests can ask for a quote).
 Route::get('/custom-cake', [CustomCakeController::class, 'show'])->name('custom-cake');
