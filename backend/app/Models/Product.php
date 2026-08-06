@@ -25,6 +25,7 @@ class Product extends Model
         'image_path',
         'features',
         'calories',
+        'calorie_unit',
         'is_featured',
         'status',
         'category',

@@ -726,6 +726,7 @@
                     badge: el.dataset.tag,
                     desc: el.dataset.desc,
                     calories: el.dataset.calories,
+                    calorieUnit: el.dataset.calorieUnit,
                     allergens: el.dataset.allergens,
                     price: el.dataset.price,
                 }, buildOrderFooter);

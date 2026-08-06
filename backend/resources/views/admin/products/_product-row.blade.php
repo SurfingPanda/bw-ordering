@@ -155,10 +155,16 @@
                             <input type="number" step="0.01" min="0" name="products[{{ $i }}][original_price]" value="{{ $product['original_price'] ?? '' }}" class="{{ $input }}">
                         </label>
                     </div>
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-medium text-slate-500">Calories (optional)</span>
-                        <input type="number" min="0" name="products[{{ $i }}][calories]" value="{{ $product['calories'] ?? '' }}" class="{{ $input }}">
-                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Calories (optional)</span>
+                            <input type="number" min="0" name="products[{{ $i }}][calories]" value="{{ $product['calories'] ?? '' }}" class="{{ $input }}">
+                        </label>
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Per (piece, whole, etc.)</span>
+                            <input type="text" maxlength="50" placeholder="piece" name="products[{{ $i }}][calorie_unit]" value="{{ $product['calorie_unit'] ?? '' }}" class="{{ $input }}">
+                        </label>
+                    </div>
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Description</span>
                         <textarea name="products[{{ $i }}][description]" rows="3" class="{{ $input }}">{{ $product['description'] ?? '' }}</textarea>

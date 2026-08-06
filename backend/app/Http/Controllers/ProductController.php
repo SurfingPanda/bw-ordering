@@ -67,6 +67,7 @@ class ProductController extends Controller
             'products.*.image_path' => 'nullable|string',
             'products.*.features' => 'nullable|array',
             'products.*.calories' => 'nullable|integer',
+            'products.*.calorie_unit' => 'nullable|string|max:50',
             'products.*.is_featured' => 'nullable|boolean',
             'products.*.status' => 'nullable|string',
             'originalIds' => 'nullable|array',
@@ -84,6 +85,7 @@ class ProductController extends Controller
                 'image_path' => $p['image_path'] ?? null,
                 'features' => $p['features'] ?? [],
                 'calories' => $p['calories'] ?? null,
+                'calorie_unit' => $p['calorie_unit'] ?? null,
                 'is_featured' => $p['is_featured'] ?? false,
                 'status' => $p['status'] ?? null,
             ];

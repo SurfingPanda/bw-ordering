@@ -250,6 +250,7 @@ class LandingController extends Controller
             'price' => '₱'.(fmod($price, 1.0) === 0.0 ? number_format($price, 0) : number_format($price, 2)),
             'desc' => $p->description,
             'calories' => $p->calories,
+            'calorie_unit' => $p->calorie_unit,
             'allergens' => $p->features ?? [],
         ];
     }

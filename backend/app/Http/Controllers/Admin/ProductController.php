@@ -70,6 +70,7 @@ class ProductController extends Controller
             'products.*.price' => 'nullable|numeric|min:0',
             'products.*.original_price' => 'nullable|numeric|min:0',
             'products.*.calories' => 'nullable|integer|min:0',
+            'products.*.calorie_unit' => 'nullable|string|max:50',
             'products.*.status' => ['nullable', Rule::in(['new', 'best_seller', 'bundle', 'sold_out'])],
             'products.*.type' => ['nullable', Rule::in(['single', 'bundle'])],
             // bundle_product_ids arrives keyed by linked product id, valued by
@@ -127,6 +128,7 @@ class ProductController extends Controller
                 'image_path' => trim((string) ($p['image_path'] ?? '')) ?: null,
                 'features' => $this->linesToArray($p['features'] ?? ''),
                 'calories' => ($p['calories'] ?? '') === '' ? null : (int) $p['calories'],
+                'calorie_unit' => trim((string) ($p['calorie_unit'] ?? '')) ?: null,
                 'is_featured' => ! empty($p['is_featured']),
                 'status' => ($p['status'] ?? '') !== '' ? $p['status'] : null,
                 'type' => $type,

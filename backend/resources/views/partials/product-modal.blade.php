@@ -138,7 +138,7 @@ window.ProductModal = (function () {
                 flame.setAttribute('aria-hidden', 'true');
                 flame.textContent = '🔥';
                 calEl.appendChild(flame);
-                calEl.appendChild(document.createTextNode(' ' + d.calories + ' cal'));
+                calEl.appendChild(document.createTextNode(' ' + d.calories + ' kal per ' + (d.calorieUnit || 'piece')));
                 calEl.classList.remove('hidden');
                 calEl.classList.add('inline-flex');
             } else {

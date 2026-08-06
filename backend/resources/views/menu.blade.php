@@ -552,7 +552,7 @@
             grid.innerHTML = rows.slice(0, gridLimit).map(p => {
                 const soldOut = p.status === 'sold_out';
                 const onSale = p.original_price != null && Number(p.original_price) > Number(p.price);
-                const productInfo = p.calories != null ? `${p.calories} cal` : '';
+                const productInfo = p.calories != null ? `${p.calories} kal per ${p.calorie_unit || 'piece'}` : '';
                 return `
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
                     class="product-card group relative flex cursor-pointer flex-col rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
@@ -832,6 +832,7 @@
                 badge: p.status ? (STATUS_LABEL[p.status] || p.status) : '',
                 desc: p.description || '',
                 calories: p.calories,
+                calorieUnit: p.calorie_unit,
                 allergens: p.features || [],
                 dim: soldOut,
                 grayscale: soldOut,
