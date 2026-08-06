@@ -552,7 +552,7 @@
             grid.innerHTML = rows.slice(0, gridLimit).map(p => {
                 const soldOut = p.status === 'sold_out';
                 const onSale = p.original_price != null && Number(p.original_price) > Number(p.price);
-                const productInfo = p.calories != null ? `${p.calories} kal per ${p.calorie_unit || 'piece'}` : '';
+                const productInfo = p.calories != null ? `${p.calories} kcal per ${p.calorie_unit || 'piece'}` : '';
                 return `
                 <div data-view="${p.id}" role="button" tabindex="0" aria-label="View ${p.name}"
                     class="product-card group relative flex cursor-pointer flex-col rounded-2xl bg-white shadow-sm outline-none transition hover:shadow-xl focus-visible:ring-2 focus-visible:ring-brand-500">
@@ -684,13 +684,35 @@
         function cartLines() {
             return Object.entries(cart)
                 .map(([id, qty]) => ({
-                    product: withBundleDisplay(id.startsWith('bundle:') ? bundleFromKey(id) : PRODUCTS.find(p => p.id === id)),
+                    product: withBundleDisplay(id.startsWith('bundle:') ? bundleFromKey(id) : PRODUCTS.find(p => String(p.id) === id)),
                     qty,
                 }))
                 .filter(l => l.product);
         }
 
+        // The cart lives in localStorage, so product IDs can outlive a product
+        // that was removed from the catalogue. Keep the persisted cart in sync
+        // with the products we can actually render and order; otherwise its
+        // badge can report items while the drawer has no lines to show.
+        function reconcileCart() {
+            const next = {};
+            Object.entries(cart).forEach(([id, value]) => {
+                const qty = Number(value);
+                const product = id.startsWith('bundle:')
+                    ? bundleFromKey(id)
+                    : PRODUCTS.find(p => String(p.id) === id);
+
+                if (product && Number.isInteger(qty) && qty > 0) next[id] = qty;
+            });
+
+            if (JSON.stringify(next) !== JSON.stringify(cart)) {
+                cart = next;
+                writeCart(cart);
+            }
+        }
+
         function renderCart() {
+            reconcileCart();
             const lines = cartLines();
             const itemCount = lines.reduce((s, l) => s + l.qty, 0);
             const subtotal = lines.reduce((s, l) => s + Number(l.product.price) * l.qty, 0);

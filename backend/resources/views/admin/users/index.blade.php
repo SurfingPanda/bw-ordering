@@ -196,7 +196,7 @@
             function paintAccess() {
                 var role = roleSelect.value;
                 var defaults = ROLE_DEFAULTS[role] || [];
-                var lockAll = role === 'admin' || role === 'customer';
+                var lockcall = role === 'admin' || role === 'customer';
                 hint.textContent = role === 'admin' ? 'Admins can access everything.'
                     : role === 'customer' ? 'Customers have no admin access — pick a staff role to grant sections.'
                     : 'Sections included with the role are locked in. Tick extras to grant them.';
@@ -204,7 +204,7 @@
                     var key = item.dataset.accessItem;
                     var viaRole = defaults.indexOf(key) !== -1;
                     var box = item.querySelector('input[type="checkbox"]');
-                    if (lockAll) {
+                    if (lockcall) {
                         box.checked = role === 'admin';
                         box.disabled = true;
                     } else {
@@ -212,7 +212,7 @@
                         box.disabled = viaRole;
                     }
                     item.classList.toggle('opacity-60', box.disabled);
-                    item.querySelector('[data-role-tag]').classList.toggle('hidden', !(viaRole && !lockAll));
+                    item.querySelector('[data-role-tag]').classList.toggle('hidden', !(viaRole && !lockcall));
                 });
             }
 

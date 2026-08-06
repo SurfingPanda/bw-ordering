@@ -51,7 +51,7 @@
              button competing with the card's click target. It must be outside
              the image wrapper, which clips its image to rounded corners. --}}
         <div class="calorie-bubble pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-10 scale-95 rounded-full bg-navy-900/95 px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-xl transition duration-200 group-hover:scale-100 group-hover:opacity-100 group-focus:scale-100 group-focus:opacity-100">
-            {{ $p['calories'] }} kal per {{ $p['calorie_unit'] ?: 'piece' }}
+            {{ $p['calories'] }} kcal per {{ $p['calorie_unit'] ?: 'piece' }}
         </div>
     @endif
     <div class="p-4">

@@ -551,6 +551,22 @@
             return Object.keys(cart).reduce(function (s, id) { return s + cart[id]; }, 0);
         }
 
+        // A browser can retain cart IDs after an item is removed from the
+        // catalogue. Remove those stale (or malformed) entries once the live
+        // catalogue is available so the badge and drawer always agree.
+        function reconcileCart(products) {
+            var next = {};
+            Object.keys(cart).forEach(function (id) {
+                var qty = Number(cart[id]);
+                var exists = products.some(function (p) { return String(p.id) === id; });
+                if (exists && Number.isInteger(qty) && qty > 0) next[id] = qty;
+            });
+            if (JSON.stringify(next) !== JSON.stringify(cart)) {
+                cart = next;
+                writeCart(cart);
+            }
+        }
+
         function updateBadge() {
             var n = cartCount();
             document.querySelectorAll('.mini-cart-badge, .mini-cart-count').forEach(function (el) {
@@ -583,8 +599,10 @@
 
         function renderDrawer() {
             ensureProducts().then(function (products) {
+                reconcileCart(products);
+                updateBadge();
                 var lines = Object.keys(cart).map(function (id) {
-                    return { product: products.find(function (p) { return p.id === id; }), qty: cart[id] };
+                    return { product: products.find(function (p) { return String(p.id) === id; }), qty: cart[id] };
                 }).filter(function (l) { return l.product; });
                 var subtotal = lines.reduce(function (s, l) { return s + Number(l.product.price) * l.qty; }, 0);
 
@@ -673,7 +691,7 @@
             a.addEventListener('click', function () {
                 ensureProducts().then(function (products) {
                     var items = Object.keys(cart).map(function (id) {
-                        var p = products.find(function (x) { return x.id === id; });
+                        var p = products.find(function (x) { return String(x.id) === id; });
                         return p ? { product_id: p.id, name: p.name, qty: cart[id], img: p.image_path, price: p.price } : null;
                     }).filter(Boolean);
                     try { localStorage.setItem('bw_checkout', JSON.stringify({ items: items, voucher: null })); } catch (e) {}
@@ -681,6 +699,13 @@
             });
         });
 
+        // Resolve the full catalogue in the background as well, so a stale
+        // badge is corrected even if the customer never opens the drawer.
+        ensureProducts().then(function (products) {
+            reconcileCart(products);
+            updateBadge();
+            renderCardControls();
+        });
         updateBadge();
         renderCardControls();
 
