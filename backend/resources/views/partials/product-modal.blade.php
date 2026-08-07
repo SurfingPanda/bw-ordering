@@ -68,7 +68,7 @@ window.ProductModal = (function () {
         egg: '🥚', eggs: '🥚',
         milk: '🥛', dairy: '🥛',
         nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
-        soy: '🫘',
+        soy: '🌱',
         shellfish: '🦐', seafood: '🦐',
         fish: '🐟',
         sesame: '🌰',
@@ -149,9 +149,9 @@ window.ProductModal = (function () {
             var allergensWrap = document.getElementById('pm-allergens-wrap');
             var allergensEl = document.getElementById('pm-allergens');
             allergensEl.innerHTML = '';
-            var allergens = Array.isArray(d.allergens)
-                ? d.allergens
-                : String(d.allergens || '').split(',').map(function (a) { return a.trim(); }).filter(Boolean);
+            var allergens = (Array.isArray(d.allergens) ? d.allergens : [d.allergens]).reduce(function (acc, a) {
+                return acc.concat(String(a || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+            }, []);
             if (allergens.length) {
                 allergens.forEach(function (a) {
                     var span = document.createElement('span');
