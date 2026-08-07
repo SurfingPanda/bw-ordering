@@ -47,4 +47,23 @@ class StoresPageTest extends TestCase
             ->assertOk()
             ->assertSee('0 stores found');
     }
+
+    public function test_emits_valid_local_business_json_ld_per_store(): void
+    {
+        $this->makeStore();
+        $this->makeStore(['name' => 'BW Superbakeshop — Cebu', 'region' => 'Visayas', 'address' => 'Osmeña Blvd, Cebu City', 'phone' => '(032) 255 6789']);
+
+        $html = $this->get('/stores')->assertOk()->getContent();
+
+        preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+        $jsonLd = json_decode($m[1], true);
+
+        $this->assertSame(JSON_ERROR_NONE, json_last_error());
+        $this->assertCount(2, $jsonLd['@graph']);
+        $this->assertContains('LocalBusiness', $jsonLd['@graph'][0]['@type']);
+        $this->assertSame('88 Ayala Ave, Makati City', $jsonLd['@graph'][0]['address']['streetAddress']);
+        $this->assertSame(14.5547, $jsonLd['@graph'][0]['geo']['latitude']);
+        $this->assertSame('0917 000 0000', $jsonLd['@graph'][0]['telephone']);
+        $this->assertSame('(032) 255 6789', $jsonLd['@graph'][1]['telephone']);
+    }
 }

@@ -19,14 +19,15 @@
     $email = $fr['email'] ?? 'franchise@bwsuperbakeshop.com';
     $inquireBody = "Name:\nContact number:\nPreferred location / city:\nPackage of interest:\nMessage:\n";
     $href = 'mailto:'.$email.'?subject=Franchise%20Inquiry&body='.rawurlencode($inquireBody);
+    $metaTitle = 'BW Superbakeshop | Partner with us';
+    $metaDescription = 'Own a bw Superbakeshop. Partner with a trusted bakeshop brand — training, supply chain, and marketing support included.';
 @endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BW Superbakeshop | Partner with us</title>
-    <meta name="description" content="Own a bw Superbakeshop. Partner with a trusted bakeshop brand — training, supply chain, and marketing support included.">
+    @include('partials.seo-meta')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">

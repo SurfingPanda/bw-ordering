@@ -17,7 +17,9 @@ class FranchisePageTest extends TestCase
             ->assertSee('Partner with us')
             ->assertSee('Franchise packages')
             ->assertSee('Kiosk')
-            ->assertSee('franchise@bwsuperbakeshop.com');
+            ->assertSee('franchise@bwsuperbakeshop.com')
+            ->assertSee('<link rel="canonical"', false)
+            ->assertSee('<meta property="og:title"', false);
     }
 
     public function test_renders_saved_franchise_content(): void

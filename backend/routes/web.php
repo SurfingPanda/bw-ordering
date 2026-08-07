@@ -22,6 +22,7 @@ use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MyOrdersController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StoresController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,7 @@ Route::get('/menu', [MenuController::class, 'index'])->name('menu');
 Route::get('/stores', [StoresController::class, 'index'])->name('stores');
 Route::get('/franchise', [FranchiseController::class, 'index'])->name('franchise');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Legal pages — linked from the site footer.
 Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('privacy-policy');

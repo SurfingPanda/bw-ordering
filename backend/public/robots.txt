@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /checkout
+Disallow: /my-orders
+Disallow: /profile
+Disallow: /complete-profile
+Disallow: /auth/
+Allow: /
+
+Sitemap: https://www.bwsuperbakeshop.com/sitemap.xml

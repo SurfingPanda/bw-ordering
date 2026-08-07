@@ -1,13 +1,16 @@
 {{-- Public "Contact Us" page — a single message form (guests may send one
      too, no login required). Submissions land in contact_messages for staff
      to review at /admin/contact-messages (see Admin\ContactController). --}}
+@php
+    $metaTitle = 'BW Superbakeshop | Contact Us';
+    $metaDescription = 'Have a question or feedback for bw Superbakeshop? Send us a message and our team will get back to you.';
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BW Superbakeshop | Contact Us</title>
-    <meta name="description" content="Have a question or feedback for bw Superbakeshop? Send us a message and our team will get back to you.">
+    @include('partials.seo-meta')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">

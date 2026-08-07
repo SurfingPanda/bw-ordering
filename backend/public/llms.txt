@@ -1,0 +1,32 @@
+# bw Superbakeshop
+
+> Philippine bakery chain selling freshly baked cakes, bread, and pastries,
+> with online ordering for pickup and delivery, and a custom cake request
+> service, across branches in Luzon, Visayas, and Mindanao.
+
+## What we sell
+- Cakes, including custom/made-to-order celebration cakes
+- Bread and pastries, baked fresh daily
+- Online ordering with pickup or delivery
+
+## Ordering
+- Order online: https://www.bwsuperbakeshop.com/menu
+- Request a custom cake: https://www.bwsuperbakeshop.com/custom-cake
+
+## Store locations
+- Find a branch (address, hours, phone, map): https://www.bwsuperbakeshop.com/stores
+- Branches include: Quezon City, Makati, Pasig, Pampanga, Baguio (Luzon);
+  Cebu, Iloilo (Visayas); Davao, Cagayan de Oro (Mindanao) — see /stores for
+  the current, authoritative list; this file is not kept in lockstep with
+  new branches.
+
+## Franchise
+- Franchise inquiries: https://www.bwsuperbakeshop.com/franchise
+
+## Contact
+- Contact form: https://www.bwsuperbakeshop.com/contact
+- Facebook: https://www.facebook.com/bwsuperbakeshop
+
+## Other pages
+- About: https://www.bwsuperbakeshop.com/about
+- Privacy policy: https://www.bwsuperbakeshop.com/privacy-policy

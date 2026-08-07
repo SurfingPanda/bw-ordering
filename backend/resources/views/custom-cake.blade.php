@@ -2,13 +2,16 @@
      → review). One real <form> wraps every step; JS only shows/hides steps and
      validates before advancing, so the final submit posts everything at once.
      Submissions land in custom_cake_requests for the team to quote. --}}
+@php
+    $metaTitle = 'BW Superbakeshop | Customize Your Cake';
+    $metaDescription = "Tell us your dream cake — flavor, size, design — and we'll bake it to perfection. Our team will follow up with a quote.";
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BW Superbakeshop | Customize Your Cake</title>
-    <meta name="description" content="Tell us your dream cake — flavor, size, design — and we'll bake it to perfection. Our team will follow up with a quote.">
+    @include('partials.seo-meta')
     @include('partials.favicon')
     @vite('resources/css/app.css')
 </head>

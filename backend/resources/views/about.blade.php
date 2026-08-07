@@ -3,13 +3,16 @@
      legal/privacy-policy.blade.php and legal/terms-of-service.blade.php.
      $stats reuses the franchise page's real trust figures (Site Editor →
      Franchise → Trust Stats) so this page never invents its own numbers. --}}
+@php
+    $metaTitle = 'BW Superbakeshop | About Us';
+    $metaDescription = 'Freshly baked, made with love, ordered with ease — the story and values behind bw Superbakeshop.';
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BW Superbakeshop | About Us</title>
-    <meta name="description" content="Freshly baked, made with love, ordered with ease — the story and values behind bw Superbakeshop.">
+    @include('partials.seo-meta')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">

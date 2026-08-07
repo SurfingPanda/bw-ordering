@@ -1,9 +1,44 @@
+@php
+    // Canonical stays the plain /menu URL regardless of ?category= — treating
+    // every filtered view as a distinct canonical page would dilute ranking
+    // signal across dozens of near-duplicate URLs instead of consolidating it.
+    $category = request('category');
+    $metaTitle = $category ? "$category — Order Online | BW Superbakeshop" : 'Order Online — BW Superbakeshop';
+    $metaDescription = $category
+        ? "Order fresh {$category} online from bw Superbakeshop. Pickup or delivery from branches nationwide."
+        : 'Browse and order fresh cakes, bread, and pastries online from bw Superbakeshop. Pickup or delivery from branches nationwide.';
+    $canonical = url('/menu');
+    // Reuses the same $products collection already rendered for the cart's
+    // JS blob below — no extra query. Capped so the page doesn't ship an
+    // unbounded JSON-LD block as the catalogue grows.
+    $menuJsonLd = [
+        '@context' => 'https://schema.org',
+        '@type' => 'ItemList',
+        'itemListElement' => $products->take(100)->values()->map(fn ($p, $i) => [
+            '@type' => 'ListItem',
+            'position' => $i + 1,
+            'item' => [
+                '@type' => 'Product',
+                'name' => $p->name,
+                'description' => $p->description,
+                'image' => $p->image_path,
+                'category' => $p->category,
+                'offers' => [
+                    '@type' => 'Offer',
+                    'priceCurrency' => 'PHP',
+                    'price' => $p->price,
+                    'availability' => 'https://schema.org/InStock',
+                ],
+            ],
+        ])->all(),
+    ];
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Order Online — BW Superbakeshop</title>
+    @include('partials.seo-meta', ['jsonLd' => $menuJsonLd])
     @include('partials.favicon')
     @vite('resources/css/app.css')
 </head>

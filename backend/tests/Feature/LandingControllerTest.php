@@ -158,6 +158,33 @@ class LandingControllerTest extends TestCase
         $this->assertSame([], $data['categories']);
     }
 
+    public function test_homepage_has_canonical_og_tags_and_valid_json_ld_with_store_departments(): void
+    {
+        \App\Models\Store::create([
+            'name' => 'BW Superbakeshop — Makati',
+            'region' => 'Luzon',
+            'fulfillment' => 'both',
+            'address' => '88 Ayala Ave, Makati City',
+            'hours' => '7:00 AM – 9:00 PM',
+            'phone' => '0917 000 0000',
+            'latitude' => 14.5547,
+            'longitude' => 121.0244,
+        ]);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringContainsString('<link rel="canonical"', $html);
+        $this->assertStringContainsString('<meta property="og:title"', $html);
+        $this->assertMatchesRegularExpression('/<h1[^>]*>.*bw Superbakeshop.*<\/h1>/i', $html);
+
+        preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+        $jsonLd = json_decode($m[1], true);
+
+        $this->assertSame(JSON_ERROR_NONE, json_last_error());
+        $this->assertContains('Organization', $jsonLd['@graph'][0]['@type']);
+        $this->assertCount(1, $jsonLd['@graph'][0]['department']);
+    }
+
     public function test_button_state_helper_matches_the_ported_js_semantics(): void
     {
         $this->assertSame('on', SiteContent::buttonState([], 'navOrder'));

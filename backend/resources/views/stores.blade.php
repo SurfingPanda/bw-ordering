@@ -12,14 +12,46 @@
         'latitude' => $s->latitude,
         'longitude' => $s->longitude,
     ])->values();
+    $metaTitle = 'BW Superbakeshop | Store Locator';
+    $metaDescription = 'Find the bw Superbakeshop branch nearest you. Branches nationwide with directions, hours, and contact details.';
+    $seoSiteUrl = rtrim(config('app.url'), '/');
+    // Real per-branch LocalBusiness nodes (address/geo/phone already live in
+    // the stores table) — this is what lets AI/local-search answer engines
+    // recommend a specific branch, unlike the homepage's single chain-level
+    // node. Hours are deliberately omitted: stores.hours is free text (e.g.
+    // "6:00 AM – 9:00 PM"), and a wrong openingHoursSpecification claim is
+    // worse than none.
+    $storesJsonLd = [
+        '@context' => 'https://schema.org',
+        '@graph' => $stores->map(fn ($s) => [
+            '@type' => ['Bakery', 'LocalBusiness'],
+            '@id' => "$seoSiteUrl/stores#store-{$s->id}",
+            'name' => $s->name,
+            'branchOf' => ['@id' => "$seoSiteUrl/#bakery"],
+            'address' => [
+                '@type' => 'PostalAddress',
+                'streetAddress' => $s->address,
+                'addressRegion' => $s->region,
+                'addressCountry' => 'PH',
+            ],
+            'geo' => [
+                '@type' => 'GeoCoordinates',
+                'latitude' => $s->latitude,
+                'longitude' => $s->longitude,
+            ],
+            'telephone' => $s->phone,
+            'priceRange' => '₱₱',
+            'servesCuisine' => 'Bakery',
+            'url' => "$seoSiteUrl/stores",
+        ])->values(),
+    ];
 @endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BW Superbakeshop | Store Locator</title>
-    <meta name="description" content="Find the bw Superbakeshop branch nearest you. Branches nationwide with directions, hours, and contact details.">
+    @include('partials.seo-meta', ['jsonLd' => $storesJsonLd])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">

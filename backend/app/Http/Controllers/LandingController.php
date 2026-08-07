@@ -203,6 +203,7 @@ class LandingController extends Controller
         // trimmed to the fields the landing map preview's markers/popups
         // need — see resources/js/landing-map.js.
         $viewData['mapStores'] = app(StoreController::class)->cachedList()->map(fn ($s) => [
+            'id' => $s->id,
             'name' => $s->name,
             'address' => $s->address,
             'hours' => $s->hours,

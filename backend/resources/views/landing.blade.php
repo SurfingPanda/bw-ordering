@@ -4,15 +4,16 @@
     $isExternal = fn (?string $href) => (bool) preg_match('#^https?://#i', (string) $href);
     // 3-state CTA lookup (on/disabled/off) — see App\Models\SiteContent::buttonState().
     $btn = fn (string $key) => \App\Models\SiteContent::buttonState($content['buttons'] ?? [], $key);
-    $siteUrl = 'https://www.bwsuperbakeshop.com';
+    $siteUrl = rtrim(config('app.url'), '/');
     $metaTitle = 'BW Superbakeshop';
     $metaDescription = 'Order freshly baked cakes, breads, and pastries from bw Superbakeshop. Nationwide branches, custom cakes, and delivery.';
     $ogImage = $siteUrl.'/images/promo-cake.png';
+    $canonical = $siteUrl;
     $jsonLd = [
         '@context' => 'https://schema.org',
         '@graph' => [
             [
-                '@type' => ['Bakery', 'LocalBusiness'],
+                '@type' => ['Organization', 'Bakery'],
                 '@id' => "$siteUrl/#bakery",
                 'name' => 'bw Superbakeshop',
                 'url' => $siteUrl,
@@ -21,7 +22,12 @@
                 'description' => $metaDescription,
                 'servesCuisine' => 'Bakery',
                 'priceRange' => '₱₱',
+                'areaServed' => 'Philippines',
                 'sameAs' => ['https://www.facebook.com/bwsuperbakeshop'],
+                // Chains don't have one address — link out to the real,
+                // fully-addressed per-branch LocalBusiness nodes emitted on
+                // /stores instead of inventing a fake single location here.
+                'department' => $mapStores->map(fn ($s) => ['@id' => "$siteUrl/stores#store-{$s['id']}"])->values()->all(),
             ],
             [
                 '@type' => 'WebSite',
@@ -47,20 +53,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $metaTitle }}</title>
-    <meta name="description" content="{{ $metaDescription }}">
-    <link rel="canonical" href="{{ $siteUrl }}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="bw Superbakeshop">
-    <meta property="og:title" content="{{ $metaTitle }}">
-    <meta property="og:description" content="{{ $metaDescription }}">
-    <meta property="og:url" content="{{ $siteUrl }}">
-    <meta property="og:image" content="{{ $ogImage }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $metaTitle }}">
-    <meta name="twitter:description" content="{{ $metaDescription }}">
-    <meta name="twitter:image" content="{{ $ogImage }}">
-    <script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES) !!}</script>
+    @include('partials.seo-meta')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Pacifico&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -72,6 +65,10 @@
     @include('partials.maintenance-screen', ['m' => $content['maintenance'], 'social' => $content['social'] ?? []])
 @else
     <div class="min-h-screen bg-brand-50 text-navy-800">
+        {{-- Always-rendered (unlike the hero carousel, which is a Site Editor
+             toggle and pure images with no text) so the page has exactly one
+             real <h1> regardless of CMS state. --}}
+        <h1 class="sr-only">bw Superbakeshop — Fresh Cakes, Bread &amp; Pastries, Order Online for Pickup or Delivery Nationwide</h1>
         {{-- Announcement bar (Site Editor toggle; absent = shown) --}}
         @if($content['announcementVisible'] ?? true)
             <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
