@@ -376,11 +376,13 @@
         function renderCategories() {
             const nav = document.getElementById('category-nav');
             nav.innerHTML = '';
+            let activeBtn = null;
             categories().forEach(c => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
+                const isActive = active === c.name;
                 btn.className = 'flex shrink-0 items-center gap-3 rounded-full p-1.5 pr-5 text-sm font-semibold transition lg:w-full ' +
-                    (active === c.name ? 'bg-white text-navy-900 shadow-lg ring-2 ring-brand-500' : 'text-white hover:bg-white/10');
+                    (isActive ? 'bg-white text-navy-900 shadow-lg ring-2 ring-brand-500' : 'text-white hover:bg-white/10');
                 let badge = '';
                 if (c.icon) {
                     badge = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ICON_GRADIENT[c.icon]} text-white shadow ring-1 ring-black/5 [&_svg]:h-5 [&_svg]:w-5">${ICON_SVG[c.icon]}</span>`;
@@ -390,7 +392,20 @@
                 btn.innerHTML = badge + `<span>${c.name}</span>`;
                 btn.addEventListener('click', () => { active = c.name; tag = 'all'; renderAll(); });
                 nav.appendChild(btn);
+                if (isActive) activeBtn = btn;
             });
+            // Mobile nav scrolls horizontally (lg switches to a vertical
+            // sidebar where every item is already visible) — recenter the
+            // active pill so tapping a category near either edge doesn't
+            // leave it clipped off-screen.
+            if (activeBtn) {
+                requestAnimationFrame(() => {
+                    const navRect = nav.getBoundingClientRect();
+                    const btnRect = activeBtn.getBoundingClientRect();
+                    const offset = (btnRect.left + btnRect.width / 2) - (navRect.left + navRect.width / 2);
+                    nav.scrollBy({ left: offset, behavior: 'smooth' });
+                });
+            }
         }
 
         // ---- product grid ----
