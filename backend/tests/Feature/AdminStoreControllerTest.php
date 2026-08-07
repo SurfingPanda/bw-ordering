@@ -23,7 +23,7 @@ class AdminStoreControllerTest extends TestCase
     {
         return Store::create(array_merge([
             'name' => 'QC Branch',
-            'region' => 'Metro Manila',
+            'region' => 'Luzon',
             'fulfillment' => 'both',
             'address' => '123 Katipunan Ave, Quezon City',
             'hours' => '7:00 AM – 9:00 PM',

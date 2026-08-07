@@ -14,7 +14,7 @@ class StoresPageTest extends TestCase
     {
         return Store::create(array_merge([
             'name' => 'BW Superbakeshop — Makati',
-            'region' => 'Metro Manila',
+            'region' => 'Luzon',
             'fulfillment' => 'both',
             'address' => '88 Ayala Ave, Makati City',
             'hours' => '7:00 AM – 9:00 PM',

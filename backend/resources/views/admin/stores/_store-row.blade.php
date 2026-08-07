@@ -32,9 +32,9 @@
                     </label>
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Region</span>
-                        @php($region = $store['region'] ?? 'Metro Manila')
+                        @php($region = $store['region'] ?? 'Luzon')
                         <select name="stores[{{ $i }}][region]" class="{{ $input }} bg-white">
-                            @foreach(['Metro Manila', 'Luzon', 'Visayas', 'Mindanao'] as $r)
+                            @foreach(['Luzon', 'Visayas', 'Mindanao'] as $r)
                                 <option value="{{ $r }}" @selected($region === $r)>{{ $r }}</option>
                             @endforeach
                         </select>

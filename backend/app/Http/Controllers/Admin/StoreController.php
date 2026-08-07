@@ -56,7 +56,7 @@ class StoreController extends Controller
         $request->validate([
             'stores' => 'nullable|array',
             'stores.*.id' => 'nullable|integer',
-            'stores.*.region' => ['nullable', Rule::in(['Metro Manila', 'Luzon', 'Visayas', 'Mindanao'])],
+            'stores.*.region' => ['nullable', Rule::in(['Luzon', 'Visayas', 'Mindanao'])],
             'stores.*.fulfillment' => ['nullable', Rule::in(['both', 'delivery', 'pickup'])],
             'stores.*.latitude' => 'nullable|numeric|between:-90,90',
             'stores.*.longitude' => 'nullable|numeric|between:-180,180',
@@ -74,7 +74,7 @@ class StoreController extends Controller
 
             $attrs = [
                 'name' => $name,
-                'region' => $s['region'] ?? 'Metro Manila',
+                'region' => $s['region'] ?? 'Luzon',
                 'fulfillment' => $s['fulfillment'] ?? 'both',
                 'address' => trim((string) ($s['address'] ?? '')),
                 'hours' => trim((string) ($s['hours'] ?? '')) ?: null,
