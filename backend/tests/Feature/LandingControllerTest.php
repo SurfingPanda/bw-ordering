@@ -85,10 +85,11 @@ class LandingControllerTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Our Best Sellers')->assertSee('Mocha Cake');
     }
 
-    public function test_best_sellers_and_whats_new_are_capped_at_two_rows(): void
+    public function test_best_sellers_and_whats_new_are_capped(): void
     {
-        // The grid is md:grid-cols-4 — flagging more than 8 products used to
-        // render every single one, unbounded.
+        // The grid is md:grid-cols-4 — flagging more than the cap used to
+        // render every single one, unbounded. Best Sellers caps at two full
+        // rows; What's New caps at one.
         Product::factory()->count(12)->create(['status' => 'best_seller']);
         Product::factory()->count(9)->create(['status' => 'new']);
 
@@ -96,7 +97,7 @@ class LandingControllerTest extends TestCase
         $data = $view->getData();
 
         $this->assertCount(8, $data['bestSellers']);
-        $this->assertCount(8, $data['whatsNewProducts']);
+        $this->assertCount(4, $data['whatsNewProducts']);
     }
 
     public function test_best_sellers_and_categories_come_from_the_products_table(): void

@@ -28,6 +28,7 @@ class SessionController extends Controller
 
         return view('auth.login', [
             'authPanel' => $content['authPanel'] ?? [],
+            'editable' => $this->isEditablePreview($request),
         ]);
     }
 

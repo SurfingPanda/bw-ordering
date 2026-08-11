@@ -188,5 +188,8 @@
         });
     })();
     </script>
+    @if($editable ?? false)
+        @include('partials._editor-bridge')
+    @endif
 </body>
 </html>

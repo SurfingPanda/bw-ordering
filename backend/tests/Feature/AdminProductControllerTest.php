@@ -31,7 +31,8 @@ class AdminProductControllerTest extends TestCase
             'description' => $product->description,
             'image_path' => $product->image_path,
             'features' => implode("\n", $product->features ?? []),
-            'calories' => $product->calories,
+            'calorie_amounts' => array_map(fn ($e) => $e['amount'] ?? '', $product->calorie_info ?? []),
+            'calorie_units' => array_map(fn ($e) => $e['unit'] ?? '', $product->calorie_info ?? []),
             'status' => $product->status,
         ], $overrides);
     }

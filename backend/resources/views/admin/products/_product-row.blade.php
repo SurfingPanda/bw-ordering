@@ -155,15 +155,52 @@
                             <input type="number" step="0.01" min="0" name="products[{{ $i }}][original_price]" value="{{ $product['original_price'] ?? '' }}" class="{{ $input }}">
                         </label>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="block">
-                            <span class="mb-1 block text-xs font-medium text-slate-500">Calories (optional)</span>
-                            <input type="number" min="0" name="products[{{ $i }}][calories]" value="{{ $product['calories'] ?? '' }}" class="{{ $input }}">
-                        </label>
-                        <label class="block">
-                            <span class="mb-1 block text-xs font-medium text-slate-500">Per (piece, whole, etc.)</span>
-                            <input type="text" maxlength="50" placeholder="piece" name="products[{{ $i }}][calorie_unit]" value="{{ $product['calorie_unit'] ?? '' }}" class="{{ $input }}">
-                        </label>
+                    {{-- A failed save flashes back the raw calorie_amounts[]/calorie_units[]
+                         the repeater actually submitted; a DB-loaded row instead carries
+                         calorie_info (see Admin\ProductController::calorieInfo). Build one
+                         normalized list either way, as a single expression (not a multi-line
+                         PHP block directive) — mixing directive styles in this file confuses
+                         Blade's compiler and corrupts everything rendered after it. --}}
+                    @php($calorieEntries = (isset($product['calorie_amounts']) || isset($product['calorie_units']))
+                        ? array_map(fn ($amount, $unit) => ['amount' => $amount, 'unit' => $unit], (array) ($product['calorie_amounts'] ?? []), (array) ($product['calorie_units'] ?? []))
+                        : (array) ($product['calorie_info'] ?? []))
+                    {{-- Deliberately NOT the shared [data-repeater]/[data-row]
+                         machinery from _form-scripts.blade.php: every entry
+                         here sits inside a product's own [data-row], and that
+                         same attribute is what syncSummary()/productRows()/the
+                         remove-confirm handler in index.blade.php use to find
+                         the enclosing PRODUCT card. Reusing it on these
+                         sub-rows would make e.g. typing in a calorie field
+                         resolve "the row" to the calorie entry instead of the
+                         product, crashing syncSummary(). Distinct
+                         data-calorie-* attributes (wired in index.blade.php)
+                         keep this fully separate. --}}
+                    <div>
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Calories (optional)</span>
+                        <p class="mb-1.5 text-xs text-slate-400">One entry per serving size — e.g. per piece, per whole.</p>
+                        <div data-calorie-repeater>
+                            <div data-calorie-rows class="space-y-2">
+                                @foreach($calorieEntries as $entry)
+                                    <div data-calorie-entry class="flex items-center gap-2">
+                                        <input type="number" min="0" placeholder="Calories" name="products[{{ $i }}][calorie_amounts][]" value="{{ $entry['amount'] ?? '' }}" class="{{ $input }}">
+                                        <input type="text" maxlength="50" placeholder="e.g. piece, whole" name="products[{{ $i }}][calorie_units][]" value="{{ $entry['unit'] ?? '' }}" class="{{ $input }}">
+                                        <button type="button" data-calorie-remove aria-label="Remove calorie entry" class="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" /></svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <template>
+                                <div data-calorie-entry class="flex items-center gap-2">
+                                    <input type="number" min="0" placeholder="Calories" name="products[{{ $i }}][calorie_amounts][]" class="{{ $input }}">
+                                    <input type="text" maxlength="50" placeholder="e.g. piece, whole" name="products[{{ $i }}][calorie_units][]" class="{{ $input }}">
+                                    <button type="button" data-calorie-remove aria-label="Remove calorie entry" class="shrink-0 rounded-md p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" /></svg>
+                                    </button>
+                                </div>
+                            </template>
+                            <button type="button" data-calorie-add class="mt-1.5 text-xs font-semibold text-brand-600 transition hover:text-brand-700">+ Add calories</button>
+                        </div>
                     </div>
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Description</span>
@@ -172,6 +209,20 @@
                     <label class="block">
                         <span class="mb-1 block text-xs font-medium text-slate-500">Allergens (one per line)</span>
                         <textarea name="products[{{ $i }}][features]" rows="3" class="{{ $input }}">{{ implode("\n", (array) ($product['features'] ?? [])) }}</textarea>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Net weight (optional)</span>
+                            <input type="text" maxlength="100" placeholder="e.g. 250g" name="products[{{ $i }}][net_weight]" value="{{ $product['net_weight'] ?? '' }}" class="{{ $input }}">
+                        </label>
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-medium text-slate-500">Storage condition (optional)</span>
+                            <input type="text" maxlength="150" placeholder="e.g. Refrigerate after opening" name="products[{{ $i }}][storage_condition]" value="{{ $product['storage_condition'] ?? '' }}" class="{{ $input }}">
+                        </label>
+                    </div>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Serving note (optional)</span>
+                        <input type="text" maxlength="100" placeholder="e.g. Best served when hot" name="products[{{ $i }}][serving_note]" value="{{ $product['serving_note'] ?? '' }}" class="{{ $input }}">
                     </label>
                     <label class="flex items-center justify-between pt-1">
                         <span class="text-xs font-medium text-slate-500">Featured</span>

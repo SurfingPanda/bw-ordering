@@ -1,8 +1,10 @@
-{{-- The Site Editor shell — ported from the old AdminContent.jsx page chrome:
-     navy sidebar with grouped/collapsible sections, sticky white header with the
-     active section title + Save, and a live-preview pane on the right (xl+).
-     Distinct from layouts/admin (the orders/products dashboard shell), exactly
-     as the two shells were distinct pages in the SPA. --}}
+{{-- The Site Editor shell — ported from the old AdminContent.jsx page chrome.
+     Nav lives in a sticky top bar (desktop group-dropdowns + a mobile hamburger
+     panel, both rendered by admin/content/_editor-nav.blade.php), not a side
+     column, plus a sticky white sub-header with the active section title +
+     Save, and a live-preview pane on the right (xl+). Distinct from
+     layouts/admin (the orders/products dashboard shell), exactly as the two
+     shells were distinct pages in the SPA. --}}
 <!doctype html>
 <html lang="en">
 <head>
@@ -15,53 +17,52 @@
 <body>
     @php($user = session('supabase_user'))
 
-    <div class="flex min-h-screen flex-col bg-navy-50/40 text-navy-800 lg:flex-row">
-        {{-- backdrop behind the mobile drawer --}}
-        <div id="sidebar-backdrop" aria-hidden="true" class="fixed inset-0 z-30 hidden bg-black/50 lg:hidden"></div>
+    <div class="flex min-h-screen flex-col bg-navy-50/40 text-navy-800">
+        {{-- top bar — logo, nav (desktop dropdowns / mobile hamburger panel), user menu --}}
+        <header class="sticky top-0 z-30 bg-navy-900 text-white shadow-lg">
+            <div class="relative flex h-16 items-center gap-3 px-4 sm:px-6">
+                <a href="/" class="flex shrink-0 items-center gap-2.5">
+                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-10 w-auto">
+                    <span class="hidden text-sm font-semibold uppercase tracking-[0.2em] text-brand-400 sm:block">Site Editor</span>
+                </a>
 
-        {{-- sidebar — off-canvas drawer on mobile, static on lg+ --}}
-        <aside id="editor-sidebar"
-            class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85%] shrink-0 -translate-x-full transform flex-col bg-navy-900 text-white shadow-2xl transition-transform duration-300 lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:w-64 lg:max-w-none lg:translate-x-0 lg:shadow-none">
-            <div class="relative flex h-24 items-center justify-center border-b border-white/10 px-5">
-                <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-20 w-auto">
-                <button type="button" id="sidebar-close" aria-label="Close menu"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-navy-50/70 transition hover:bg-white/10 hover:text-white lg:hidden">
-                    <x-admin-icon name="close" class="h-5 w-5" />
-                </button>
-            </div>
-            <div class="border-b border-white/10 px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Site Editor</p>
-                <p class="mt-1 text-xs text-navy-50/60">Manage your landing page</p>
-            </div>
-
-            <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
                 @yield('editor-nav')
-            </nav>
 
-            <div class="border-t border-white/10 px-5 py-4">
-                <div class="flex items-center gap-3 p-1">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-bold">
-                        {{ strtoupper(substr($user['email'] ?? 'E', 0, 1)) }}
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        <span class="flex items-center gap-1.5">
-                            <span class="block truncate text-sm font-semibold">{{ $user['name'] ?? 'Editor' }}</span>
-                            @include('partials.role-badge', ['email' => $user['email'] ?? ''])
-                        </span>
-                        <span class="block truncate text-xs text-navy-50/60">{{ $user['email'] ?? '' }}</span>
-                    </span>
-                </div>
-                <div class="mt-3 flex gap-2">
-                    <a href="/" class="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-white/20">
-                        View site
-                    </a>
-                    <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
-                    <button type="button" onclick="showLogoutConfirm()" class="flex-1 rounded-lg bg-white/10 py-2 text-center text-xs font-semibold transition hover:bg-brand-600">
-                        Logout
+                <div class="ml-auto flex shrink-0 items-center gap-1">
+                    <div class="relative" data-user-menu>
+                        <button type="button" data-user-menu-toggle
+                            class="flex items-center gap-2 rounded-lg p-1.5 pr-2 transition hover:bg-white/10">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-bold">
+                                {{ strtoupper(substr($user['email'] ?? 'E', 0, 1)) }}
+                            </span>
+                            <span class="hidden max-w-[9rem] truncate text-sm font-semibold sm:block">{{ $user['name'] ?? 'Editor' }}</span>
+                            <x-admin-icon name="chevron-right" data-user-menu-chevron class="hidden h-3.5 w-3.5 shrink-0 rotate-90 text-navy-50/60 transition-transform sm:block" />
+                        </button>
+                        <div data-user-menu-panel class="invisible absolute right-0 top-full z-40 mt-1 w-60 -translate-y-1 rounded-xl border border-slate-200 bg-white p-1.5 text-navy-800 opacity-0 shadow-xl transition-all duration-150">
+                            <div class="border-b border-slate-100 px-3 py-2">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="block truncate text-sm font-semibold">{{ $user['name'] ?? 'Editor' }}</span>
+                                    @include('partials.role-badge', ['email' => $user['email'] ?? ''])
+                                </span>
+                                <span class="block truncate text-xs text-slate-500">{{ $user['email'] ?? '' }}</span>
+                            </div>
+                            <a href="/" class="mt-1 flex items-center rounded-lg px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50">
+                                View site
+                            </a>
+                            <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
+                            <button type="button" onclick="showLogoutConfirm()" class="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button" id="mobile-nav-toggle" aria-label="Open menu" aria-expanded="false"
+                        class="rounded-lg p-2 text-navy-50/80 transition hover:bg-white/10 hover:text-white lg:hidden">
+                        <x-admin-icon name="menu" class="h-6 w-6" />
                     </button>
                 </div>
             </div>
-        </aside>
+        </header>
 
         {{-- Log-out confirmation (ConfirmModal port, same pattern as the landing/menu pages) --}}
         <div id="logout-confirm-modal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" onclick="hideLogoutConfirm(event)" role="dialog" aria-modal="true" aria-label="Log out?">
@@ -77,13 +78,9 @@
 
         {{-- main --}}
         <div class="flex min-w-0 flex-1 flex-col">
-            <header class="sticky top-0 z-20 border-b border-slate-200 bg-white">
+            <header class="sticky top-16 z-20 border-b border-slate-200 bg-white">
                 <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
                     <div class="flex min-w-0 items-center gap-2">
-                        <button type="button" id="sidebar-open" aria-label="Open menu"
-                            class="-ml-1 shrink-0 rounded-lg p-2 text-navy-700 transition hover:bg-navy-50 lg:hidden">
-                            <x-admin-icon name="menu" class="h-6 w-6" />
-                        </button>
                         <h1 id="editor-title" class="truncate text-lg font-bold text-navy-800">@yield('title', 'Site Editor')</h1>
                     </div>
                     <div class="flex items-center gap-3">
@@ -105,8 +102,8 @@
                      so it refreshes on every save's redirect. Pages without a
                      preview section (Stores/Vouchers CRUD) get the full width. --}}
                 @hasSection('preview')
-                    <aside class="hidden shrink-0 border-l border-slate-200 bg-slate-100/70 xl:block xl:w-[42%]">
-                        <div class="sticky top-16 flex h-[calc(100vh-4rem)] flex-col p-5">
+                    <aside class="hidden shrink-0 border-l border-slate-200 bg-slate-100/70 xl:block xl:w-[55%]">
+                        <div class="sticky top-32 flex h-[calc(100vh-8rem)] flex-col p-5">
                             <p class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
                                 <span class="h-2 w-2 rounded-full bg-green-500"></span>
                                 @yield('preview-label', 'Live preview — full page')
@@ -120,17 +117,26 @@
     </div>
 
     <script>
-        // Mobile drawer open/close (same off-canvas behavior as the SPA shell).
-        const editorSidebar = document.getElementById('editor-sidebar')
-        const sidebarBackdrop = document.getElementById('sidebar-backdrop')
-        function setSidebarOpen(open) {
-            editorSidebar.classList.toggle('-translate-x-full', !open)
-            editorSidebar.classList.toggle('translate-x-0', open)
-            sidebarBackdrop.classList.toggle('hidden', !open)
-        }
-        document.getElementById('sidebar-open').addEventListener('click', () => setSidebarOpen(true))
-        document.getElementById('sidebar-close').addEventListener('click', () => setSidebarOpen(false))
-        sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false))
+        // User menu dropdown in the top bar (avatar → View site / Logout).
+        ;(() => {
+            const wrap = document.querySelector('[data-user-menu]')
+            if (!wrap) return
+            const panel = wrap.querySelector('[data-user-menu-panel]')
+            const chevron = wrap.querySelector('[data-user-menu-chevron]')
+            function setOpen(open) {
+                panel.classList.toggle('invisible', !open)
+                panel.classList.toggle('opacity-0', !open)
+                panel.classList.toggle('-translate-y-1', !open)
+                if (chevron) chevron.classList.toggle('-rotate-90', open)
+            }
+            wrap.querySelector('[data-user-menu-toggle]').addEventListener('click', (e) => {
+                e.stopPropagation()
+                setOpen(panel.classList.contains('invisible'))
+            })
+            wrap.addEventListener('click', (e) => e.stopPropagation())
+            document.addEventListener('click', () => setOpen(false))
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false) })
+        })()
 
         window.showLogoutConfirm = function () {
             const el = document.getElementById('logout-confirm-modal')

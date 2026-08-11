@@ -59,7 +59,6 @@ class ImportProductsFromSupabase extends Command
                     'original_price' => $r['original_price'] ?? null,
                     'image_path' => $r['image_path'] ?? null,
                     'features' => is_array($r['features'] ?? null) ? $r['features'] : [],
-                    'calories' => $r['calories'] ?? null,
                     'is_featured' => $r['is_featured'] ?? false,
                     'status' => $r['status'] ?? null,
                     'category' => $r['category'] ?? null,

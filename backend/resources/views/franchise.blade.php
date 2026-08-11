@@ -60,7 +60,7 @@
                 @php $franchiseHeroTypography = \App\Models\SiteContent::typographyStyle($hero['typography'] ?? []); @endphp
                 <span data-editable="franchise.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400" style="{{ $franchiseHeroTypography }}">{{ $hero['eyebrow'] ?? '' }}</span>
                 <h1 data-editable="franchise.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl" style="{{ $franchiseHeroTypography }}">{!! $heroTitleHtml !!}</h1>
-                <p data-editable="franchise.hero.subtitle" class="mx-auto mt-5 max-w-xl text-base text-navy-50/80" style="{{ $franchiseHeroTypography }}">{{ $hero['subtitle'] ?? '' }}</p>
+                <p data-editable="franchise.hero.subtitle" data-editable-multiline class="mx-auto mt-5 max-w-xl text-base text-navy-50/80" style="{{ $franchiseHeroTypography }}">{{ $hero['subtitle'] ?? '' }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <a href="{{ $href }}" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Inquire about a franchise
@@ -151,7 +151,7 @@
                     <div class="h-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg">
                         <span data-editable="franchise.perks.{{ $i }}.icon" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">{{ $p['icon'] ?? '' }}</span>
                         <h3 data-editable="franchise.perks.{{ $i }}.title" class="mt-4 text-base font-semibold text-navy-800">{{ $p['title'] ?? '' }}</h3>
-                        <p data-editable="franchise.perks.{{ $i }}.text" class="mt-2 text-sm text-slate-500">{{ $p['text'] ?? '' }}</p>
+                        <p data-editable="franchise.perks.{{ $i }}.text" data-editable-multiline class="mt-2 text-sm text-slate-500">{{ $p['text'] ?? '' }}</p>
                     </div>
                 @endforeach
             </div>
@@ -201,7 +201,7 @@
                             style="animation-delay: {{ $floatDelays[$i % 6] }}"
                         >
                             <span class="text-3xl leading-none text-brand-300 transition-colors duration-300 group-hover:text-brand-400" aria-hidden="true">&ldquo;</span>
-                            <p data-editable="franchise.testimonials.{{ $i }}.quote" class="-mt-1 line-clamp-6 flex-1 text-sm italic text-slate-600 sm:text-base">{{ $t['quote'] ?? '' }}</p>
+                            <p data-editable="franchise.testimonials.{{ $i }}.quote" data-editable-multiline class="-mt-1 line-clamp-6 flex-1 text-sm italic text-slate-600 sm:text-base">{{ $t['quote'] ?? '' }}</p>
                             <div class="mt-6 flex items-center gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-bold text-brand-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true">
                                     {{ strtoupper(substr(trim((string) ($t['name'] ?? '')), 0, 1)) ?: '?' }}
@@ -232,7 +232,7 @@
                         <div class="h-full rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
                             <span data-editable="franchise.steps.{{ $i }}.n" class="font-script text-3xl text-brand-500">{{ $s['n'] ?? '' }}</span>
                             <h3 data-editable="franchise.steps.{{ $i }}.title" class="mt-2 text-base font-semibold text-navy-800">{{ $s['title'] ?? '' }}</h3>
-                            <p data-editable="franchise.steps.{{ $i }}.text" class="mt-2 text-sm text-slate-500">{{ $s['text'] ?? '' }}</p>
+                            <p data-editable="franchise.steps.{{ $i }}.text" data-editable-multiline class="mt-2 text-sm text-slate-500">{{ $s['text'] ?? '' }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -257,8 +257,8 @@
                         @endif
                         <h3 data-editable="franchise.packages.{{ $i }}.name" class="text-lg font-bold text-navy-800">{{ $pkg['name'] ?? '' }}</h3>
                         <p data-editable="franchise.packages.{{ $i }}.price" class="mt-1 text-2xl font-bold text-brand-600">{{ $pkg['price'] ?? '' }}</p>
-                        <p data-editable="franchise.packages.{{ $i }}.blurb" class="mt-2 text-sm text-slate-500">{{ $pkg['blurb'] ?? '' }}</p>
-                        <ul data-editable="franchise.packages.{{ $i }}.features" class="mt-4 space-y-2 text-sm text-slate-600">
+                        <p data-editable="franchise.packages.{{ $i }}.blurb" data-editable-multiline class="mt-2 text-sm text-slate-500">{{ $pkg['blurb'] ?? '' }}</p>
+                        <ul data-editable="franchise.packages.{{ $i }}.features" data-editable-list class="mt-4 space-y-2 text-sm text-slate-600">
                             @foreach($pkg['features'] ?? [] as $f)
                                 <li class="flex items-start gap-2"><span class="mt-0.5 text-brand-500">✓</span>{{ $f }}</li>
                             @endforeach
@@ -288,7 +288,7 @@
                                 <polyline points="6 9 12 15 18 9" />
                             </svg>
                         </summary>
-                        <p data-editable="franchise.faqs.{{ $i }}.a" class="mt-3 text-sm text-slate-500">{{ $f['a'] ?? '' }}</p>
+                        <p data-editable="franchise.faqs.{{ $i }}.a" data-editable-multiline class="mt-3 text-sm text-slate-500">{{ $f['a'] ?? '' }}</p>
                     </details>
                 @endforeach
             </div>

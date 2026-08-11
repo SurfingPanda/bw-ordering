@@ -36,6 +36,24 @@ class LandingController extends Controller
             'title' => "What's New?",
             'subtitle' => "The latest additions to our bakeshop — try them while they're still warm.",
         ],
+        // NOT named 'categories' — same reserved-dead-SPA-key reason as
+        // bestSellersSection below (see that key's comment).
+        'categoriesSection' => [
+            'eyebrow' => 'Shop by category',
+            'title' => 'What are you craving today?',
+            'subtitle' => 'Browse our full range of freshly baked goodies for every occasion.',
+        ],
+        // NOT named 'bestSellers' — that key is a dead SPA-era product-card
+        // list already reserved in the CMS blob (see SiteContentController's
+        // MANAGED_KEYS comment); reusing it here would collide with it.
+        'bestSellersSection' => [
+            'eyebrow' => 'Crowd favorites',
+            'title' => 'Our Best Sellers',
+            'subtitle' => "Tried, tested, and loved — the treats our customers can't get enough of.",
+            // Editor-uploaded, shown as-is (no dark overlay) — same pattern
+            // as customCake.backgroundImage above the Categories section.
+            'backgroundImage' => null,
+        ],
         'buttons' => [
             'navOrder' => true,
             'navSignIn' => true,
@@ -53,6 +71,19 @@ class LandingController extends Controller
             'image' => '/images/custom-cake-tower.svg',
             'alt' => 'A tall three-tier custom celebration cake with drip icing and a candle on top',
             'buttonLink' => '/custom-cake',
+            // Solid card background color, editor-pickable — the brand
+            // orange it always used to be, just now a plain hex instead of
+            // a fixed from/to gradient.
+            'backgroundColor' => '#ef7d1a',
+            // Full-bleed backdrop behind BOTH the Categories section above
+            // this promo banner and the banner itself — editor-uploaded, so
+            // it's stored here rather than under 'categoriesVisible' (which
+            // only the Menu Categories mini-form, a separate save, manages).
+            'backgroundImage' => null,
+            // 0-100, applied only to the background image layer (never the
+            // content on top of it) so an editor can fade a busy photo back
+            // without darkening/tinting it — see the opacity slider below.
+            'backgroundOpacity' => 100,
         ],
         'storeLocator' => [
             'title' => '60+ stores, always near you',
@@ -132,13 +163,13 @@ class LandingController extends Controller
     ];
 
     /**
-     * Best Sellers / What's New render in a 4-wide grid (md:grid-cols-4) —
-     * cap at two full rows. Unlike the old CMS-curated card lists, these are
-     * every product with a given status, which is unbounded: an editor could
-     * flag 50 products best_seller and this section would otherwise render
-     * all 50 on the landing page.
+     * Both grids render 4-wide (md:grid-cols-4). Unlike the old CMS-curated
+     * card lists, these are every product with a given status, which is
+     * unbounded: an editor could flag 50 products best_seller and this
+     * section would otherwise render all 50 on the landing page.
      */
-    private const LANDING_GRID_LIMIT = 8;
+    private const BEST_SELLERS_LIMIT = 8; // two full rows
+    private const WHATS_NEW_LIMIT = 4; // one row
 
     public function index(Request $request)
     {
@@ -163,6 +194,10 @@ class LandingController extends Controller
             'bestSellers' => [],
             'whatsNewProducts' => [],
             'categories' => [],
+            // Arms the click-to-edit bridge (see partials/_editor-bridge) —
+            // only true for a real editor session previewing their own
+            // unsaved draft, never for a normal visitor.
+            'editable' => $this->isEditablePreview($request),
         ];
 
         if ($content['maintenance']['enabled'] ?? false) {
@@ -170,6 +205,8 @@ class LandingController extends Controller
         }
 
         $content['customCake'] = array_merge(self::DEFAULT_CONTENT['customCake'], $content['customCake'] ?? []);
+        $content['categoriesSection'] = array_merge(self::DEFAULT_CONTENT['categoriesSection'], $content['categoriesSection'] ?? []);
+        $content['bestSellersSection'] = array_merge(self::DEFAULT_CONTENT['bestSellersSection'], $content['bestSellersSection'] ?? []);
         $content['storeLocator'] = array_merge(self::DEFAULT_CONTENT['storeLocator'], $content['storeLocator'] ?? []);
         $content['newsletter'] = array_merge(self::DEFAULT_CONTENT['newsletter'], $content['newsletter'] ?? []);
         $content['footer'] = array_merge(self::DEFAULT_CONTENT['footer'], $content['footer'] ?? []);
@@ -186,12 +223,12 @@ class LandingController extends Controller
             ->get());
 
         $viewData['content'] = $content;
-        $viewData['bestSellers'] = $products->where('status', 'best_seller')->take(self::LANDING_GRID_LIMIT)->values()
+        $viewData['bestSellers'] = $products->where('status', 'best_seller')->take(self::BEST_SELLERS_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         // What's New is likewise products-table-sourced: every product whose
         // status is "new" (set in the admin Products editor), not a
         // CMS-curated card list.
-        $viewData['whatsNewProducts'] = $products->where('status', 'new')->take(self::LANDING_GRID_LIMIT)->values()
+        $viewData['whatsNewProducts'] = $products->where('status', 'new')->take(self::WHATS_NEW_LIMIT)->values()
             ->map(fn (Product $p) => $this->presentProduct($p))->all();
         $viewData['categories'] = $this->categoriesFrom(
             $products,
@@ -250,9 +287,11 @@ class LandingController extends Controller
             'tag' => self::STATUS_TAGS[$p->status] ?? null,
             'price' => '₱'.(fmod($price, 1.0) === 0.0 ? number_format($price, 0) : number_format($price, 2)),
             'desc' => $p->description,
-            'calories' => $p->calories,
-            'calorie_unit' => $p->calorie_unit,
+            'calorie_info' => $p->calorie_info,
             'allergens' => $p->features ?? [],
+            'net_weight' => $p->net_weight,
+            'storage_condition' => $p->storage_condition,
+            'serving_note' => $p->serving_note,
         ];
     }
 

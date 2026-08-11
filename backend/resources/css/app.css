@@ -22,6 +22,10 @@
     --color-brand-400: #f59b3f;
     --color-brand-500: #ef7d1a;
     --color-brand-600: #e06f10;
+
+    /* Site nav bar only — distinct from the --color-navy-* scale used
+       elsewhere (buttons, headings), which reads darker/more desaturated. */
+    --color-navbar: #083caa;
 }
 
 /* ---- "Under construction" (maintenance) page animations — ported from the
@@ -52,10 +56,11 @@
     display: none;
 }
 
-/* Product detail hover panels extend past the card edge. A hovered card must
-   paint above its later grid siblings or the panel gets covered by the next
-   product image. Kept as CSS rather than a utility state so this stacking
-   rule is reliable in both server-rendered and JS-rendered card grids. */
+/* Calorie hover chips pop out above their card (see menu.blade.php's
+   product-card and product-card.blade.php). A hovered card must paint above
+   its later grid siblings or the popped-out chip gets covered by the next
+   row's product image. Kept as CSS rather than a utility state so this
+   stacking rule is reliable in both server-rendered and JS-rendered grids. */
 .product-card:hover,
 .product-card:focus {
     z-index: 30;
@@ -66,21 +71,6 @@
 .product-card-wrap:has(.product-card:hover),
 .product-card-wrap:has(.product-card:focus) {
     z-index: 30;
-}
-
-/* Calorie hint above a product card — the small tail makes it read as a
-   conversational bubble rather than a detached status pill. */
-.calorie-bubble::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 100%;
-    width: 0;
-    height: 0;
-    transform: translateX(-50%);
-    border: 7px solid transparent;
-    border-top-color: rgb(11 31 61 / 0.95);
-    border-bottom: 0;
 }
 
 /* Slim, trackless scrollbar for scrollable panels with rounded corners (the

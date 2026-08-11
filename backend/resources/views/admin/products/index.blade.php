@@ -254,6 +254,19 @@
                 applyBundleFilter(item.closest('[data-bundle-products-wrap]'))
                 return
             }
+            // Calorie entries: a lightweight repeater kept deliberately
+            // separate from the shared [data-repeater] machinery above (see
+            // the comment on data-calorie-repeater in _product-row.blade.php)
+            // — plain-array field names (calorie_amounts[]/calorie_units[])
+            // mean a clone never needs index substitution.
+            const calorieAdd = e.target.closest('[data-calorie-add]')
+            if (calorieAdd) {
+                const wrap = calorieAdd.closest('[data-calorie-repeater]')
+                wrap.querySelector('[data-calorie-rows]').insertAdjacentHTML('beforeend', wrap.querySelector('template').innerHTML)
+                return
+            }
+            const calorieRemove = e.target.closest('[data-calorie-remove]')
+            if (calorieRemove) { calorieRemove.closest('[data-calorie-entry]').remove(); return }
             // A removed row leaves a gap on the current page — re-page to fill it.
             if (e.target.closest('#products-form [data-remove]')) { applyProductSearch(); return }
             if (e.target.closest('#products-form [data-add]')) {

@@ -47,7 +47,12 @@
         form.addEventListener('input', markDirty)
         form.addEventListener('change', markDirty)
         form.addEventListener('click', (e) => {
-            if (e.target.closest('[data-add], [data-remove], [data-move]')) markDirty(e)
+            // data-calorie-add/-remove: the products editor's calorie
+            // repeater (see _product-row.blade.php) — deliberately separate
+            // from data-add/data-remove/data-move (the shared repeater
+            // machinery in _form-scripts.blade.php) but still needs to flip
+            // Save/Reset on.
+            if (e.target.closest('[data-add], [data-remove], [data-move], [data-calorie-add], [data-calorie-remove]')) markDirty(e)
         })
 
         // Warn before leaving with unsaved edits (closed tab, back button,

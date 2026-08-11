@@ -54,7 +54,7 @@ class SiteContentController extends Controller
      */
     private const MANAGED_KEYS = [
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
-        'whatsNew', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator', 'storesPage',
+        'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator', 'storesPage',
         'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
 

@@ -43,9 +43,9 @@
     @else
         @php $customCakeFormTypography = \App\Models\SiteContent::typographyStyle($form['typography'] ?? []); @endphp
         <div class="text-center">
-            <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500" style="{{ $customCakeFormTypography }}">{{ $form['eyebrow'] }}</span>
-            <h1 class="mt-2 font-brand text-4xl font-bold text-navy-800" style="{{ $customCakeFormTypography }}">{{ $form['title'] }}</h1>
-            <p class="mx-auto mt-3 max-w-md text-sm text-slate-500" style="{{ $customCakeFormTypography }}">{{ $form['subtitle'] }}</p>
+            <span data-editable="customCakeForm.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500" style="{{ $customCakeFormTypography }}">{{ $form['eyebrow'] }}</span>
+            <h1 data-editable="customCakeForm.title" class="mt-2 font-brand text-4xl font-bold text-navy-800" style="{{ $customCakeFormTypography }}">{{ $form['title'] }}</h1>
+            <p data-editable="customCakeForm.subtitle" data-editable-multiline class="mx-auto mt-3 max-w-md text-sm text-slate-500" style="{{ $customCakeFormTypography }}">{{ $form['subtitle'] }}</p>
         </div>
 
         {{-- progress --}}
@@ -541,5 +541,8 @@
 })();
 </script>
 @endunless
+@if($editable ?? false)
+    @include('partials._editor-bridge')
+@endif
 </body>
 </html>

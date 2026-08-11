@@ -2,10 +2,10 @@
     Shared product detail modal — the image + badge/name/description/calories/
     allergens/trust-line shell used by both the landing page's card grid and
     the /menu page's product grid. Previously each page hand-rolled an
-    identical copy of this markup and its populate logic (incl. the allergen
-    icon map); now there's one shell and one JS module (window.ProductModal),
-    and each page supplies only what's genuinely different — the price/CTA
-    footer — via the `renderFooter(footerEl, data)` callback passed to open().
+    identical copy of this markup and its populate logic; now there's one
+    shell and one JS module (window.ProductModal), and each page supplies
+    only what's genuinely different — the price/CTA footer — via the
+    `renderFooter(footerEl, data)` callback passed to open().
 
     Usage (in a page's own <script>):
         var pmModal = window.ProductModal.init({
@@ -13,8 +13,14 @@
             onClose: function () {}, // optional extra cleanup on any close
         });
         pmModal.open({
-            img, name, badge, desc, calories,
-            allergens: [...] | 'comma, separated, string',
+            img, name, badge, desc, calorieText,
+            // Free-form text, one entry per admin-entered line — rendered as
+            // plain joined text, never split apart (an entry may itself be a
+            // full sentence containing commas). Array, or a JSON-encoded
+            // array string (e.g. from a data-* attribute).
+            allergens: [...] | '["...", "..."]',
+            netWeight: '250g', storageCondition: 'Refrigerate after opening',
+            servingNote: 'Best served when hot', // optional
             dim: false, grayscale: false, // optional sold-out treatment
         }, function (footerEl, data) {
             footerEl.innerHTML = `...price + CTA markup...`;
@@ -42,12 +48,25 @@
             </span>
             <div class="flex flex-col p-8 sm:p-10">
                 <span id="pm-tag" class="hidden w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600"></span>
-                <h3 id="pm-name" class="mt-4 text-3xl font-extrabold text-navy-900 sm:text-4xl"></h3>
+                <div class="mt-4 flex items-start gap-1">
+                    <h3 id="pm-name" class="min-w-0 text-3xl font-extrabold text-navy-900"></h3>
+                    <span id="pm-serving-note" class="hidden mt-1 shrink-0 whitespace-nowrap text-[10px] font-semibold text-red-500"></span>
+                </div>
                 <p id="pm-desc" class="hidden mt-4 text-base leading-relaxed text-slate-500"></p>
                 <span id="pm-calories" class="hidden mt-5 w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"></span>
                 <div id="pm-allergens-wrap" class="hidden mt-6">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
-                    <div id="pm-allergens" class="mt-2.5 flex flex-wrap gap-2"></div>
+                    <p id="pm-allergens" class="mt-1.5 text-sm leading-relaxed text-slate-600"></p>
+                </div>
+                <div id="pm-meta-wrap" class="hidden mt-6 grid grid-cols-2 gap-4">
+                    <div id="pm-netweight-wrap" class="hidden">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Net Weight</p>
+                        <p id="pm-netweight" class="mt-1.5 text-sm font-semibold text-navy-700"></p>
+                    </div>
+                    <div id="pm-storage-wrap" class="hidden">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Storage Condition</p>
+                        <p id="pm-storage" class="mt-1.5 text-sm font-semibold text-navy-700"></p>
+                    </div>
                 </div>
                 <div class="mt-8 border-t border-slate-100 pt-6">
                     <div id="pm-footer"></div>
@@ -63,17 +82,6 @@
 
 <script>
 window.ProductModal = (function () {
-    var ALLERGEN_ICONS = {
-        gluten: '🌾', wheat: '🌾',
-        egg: '🥚', eggs: '🥚',
-        milk: '🥛', dairy: '🥛',
-        nut: '🥜', nuts: '🥜', peanut: '🥜', peanuts: '🥜', treenuts: '🥜',
-        soy: '🌱',
-        shellfish: '🦐', seafood: '🦐',
-        fish: '🐟',
-        sesame: '🌰',
-    };
-
     function init(opts) {
         opts = opts || {};
         var closeOnBackdrop = opts.closeOnBackdrop !== false;
@@ -127,18 +135,22 @@ window.ProductModal = (function () {
 
             document.getElementById('pm-name').textContent = d.name || '';
 
+            var servingNoteEl = document.getElementById('pm-serving-note');
+            servingNoteEl.textContent = d.servingNote || '';
+            servingNoteEl.classList.toggle('hidden', !d.servingNote);
+
             var descEl = document.getElementById('pm-desc');
             descEl.textContent = d.desc || '';
             descEl.classList.toggle('hidden', !d.desc);
 
             var calEl = document.getElementById('pm-calories');
             calEl.textContent = '';
-            if (d.calories) {
+            if (d.calorieText) {
                 var flame = document.createElement('span');
                 flame.setAttribute('aria-hidden', 'true');
                 flame.textContent = '🔥';
                 calEl.appendChild(flame);
-                calEl.appendChild(document.createTextNode(' ' + d.calories + ' kcal per ' + (d.calorieUnit || 'piece')));
+                calEl.appendChild(document.createTextNode(' ' + d.calorieText));
                 calEl.classList.remove('hidden');
                 calEl.classList.add('inline-flex');
             } else {
@@ -146,27 +158,32 @@ window.ProductModal = (function () {
                 calEl.classList.remove('inline-flex');
             }
 
+            // Each entry is free-form text (an editor may write a full
+            // sentence, not just a single keyword), so entries are only ever
+            // joined for display, never split apart again — splitting on
+            // commas used to shred a sentence like "May contain glucose,
+            // sulfirite" into two fragments.
             var allergensWrap = document.getElementById('pm-allergens-wrap');
             var allergensEl = document.getElementById('pm-allergens');
-            allergensEl.innerHTML = '';
-            var allergens = (Array.isArray(d.allergens) ? d.allergens : [d.allergens]).reduce(function (acc, a) {
-                return acc.concat(String(a || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
-            }, []);
-            if (allergens.length) {
-                allergens.forEach(function (a) {
-                    var span = document.createElement('span');
-                    span.className = 'inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700';
-                    var icon = document.createElement('span');
-                    icon.setAttribute('aria-hidden', 'true');
-                    icon.textContent = ALLERGEN_ICONS[String(a).toLowerCase()] || '⚠️';
-                    span.appendChild(icon);
-                    span.appendChild(document.createTextNode(' ' + a));
-                    allergensEl.appendChild(span);
-                });
-                allergensWrap.classList.remove('hidden');
-            } else {
-                allergensWrap.classList.add('hidden');
+            var allergensRaw = d.allergens;
+            if (typeof allergensRaw === 'string') {
+                try { allergensRaw = JSON.parse(allergensRaw); } catch (e) { allergensRaw = allergensRaw ? [allergensRaw] : []; }
             }
+            var allergens = (Array.isArray(allergensRaw) ? allergensRaw : [allergensRaw])
+                .map(function (a) { return String(a || '').trim(); })
+                .filter(Boolean);
+            allergensEl.textContent = allergens.join(' ');
+            allergensWrap.classList.toggle('hidden', !allergens.length);
+
+            var netWeightWrap = document.getElementById('pm-netweight-wrap');
+            document.getElementById('pm-netweight').textContent = d.netWeight || '';
+            netWeightWrap.classList.toggle('hidden', !d.netWeight);
+
+            var storageWrap = document.getElementById('pm-storage-wrap');
+            document.getElementById('pm-storage').textContent = d.storageCondition || '';
+            storageWrap.classList.toggle('hidden', !d.storageCondition);
+
+            document.getElementById('pm-meta-wrap').classList.toggle('hidden', !d.netWeight && !d.storageCondition);
 
             var footer = document.getElementById('pm-footer');
             footer.innerHTML = '';

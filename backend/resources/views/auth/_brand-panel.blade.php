@@ -19,17 +19,17 @@
         <div class="absolute right-16 top-80">🍰</div>
     </div>
     <div class="relative z-10 flex flex-col items-center px-10 pb-10 pt-12 text-center text-white">
-        <img src="{{ $ap['logo'] }}" alt="BW Superbakeshop" class="h-48 w-auto drop-shadow-lg">
+        <img data-editable="authPanel.logo" src="{{ $ap['logo'] }}" alt="BW Superbakeshop" class="h-48 w-auto drop-shadow-lg">
         @php $authPanelTypography = \App\Models\SiteContent::typographyStyle($ap['typography'] ?? []); @endphp
         @if($ap['tagline'])
-            <p class="mt-6 text-sm font-medium text-navy-50/90" style="{{ $authPanelTypography }}">{{ $ap['tagline'] }}</p>
+            <p data-editable="authPanel.tagline" class="mt-6 text-sm font-medium text-navy-50/90" style="{{ $authPanelTypography }}">{{ $ap['tagline'] }}</p>
         @endif
         @if($ap['script'])
-            <p class="font-script text-xl text-brand-400" style="{{ $authPanelTypography }}">{{ $ap['script'] }}</p>
+            <p data-editable="authPanel.script" class="font-script text-xl text-brand-400" style="{{ $authPanelTypography }}">{{ $ap['script'] }}</p>
         @endif
     </div>
     @if($ap['image'])
-        <img src="{{ $ap['image'] }}" alt="" loading="lazy" decoding="async" class="relative z-10 mt-auto w-full max-w-md self-center px-6 pb-6 drop-shadow-2xl">
+        <img data-editable="authPanel.image" src="{{ $ap['image'] }}" alt="" loading="lazy" decoding="async" class="relative z-10 mt-auto w-full max-w-md self-center px-6 pb-6 drop-shadow-2xl">
     @endif
     <svg class="absolute right-[-1px] top-0 h-full w-10 text-white" viewBox="0 0 40 600" preserveAspectRatio="none" fill="currentColor">
         <path d="M40 0 C40 130 8 200 8 300 C8 400 40 470 40 600 Z" />

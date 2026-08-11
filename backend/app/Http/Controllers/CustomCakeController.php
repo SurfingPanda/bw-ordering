@@ -86,6 +86,7 @@ class CustomCakeController extends Controller
             // Branch picker on the "Your Info" step — same cached list the
             // checkout page uses.
             'stores' => app(StoreController::class)->cachedList(),
+            'editable' => $this->isEditablePreview($request),
         ]);
     }
 

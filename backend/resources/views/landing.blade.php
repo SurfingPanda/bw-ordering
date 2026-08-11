@@ -72,30 +72,40 @@
         {{-- Announcement bar (Site Editor toggle; absent = shown) --}}
         @if($content['announcementVisible'] ?? true)
             <div class="bg-navy-900 text-center text-xs font-medium tracking-wide text-white">
-                <p class="px-4 py-2" style="{{ \App\Models\SiteContent::typographyStyle($content['announcementTypography'] ?? []) }}">{{ $content['announcement'] }}</p>
+                <p data-editable="announcement" data-editable-multiline class="px-4 py-2" style="{{ \App\Models\SiteContent::typographyStyle($content['announcementTypography'] ?? []) }}">{{ $content['announcement'] }}</p>
             </div>
         @endif
 
         {{-- Nav --}}
-        <header class="sticky top-0 z-50 border-b border-slate-100 bg-brand-50">
+        <header class="sticky top-0 z-50 bg-navbar">
             @php $orderState = $btn('navOrder'); $signInState = $btn('navSignIn'); @endphp
             {{-- Nav "Menu"/"Order Now" open straight to What's New (falls back to
                  "All" on /menu itself if there's nothing new to show — see the
                  requestedTab handling in menu.blade.php) so first-time visitors
                  see the newest products instead of the full unsorted catalogue. --}}
             @php $menuHref = '/menu?category=' . urlencode("What's New"); @endphp
-            <nav class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
-                <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
+            <nav class="relative mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
+                {{-- Reserves layout width in the flex row; the actual circular
+                     badge is absolutely positioned within it so it can spill
+                     past the header's bottom edge without affecting the rest
+                     of the nav's flex layout. --}}
+                <a href="/" class="group relative z-10 h-full w-20 shrink-0 sm:w-24">
+                    {{-- Soft glow behind the badge, fades in on hover — sits
+                         earlier in the DOM (and so behind) the badge span
+                         below, no z-index needed. --}}
+                    <span aria-hidden="true" class="pointer-events-none absolute -bottom-12 left-0 h-24 w-24 rounded-full bg-brand-400/50 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100 sm:-bottom-14 sm:h-28 sm:w-28"></span>
+                    <span class="absolute -bottom-12 left-0 flex h-24 w-24 items-center justify-center rounded-full bg-white p-2 shadow-lg transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 sm:-bottom-14 sm:h-28 sm:w-28">
+                        <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
+                    </span>
                 </a>
 
                 @php
                     // Animated underline on hover: a rounded bar that grows
                     // from the left, matching the pill/soft-edge language
                     // used everywhere else on this page (buttons, badges).
-                    $navLink = 'relative py-1 transition hover:text-brand-600 after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 after:ease-out after:content-[\'\'] hover:after:w-full';
+                    $navLink = 'relative py-1 transition hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:rounded-full after:bg-brand-500 after:transition-all after:duration-300 after:ease-out after:content-[\'\'] hover:after:w-full';
                 @endphp
-                <ul class="hidden items-center gap-7 text-sm font-medium text-navy-700 lg:flex">
+                <ul class="hidden items-center gap-7 text-sm font-medium text-white/90 lg:flex">
                     <li><a href="{{ $menuHref }}" class="{{ $navLink }}">Menu</a></li>
                     <li><a href="/stores" class="{{ $navLink }}">Store</a></li>
                     <li><a href="/franchise" class="{{ $navLink }}">Partner with us</a></li>
@@ -103,12 +113,12 @@
 
                 <div class="hidden items-center gap-3 lg:flex">
                     @if($user)
-                        <a href="{{ $accountRoute }}" class="text-sm font-semibold text-navy-700 transition hover:text-brand-600">
+                        <a href="{{ $accountRoute }}" class="text-sm font-semibold text-white/90 transition hover:text-white">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
                     @elseif($signInState !== 'off')
                         <a href="{{ route('login') }}" @if($signInState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
-                            class="text-sm font-semibold text-navy-700 transition hover:text-brand-600 {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
+                            class="text-sm font-semibold text-white/90 transition hover:text-white {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
                     @endif
                     @if($orderState !== 'off')
                         <a href="{{ $menuHref }}" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
@@ -119,7 +129,7 @@
                     @endif
                 </div>
 
-                <button type="button" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" aria-label="Toggle menu" class="ml-2 shrink-0 text-navy-800 lg:hidden">
+                <button type="button" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" aria-label="Toggle menu" class="ml-2 shrink-0 text-white lg:hidden">
                     <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                         <line x1="4" y1="7" x2="20" y2="7" />
                         <line x1="4" y1="12" x2="20" y2="12" />
@@ -128,20 +138,20 @@
                 </button>
             </nav>
 
-            <div id="mobile-nav" class="hidden border-t border-slate-100 bg-brand-50 px-4 py-3 lg:hidden">
-                <ul class="flex flex-col gap-1 text-sm font-medium text-navy-700">
-                    <li><a href="{{ $menuHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600">Menu</a></li>
-                    <li><a href="/stores" class="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600">Store</a></li>
-                    <li><a href="/franchise" class="block rounded-lg px-3 py-2 transition hover:bg-navy-50 hover:text-brand-600">Partner with us</a></li>
+            <div id="mobile-nav" class="hidden border-t border-navy-900/10 bg-navbar px-4 py-3 lg:hidden">
+                <ul class="flex flex-col gap-1 text-sm font-medium text-white/90">
+                    <li><a href="{{ $menuHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Menu</a></li>
+                    <li><a href="/stores" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Store</a></li>
+                    <li><a href="/franchise" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Partner with us</a></li>
                 </ul>
                 <div class="mt-3 flex gap-3">
                     @if($user)
-                        <a href="{{ $accountRoute }}" class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700">
+                        <a href="{{ $accountRoute }}" class="flex-1 rounded-full border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
                         </a>
                     @elseif($signInState !== 'off')
                         <a href="{{ route('login') }}" @if($signInState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
-                            class="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-navy-700 {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
+                            class="flex-1 rounded-full border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white {{ $signInState === 'disabled' ? 'cursor-not-allowed opacity-60' : '' }}">Sign In</a>
                     @endif
                     @if($orderState !== 'off')
                         <a href="{{ $menuHref }}" @if($orderState === 'disabled') aria-disabled="true" tabindex="-1" onclick="event.preventDefault()" @endif
@@ -159,10 +169,16 @@
         <section id="home" class="bg-navy-900">
             <div id="hero-carousel" class="group relative">
                 {{-- skip banners the editor hasn't given an image yet — an empty
-                     src renders as a giant broken-image slide --}}
-                @php $heroSlides = array_values(array_filter($content['banners'], fn ($b) => !empty($b['img']))); @endphp
+                     src renders as a giant broken-image slide. Deliberately
+                     NOT array_values()'d — $i needs to stay the real index
+                     into $content['banners'] (it drives data-editable's path
+                     below, which must match the sidebar's actual
+                     banners[$i][img] field), so "is this the first slide"
+                     uses Blade's own $loop->first instead of assuming $i
+                     starts at 0. --}}
+                @php $heroSlides = array_filter($content['banners'], fn ($b) => !empty($b['img'])); @endphp
                 @foreach($heroSlides as $i => $slide)
-                    <div class="hero-slide transition-opacity duration-700 ease-out {{ $i === 0 ? 'opacity-100' : 'pointer-events-none absolute inset-0 opacity-0' }}">
+                    <div class="hero-slide transition-opacity duration-700 ease-out {{ $loop->first ? 'opacity-100' : 'pointer-events-none absolute inset-0 opacity-0' }}">
                         <a href="/menu" class="block">
                             {{-- Only the first slide is visible on load, so later
                                  slides are marked lazy on principle; note browsers
@@ -174,7 +190,7 @@
                                  fallback for the aspect-[12/5] class — actual uploaded
                                  banners are cropped to this box via object-cover
                                  regardless of their real dimensions. --}}
-                            <img src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" loading="{{ $i === 0 ? 'eager' : 'lazy' }}" decoding="async" width="1920" height="800" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
+                            <img data-editable="banners.{{ $i }}.img" src="{{ $slide['img'] }}" alt="{{ $slide['alt'] ?? '' }}" loading="{{ $loop->first ? 'eager' : 'lazy' }}" decoding="async" width="1920" height="800" class="aspect-[12/5] max-h-[800px] w-full object-cover object-top">
                         </a>
                     </div>
                 @endforeach
@@ -185,41 +201,51 @@
         {{-- What's New — products with status "new" (hidden when there are
              none, or via the Site Editor toggle) --}}
         @if(($content['whatsNew']['visible'] ?? true) && !empty($whatsNewProducts))
-            <section id="whats-new" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-                @php $whatsNewTypography = \App\Models\SiteContent::typographyStyle($content['whatsNew']['typography'] ?? []); @endphp
-                <div class="mx-auto max-w-2xl text-center" data-reveal>
-                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
-                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['title'] ?? '' }}</h2>
-                    @if(!empty($content['whatsNew']['subtitle']))
-                        <p class="mt-3 text-sm text-slate-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['subtitle'] }}</p>
-                    @endif
-                </div>
-                <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
-                    @foreach($whatsNewProducts as $p)
-                        <div class="product-card-wrap" data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
-                            @include('partials.product-card', ['product' => $p])
-                        </div>
-                    @endforeach
-                </div>
-                <div class="mt-10 text-center" data-reveal>
-                    <a href="/menu?category={{ urlencode("What's New") }}"
-                        class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                        See What's New <span aria-hidden="true">→</span>
-                    </a>
+            <section id="whats-new" class="bg-white py-16">
+                <div class="mx-auto max-w-6xl px-4 sm:px-6">
+                    @php $whatsNewTypography = \App\Models\SiteContent::typographyStyle($content['whatsNew']['typography'] ?? []); @endphp
+                    <div class="mx-auto max-w-2xl text-center" data-reveal>
+                        <span data-editable="whatsNew.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['eyebrow'] ?? '' }}</span>
+                        <h2 data-editable="whatsNew.title" class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['title'] ?? '' }}</h2>
+                        @if(!empty($content['whatsNew']['subtitle']))
+                            <p data-editable="whatsNew.subtitle" data-editable-multiline class="mt-3 text-sm text-slate-500" style="{{ $whatsNewTypography }}">{{ $content['whatsNew']['subtitle'] }}</p>
+                        @endif
+                    </div>
+                    <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
+                        @foreach($whatsNewProducts as $p)
+                            <div class="product-card-wrap" data-reveal data-reveal-delay="{{ ($loop->index % 4) * 80 }}">
+                                @include('partials.product-card', ['product' => $p])
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-10 text-center" data-reveal>
+                        <a href="/menu?category={{ urlencode("What's New") }}"
+                            class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
+                            See What's New <span aria-hidden="true">→</span>
+                        </a>
+                    </div>
                 </div>
             </section>
         @endif
 
         {{-- Best Sellers: live products flagged status=best_seller (see LandingController).
              Hidden entirely when nothing is flagged yet, same as What's New below —
-             otherwise this renders as an empty heading + empty grid. --}}
+             otherwise this renders as an empty heading + empty grid.
+
+             Optional editor-uploaded background image (Site Editor → Best
+             Sellers) shown exactly as uploaded — no dark overlay/tint, same
+             rule as the Categories/Custom Cake backdrop above. The heading
+             sits on its own white card when a background is set — a white
+             card with dark text reads on either a light or dark photo,
+             without ever touching/dimming the photo itself. --}}
+        @php $bestSellersBg = $content['bestSellersSection']['backgroundImage'] ?? null; @endphp
         @if(!empty($bestSellers))
-        <section id="best-sellers" class="bg-navy-50/60 py-16">
+        <section id="best-sellers" class="bg-cover bg-center py-16 {{ $bestSellersBg ? '' : 'bg-navy-50/60' }}" @if($bestSellersBg) style="background-image: url('{{ $bestSellersBg }}')" @endif>
             <div class="mx-auto max-w-6xl px-4 sm:px-6">
-                <div class="mx-auto max-w-2xl text-center" data-reveal>
-                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Crowd favorites</span>
-                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">Our Best Sellers</h2>
-                    <p class="mt-3 text-sm text-slate-500">Tried, tested, and loved — the treats our customers can't get enough of.</p>
+                <div class="mx-auto max-w-2xl text-center {{ $bestSellersBg ? 'rounded-3xl bg-white/95 px-6 py-8 shadow-lg' : '' }}" data-reveal>
+                    <span data-editable="bestSellersSection.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $content['bestSellersSection']['eyebrow'] ?? '' }}</span>
+                    <h2 data-editable="bestSellersSection.title" class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $content['bestSellersSection']['title'] ?? '' }}</h2>
+                    <p data-editable="bestSellersSection.subtitle" data-editable-multiline class="mt-3 text-sm text-slate-500">{{ $content['bestSellersSection']['subtitle'] ?? '' }}</p>
                 </div>
                 <div class="mt-10 grid grid-cols-2 gap-5 md:grid-cols-4">
                     @foreach($bestSellers as $p)
@@ -242,83 +268,112 @@
         </section>
         @endif
 
-        {{-- Categories: distinct product categories (see LandingController;
-             Site Editor toggle saved by the Menu Categories tab) --}}
-        @if($content['categoriesVisible'] ?? true)
-        <section id="categories" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <div class="mx-auto max-w-2xl text-center" data-reveal>
-                <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Shop by category</span>
-                <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">What are you craving today?</h2>
-                <p class="mt-3 text-sm text-slate-500">Browse our full range of freshly baked goodies for every occasion.</p>
-            </div>
-            {{-- Same placeholder image + "no image" onerror fallback the
-                 product cards use (partials/product-card.blade.php), so a
-                 category with no photo shows the same thing a product does
-                 instead of a bare grey "no image" circle. --}}
-            @php $fallbackImg = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png'; @endphp
-            <div class="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
-                @foreach(array_slice($categories, 0, 6) as $c)
-                    <div data-reveal data-reveal-delay="{{ $loop->index * 80 }}">
-                    <a href="/menu?category={{ urlencode($c['name']) }}" class="group flex h-full flex-col items-center gap-4 rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:border-brand-200 hover:shadow-lg">
-                        <span class="h-28 w-28 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-100 transition group-hover:ring-brand-200">
-                            <img src="{{ $c['img'] ?: $fallbackImg }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" width="112" height="112"
-                                class="h-full w-full object-cover transition duration-300 group-hover:scale-110"
-                                onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
-                            <span class="hidden h-full w-full items-center justify-center text-xs font-medium text-slate-400">no image</span>
-                        </span>
-                        <span class="text-lg font-semibold text-navy-700">{{ $c['name'] }}</span>
-                    </a>
-                    </div>
-                @endforeach
-            </div>
-            <div class="mt-10 text-center">
-                <a href="/menu" class="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900">
-                    See all categories
-                </a>
-            </div>
-        </section>
-        @endif
-
-        {{-- Custom cake promo banner --}}
+        {{-- Categories + Custom Cake promo share one backdrop: an
+             editor-uploaded background image (Site Editor → Custom Cake
+             Banner → "Section background image") sits behind both, shown
+             exactly as uploaded — no dark overlay/tint of any kind, so the
+             photo never looks darkened by default. An editor-adjustable
+             opacity slider is the one exception, and it's applied only to
+             this dedicated background layer (never the content on top of
+             it), so fading the photo back never fades the heading/cards
+             with it. Legibility instead comes from putting the Categories
+             heading on its own solid white card (works over a light OR dark
+             photo, unlike white text which only reads on a dark one).
+             Falls back to the plain page background (no card, original text
+             colors) when nothing's uploaded. --}}
         @php
             $cc = $content['customCake'];
             $promoState = $btn('promoOrder');
+            $categoriesOn = $content['categoriesVisible'] ?? true;
+            $customCakeOn = $cc['visible'] ?? true;
+            $sectionsBg = $cc['backgroundImage'] ?? null;
+            $sectionsBgOpacity = ($cc['backgroundOpacity'] ?? '') !== '' ? (int) $cc['backgroundOpacity'] : 100;
         @endphp
-        @if($cc['visible'] ?? true)
-        <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6" data-reveal>
-            <div id="custom-cake"
-                class="relative min-h-[300px] rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-12 text-white shadow-xl sm:px-12">
-                @if(!empty($cc['image']))
-                    {{-- 480x720 matches the default custom-cake-tower.svg's own
-                         viewBox (2:3) — same "intrinsic ratio hint, not the
-                         literal file size" approach as the hero banner above,
-                         since an editor-uploaded replacement can be any ratio. --}}
-                    <img src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async" width="480" height="720"
-                        class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl lg:block lg:right-16 lg:h-[500px]">
-                @endif
-                @php $customCakeTypography = \App\Models\SiteContent::typographyStyle($cc['typography'] ?? []); @endphp
-                <div class="relative z-10 max-w-md">
-                    @if(!empty($cc['eyebrow']))
-                        <p class="font-script text-2xl text-white/90" style="{{ $customCakeTypography }}">{{ $cc['eyebrow'] }}</p>
-                    @endif
-                    <h2 class="mt-2 text-3xl font-bold sm:text-4xl" style="{{ $customCakeTypography }}">{{ $cc['title'] }}</h2>
-                    @if(!empty($cc['subtitle']))
-                        <p class="mt-3 text-sm text-white/90" style="{{ $customCakeTypography }}">{{ $cc['subtitle'] }}</p>
-                    @endif
-                    @if($promoState !== 'off')
-                        @php
-                            $promoHref = $cc['buttonLink'] ?: '/custom-cake';
-                            $promoDisabled = $promoState === 'disabled';
-                        @endphp
-                        <a href="{{ $promoHref }}" @if($isExternal($promoHref)) target="_blank" rel="noreferrer" @endif
-                            @if($promoDisabled) onclick="event.preventDefault();" aria-disabled="true" tabindex="-1" @endif
-                            class="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50 {{ $promoDisabled ? 'cursor-not-allowed opacity-60' : '' }}">
-                            {{ $cc['buttonLabel'] ?: 'Order a custom cake' }}
+        @if($categoriesOn || $customCakeOn)
+        <div class="relative isolate">
+            @if($sectionsBg)
+                <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ $sectionsBg }}'); opacity: {{ $sectionsBgOpacity / 100 }};"></div>
+            @endif
+            <div class="relative">
+                {{-- Categories: distinct product categories (see LandingController;
+                     Site Editor toggle saved by the Menu Categories tab) --}}
+                @if($categoriesOn)
+                <section id="categories" class="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+                    <div class="mx-auto max-w-2xl text-center" data-reveal>
+                        <span data-editable="categoriesSection.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $content['categoriesSection']['eyebrow'] ?? '' }}</span>
+                        <h2 data-editable="categoriesSection.title" class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $content['categoriesSection']['title'] ?? '' }}</h2>
+                        <p data-editable="categoriesSection.subtitle" data-editable-multiline class="mt-3 mb-8 text-sm text-slate-500">{{ $content['categoriesSection']['subtitle'] ?? '' }}</p>
+                    </div>
+                    {{-- Same placeholder image + "no image" onerror fallback the
+                         product cards use (partials/product-card.blade.php), so a
+                         category with no photo shows the same thing a product does
+                         instead of a bare grey "no image" tile. The uploaded photo
+                         fills the whole card (not just a small circle badge) with
+                         the category name overlaid at the bottom on a gradient
+                         scrim, so the image reads at full size. --}}
+                    @php $fallbackImg = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png'; @endphp
+                    <div class="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-3">
+                        @foreach(array_slice($categories, 0, 6) as $c)
+                            <div data-reveal data-reveal-delay="{{ $loop->index * 80 }}">
+                            <a href="/menu?category={{ urlencode($c['name']) }}" class="group relative block h-48 overflow-hidden rounded-3xl shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:h-56">
+                                <img src="{{ $c['img'] ?: $fallbackImg }}" alt="{{ $c['name'] }}" loading="lazy" decoding="async" width="400" height="300"
+                                    class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                    onerror="this.nextElementSibling.classList.replace('hidden', 'flex'); this.remove();">
+                                <span class="hidden absolute inset-0 items-center justify-center bg-slate-100 text-xs font-medium text-slate-400">no image</span>
+                                <span class="absolute inset-0 bg-gradient-to-t from-navy-900/80 via-navy-900/10 to-transparent"></span>
+                                <span class="absolute inset-x-0 bottom-0 p-4 text-left text-lg font-semibold text-white">{{ $c['name'] }}</span>
+                            </a>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-12 text-center">
+                        <a href="/menu" class="inline-block rounded-full bg-gradient-to-r from-navy-700 to-navy-800 px-8 py-3 text-sm font-semibold text-white shadow-md shadow-navy-800/30 transition hover:from-navy-800 hover:to-navy-900">
+                            See all categories
                         </a>
-                    @endif
-                </div>
+                    </div>
+                </section>
+                @endif
+
+                {{-- Custom cake promo banner --}}
+                @if($customCakeOn)
+                <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6" data-reveal>
+                    <div id="custom-cake"
+                        class="relative min-h-[300px] rounded-3xl px-8 py-12 text-white shadow-xl sm:px-12"
+                        style="background-color: {{ $cc['backgroundColor'] ?? '#ef7d1a' }};">
+                        @if(!empty($cc['image']))
+                            {{-- 480x720 matches the default custom-cake-tower.svg's own
+                                 viewBox (2:3) — same "intrinsic ratio hint, not the
+                                 literal file size" approach as the hero banner above,
+                                 since an editor-uploaded replacement can be any ratio. --}}
+                            <img data-editable="customCake.image" src="{{ $cc['image'] }}" alt="{{ $cc['alt'] ?? '' }}" loading="lazy" decoding="async" width="480" height="720"
+                                class="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-auto max-w-none drop-shadow-2xl lg:block lg:right-16 lg:h-[500px]">
+                        @endif
+                        @php $customCakeTypography = \App\Models\SiteContent::typographyStyle($cc['typography'] ?? []); @endphp
+                        <div class="relative z-10 max-w-md">
+                            @if(!empty($cc['eyebrow']))
+                                <p data-editable="customCake.eyebrow" class="font-script text-2xl text-white/90" style="{{ $customCakeTypography }}">{{ $cc['eyebrow'] }}</p>
+                            @endif
+                            <h2 data-editable="customCake.title" class="mt-2 text-3xl font-bold sm:text-4xl" style="{{ $customCakeTypography }}">{{ $cc['title'] }}</h2>
+                            @if(!empty($cc['subtitle']))
+                                <p data-editable="customCake.subtitle" data-editable-multiline class="mt-3 text-sm text-white/90" style="{{ $customCakeTypography }}">{{ $cc['subtitle'] }}</p>
+                            @endif
+                            @if($promoState !== 'off')
+                                @php
+                                    $promoHref = $cc['buttonLink'] ?: '/custom-cake';
+                                    $promoDisabled = $promoState === 'disabled';
+                                @endphp
+                                <a data-editable="customCake.buttonLabel" href="{{ $promoHref }}" @if($isExternal($promoHref)) target="_blank" rel="noreferrer" @endif
+                                    @if($promoDisabled) onclick="event.preventDefault();" aria-disabled="true" tabindex="-1" @endif
+                                    class="mt-6 inline-block rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-600 shadow-md transition hover:bg-navy-50 {{ $promoDisabled ? 'cursor-not-allowed opacity-60' : '' }}">
+                                    {{ $cc['buttonLabel'] ?: 'Order a custom cake' }}
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </section>
+                @endif
             </div>
-        </section>
+        </div>
         @endif
 
         {{-- Store locator teaser (Site Editor → Store Locator) — two-panel
@@ -334,8 +389,8 @@
             $firstStore = $mapStores->first();
         @endphp
         @if($sl['visible'] ?? true)
-        <section id="stores" class="relative overflow-hidden bg-brand-50 py-16">
-            <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-100/60 blur-3xl"></div>
+        <section id="stores" class="relative overflow-hidden bg-navbar py-16">
+            <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl"></div>
             <div class="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-5 lg:items-center lg:gap-12">
                 <div class="lg:col-span-2" data-reveal>
                     <span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-brand-600 shadow-sm">
@@ -345,9 +400,9 @@
                         Store Locator
                     </span>
                     @php $storeLocatorTypography = \App\Models\SiteContent::typographyStyle($sl['typography'] ?? []); @endphp
-                    <h2 class="mt-5 text-3xl font-bold text-navy-800 sm:text-4xl" style="{{ $storeLocatorTypography }}">{{ $sl['title'] ?? '' }}</h2>
+                    <h2 data-editable="storeLocator.title" class="mt-5 text-3xl font-bold text-white sm:text-4xl" style="{{ $storeLocatorTypography }}">{{ $sl['title'] ?? '' }}</h2>
                     @if(!empty($sl['subtitle']))
-                        <p class="mt-3 text-sm text-slate-500" style="{{ $storeLocatorTypography }}">{{ $sl['subtitle'] }}</p>
+                        <p data-editable="storeLocator.subtitle" data-editable-multiline class="mt-3 text-sm text-white/80" style="{{ $storeLocatorTypography }}">{{ $sl['subtitle'] }}</p>
                     @endif
                     @if($storeState !== 'off')
                         @php $storeOff = $storeState === 'disabled'; @endphp
@@ -380,7 +435,7 @@
                                 <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-600">
                                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $f['icon'] !!}</svg>
                                 </span>
-                                <p class="mt-2 text-xs font-medium leading-snug text-navy-700">{{ $f['label'] }}</p>
+                                <p class="mt-2 text-xs font-medium leading-snug text-white/90">{{ $f['label'] }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -442,16 +497,16 @@
         <section id="newsletter" class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="rounded-3xl border border-brand-100 bg-white px-8 py-12 text-center shadow-sm sm:px-12" data-reveal>
                 @php $newsletterTypography = \App\Models\SiteContent::typographyStyle($n['typography'] ?? []); @endphp
-                <h2 class="text-2xl font-bold text-navy-800 sm:text-3xl" style="{{ $newsletterTypography }}">{{ $n['title'] }}</h2>
+                <h2 data-editable="newsletter.title" class="text-2xl font-bold text-navy-800 sm:text-3xl" style="{{ $newsletterTypography }}">{{ $n['title'] }}</h2>
                 @if(!empty($n['subtitle']))
-                    <p class="mt-2 text-sm text-slate-600" style="{{ $newsletterTypography }}">{{ $n['subtitle'] }}</p>
+                    <p data-editable="newsletter.subtitle" class="mt-2 text-sm text-slate-600" style="{{ $newsletterTypography }}">{{ $n['subtitle'] }}</p>
                 @endif
                 @if($newsState !== 'off')
                     @php $newsOff = $newsState === 'disabled'; @endphp
                     <form onsubmit="event.preventDefault(); return false;" class="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row {{ $newsOff ? 'cursor-not-allowed opacity-60' : '' }}">
                         <input type="email" required @if($newsOff) disabled @endif placeholder="{{ $n['placeholder'] }}"
                             class="w-full rounded-full border border-slate-300 px-5 py-3 text-sm text-navy-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed">
-                        <button type="submit" @if($newsOff) disabled @endif
+                        <button type="submit" data-editable="newsletter.buttonLabel" @if($newsOff) disabled @endif
                             style="{{ $newsletterTypography }}"
                             class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed">
                             {{ $n['buttonLabel'] }}
@@ -747,9 +802,11 @@
                     name: el.dataset.name,
                     badge: el.dataset.tag,
                     desc: el.dataset.desc,
-                    calories: el.dataset.calories,
-                    calorieUnit: el.dataset.calorieUnit,
+                    calorieText: el.dataset.calorieText,
                     allergens: el.dataset.allergens,
+                    netWeight: el.dataset.netWeight,
+                    storageCondition: el.dataset.storageCondition,
+                    servingNote: el.dataset.servingNote,
                     price: el.dataset.price,
                 }, buildOrderFooter);
             };
@@ -818,6 +875,9 @@
         }
     })();
     </script>
+@endif
+@if($editable ?? false)
+    @include('partials._editor-bridge')
 @endif
 </body>
 </html>

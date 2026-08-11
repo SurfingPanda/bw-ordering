@@ -88,9 +88,9 @@
                     </svg>
                 </span>
                 @php $storesPageTypography = \App\Models\SiteContent::typographyStyle($hero['typography'] ?? []); @endphp
-                <h1 class="mt-5 text-4xl font-bold text-white sm:text-5xl" style="{{ $storesPageTypography }}">{{ $hero['title'] }}</h1>
+                <h1 data-editable="storesPage.title" class="mt-5 text-4xl font-bold text-white sm:text-5xl" style="{{ $storesPageTypography }}">{{ $hero['title'] }}</h1>
                 @if(!empty($hero['subtitle']))
-                    <p class="mx-auto mt-4 max-w-md text-base text-navy-50/80" style="{{ $storesPageTypography }}">{{ $hero['subtitle'] }}</p>
+                    <p data-editable="storesPage.subtitle" data-editable-multiline class="mx-auto mt-4 max-w-md text-base text-navy-50/80" style="{{ $storesPageTypography }}">{{ $hero['subtitle'] }}</p>
                 @endif
                 <div class="relative mx-auto mt-7 max-w-md">
                     <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -205,5 +205,8 @@
 
         @include('partials.site-footer', ['f' => $footerContent, 'social' => $social])
     </div>
+    @if($editable ?? false)
+        @include('partials._editor-bridge')
+    @endif
 </body>
 </html>

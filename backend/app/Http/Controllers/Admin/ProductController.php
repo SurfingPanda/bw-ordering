@@ -69,8 +69,17 @@ class ProductController extends Controller
             'products.*.id' => 'nullable|string',
             'products.*.price' => 'nullable|numeric|min:0',
             'products.*.original_price' => 'nullable|numeric|min:0',
-            'products.*.calories' => 'nullable|integer|min:0',
-            'products.*.calorie_unit' => 'nullable|string|max:50',
+            // Parallel arrays (not nested-indexed objects) so the admin
+            // repeater's "+ Add calories" button can append a bare pair of
+            // inputs client-side without renumbering anything — see
+            // _product-row.blade.php.
+            'products.*.calorie_amounts' => 'nullable|array',
+            'products.*.calorie_amounts.*' => 'nullable|integer|min:0',
+            'products.*.calorie_units' => 'nullable|array',
+            'products.*.calorie_units.*' => 'nullable|string|max:50',
+            'products.*.net_weight' => 'nullable|string|max:100',
+            'products.*.storage_condition' => 'nullable|string|max:150',
+            'products.*.serving_note' => 'nullable|string|max:100',
             'products.*.status' => ['nullable', Rule::in(['new', 'best_seller', 'bundle', 'sold_out'])],
             'products.*.type' => ['nullable', Rule::in(['single', 'bundle'])],
             // bundle_product_ids arrives keyed by linked product id, valued by
@@ -127,8 +136,10 @@ class ProductController extends Controller
                 'description' => trim((string) ($p['description'] ?? '')) ?: null,
                 'image_path' => trim((string) ($p['image_path'] ?? '')) ?: null,
                 'features' => $this->linesToArray($p['features'] ?? ''),
-                'calories' => ($p['calories'] ?? '') === '' ? null : (int) $p['calories'],
-                'calorie_unit' => trim((string) ($p['calorie_unit'] ?? '')) ?: null,
+                'calorie_info' => $this->calorieInfo($p),
+                'net_weight' => trim((string) ($p['net_weight'] ?? '')) ?: null,
+                'storage_condition' => trim((string) ($p['storage_condition'] ?? '')) ?: null,
+                'serving_note' => trim((string) ($p['serving_note'] ?? '')) ?: null,
                 'is_featured' => ! empty($p['is_featured']),
                 'status' => ($p['status'] ?? '') !== '' ? $p['status'] : null,
                 'type' => $type,
@@ -173,5 +184,29 @@ class ProductController extends Controller
         }
 
         return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $text))));
+    }
+
+    /**
+     * The calorie repeater's parallel calorie_amounts[]/calorie_units[]
+     * arrays → [['amount' => int, 'unit' => string], ...]. Rows with a blank
+     * amount are dropped (an editor removing a row, or a stray blank one).
+     */
+    private function calorieInfo(array $p): ?array
+    {
+        $amounts = (array) ($p['calorie_amounts'] ?? []);
+        $units = (array) ($p['calorie_units'] ?? []);
+
+        $entries = [];
+        foreach ($amounts as $i => $amount) {
+            if ($amount === '' || $amount === null) {
+                continue;
+            }
+            $entries[] = [
+                'amount' => (int) $amount,
+                'unit' => trim((string) ($units[$i] ?? '')) ?: 'piece',
+            ];
+        }
+
+        return $entries ?: null;
     }
 }

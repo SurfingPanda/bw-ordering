@@ -11,7 +11,7 @@
         ['key' => 'x', 'label' => 'X (Twitter)', 'icon' => '𝕏'],
     ];
 @endphp
-<footer id="site-footer" class="bg-navy-900 text-navy-50/80">
+<footer id="site-footer" class="bg-navbar text-navy-50/80">
     <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_2.5fr]">
         <div>
             <div class="flex items-center gap-2">
@@ -20,10 +20,10 @@
                          maintenance-page logo (a fixed local asset), there's no
                          single real width/height to declare here. A fixed box +
                          object-contain reserves the space without needing one. --}}
-                    <img src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-24 w-48 object-contain object-left">
+                    <img data-editable="footer.logo" src="{{ $f['logo'] }}" alt="bw Superbakeshop" class="h-24 w-48 object-contain object-left">
                 @endif
             </div>
-            <p class="mt-4 max-w-xs text-sm text-navy-50/70">{{ $f['description'] }}</p>
+            <p data-editable="footer.description" data-editable-multiline class="mt-4 max-w-xs text-sm text-navy-50/70">{{ $f['description'] }}</p>
             <div class="mt-5 flex gap-3">
                 @foreach($socialMeta as $sm)
                     @php $href = trim($social[$sm['key']] ?? ''); @endphp
@@ -47,21 +47,22 @@
                 <div>
                     <button type="button" data-footer-toggle
                         class="flex w-full items-center justify-between py-4 text-left sm:pointer-events-none sm:py-0">
-                        <h4 class="text-sm font-semibold text-white">{{ $col['title'] }}</h4>
+                        <h4 data-editable="footer.columns.{{ $loop->index }}.title" class="text-sm font-semibold text-white">{{ $col['title'] }}</h4>
                         <svg class="h-4 w-4 shrink-0 text-navy-50/50 transition-transform sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
                     <ul data-footer-panel class="hidden space-y-2 pb-4 text-sm sm:block sm:pb-0 sm:pt-4">
-                        @foreach($col['links'] ?? [] as $l)
+                        @foreach($col['links'] ?? [] as $j => $l)
                             <li>
                                 @php $url = $l['url'] ?? ''; @endphp
+                                @php $linkPath = 'footer.columns.'.$loop->parent->index.'.links.'.$j.'.label'; @endphp
                                 @if(!$url)
-                                    <a href="#" onclick="event.preventDefault()" aria-disabled="true" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
+                                    <a data-editable="{{ $linkPath }}" href="#" onclick="event.preventDefault()" aria-disabled="true" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
                                 @elseif($isExternal($url))
-                                    <a href="{{ $url }}" target="_blank" rel="noreferrer" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
+                                    <a data-editable="{{ $linkPath }}" href="{{ $url }}" target="_blank" rel="noreferrer" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
                                 @else
-                                    <a href="{{ $url }}" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
+                                    <a data-editable="{{ $linkPath }}" href="{{ $url }}" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
                                 @endif
                             </li>
                         @endforeach
@@ -72,7 +73,7 @@
     </div>
     <div class="border-t border-white/10">
         <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-navy-50/60 sm:flex-row sm:px-6">
-            <p>{{ $f['copyright'] }}</p>
+            <p data-editable="footer.copyright">{{ $f['copyright'] }}</p>
             <nav aria-label="Legal" class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-navy-50/70">
                 <a href="{{ route('privacy-policy') }}" class="transition hover:text-brand-400">Privacy Policy</a>
                 <span aria-hidden="true">&nbsp;|&nbsp;</span>

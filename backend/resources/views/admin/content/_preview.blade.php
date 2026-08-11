@@ -24,9 +24,12 @@
         const sizer = document.getElementById('preview-sizer')
         let frame = document.getElementById('preview-frame')
         let pending = null
+        let modalObserver = null
+        let unflattened = false // true while a same-page modal has temporarily taken over real iframe scrolling
 
         function fitPreview() {
             if (!box.clientWidth) return // pane hidden below the xl breakpoint
+            if (unflattened) return // a modal is open — see unflatten() below
             const scale = box.clientWidth / 1280
             // Size the iframe to the full page height so the OUTER box scrolls
             // it (the iframe itself is non-interactive). Same-origin, so we can
@@ -40,6 +43,52 @@
             frame.style.transform = `scale(${scale})`
             sizer.style.width = box.clientWidth + 'px'
             sizer.style.height = (contentH * scale) + 'px'
+        }
+
+        // The iframe is normally sized to the *full* page height so the outer
+        // box scrolls it, not the iframe (scrolling a scaled-down iframe
+        // natively feels wrong — wheel deltas don't match the visual scale).
+        // But that means the iframe has no real bounded viewport, so
+        // `position: fixed` elements inside it (modals) end up centered on
+        // the whole flattened page instead of whatever's currently visible.
+        // Every modal in this app follows the same convention (product
+        // modal, logout-confirm, etc.): `role="dialog"` on the backdrop,
+        // shown/hidden by toggling the `hidden` class — not every page also
+        // locks background scroll, so that's the one signal consistent
+        // enough to watch. While any dialog is visible, temporarily give the
+        // iframe a real bounded viewport (matching what was on screen) and
+        // let it scroll internally instead, so `fixed` positioning resolves
+        // correctly. Reverse it once the dialog closes.
+        function hasOpenDialog(doc) {
+            return !!Array.from(doc.querySelectorAll('[role="dialog"]')).find((el) => !el.classList.contains('hidden'))
+        }
+        function unflatten() {
+            if (unflattened || !box.clientWidth) return
+            const scale = box.clientWidth / 1280
+            const topOffset = box.scrollTop / scale
+            unflattened = true
+            frame.style.height = (box.clientHeight / scale) + 'px'
+            sizer.style.height = box.clientHeight + 'px'
+            try { frame.contentWindow.scrollTo(0, topOffset) } catch { /* same-origin, shouldn't happen */ }
+        }
+        function reflatten() {
+            if (!unflattened) return
+            let scrollY = 0
+            try { scrollY = frame.contentWindow.scrollY || 0 } catch { /* same-origin, shouldn't happen */ }
+            unflattened = false
+            fitPreview()
+            const scale = box.clientWidth / 1280
+            box.scrollTop = scrollY * scale
+        }
+        function watchModals(doc) {
+            if (modalObserver) modalObserver.disconnect()
+            if (!doc || !doc.body) return
+            if (hasOpenDialog(doc)) unflatten()
+            modalObserver = new MutationObserver(() => {
+                if (hasOpenDialog(doc)) unflatten()
+                else reflatten()
+            })
+            modalObserver.observe(doc.body, { subtree: true, attributes: true, attributeFilter: ['class'] })
         }
 
         // Double-buffered navigation: load the url in a hidden clone of the
@@ -62,7 +111,9 @@
                 frame = next
                 frame.id = 'preview-frame'
                 frame.style.visibility = ''
+                unflattened = false
                 fitPreview()
+                try { watchModals(frame.contentDocument) } catch { /* same-origin, shouldn't happen */ }
             })
             pending = next
             next.src = url
@@ -71,8 +122,12 @@
 
         // Re-measure when the initial page loads (later swaps re-fit above)
         // and on resize.
-        frame.addEventListener('load', fitPreview)
+        frame.addEventListener('load', () => {
+            fitPreview()
+            try { watchModals(frame.contentDocument) } catch { /* same-origin, shouldn't happen */ }
+        })
         window.addEventListener('resize', fitPreview)
         fitPreview()
+        try { watchModals(frame.contentDocument) } catch { /* not loaded yet — the load listener above will catch it */ }
     })()
 </script>

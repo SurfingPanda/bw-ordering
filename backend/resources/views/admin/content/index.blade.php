@@ -150,6 +150,49 @@
             @include('admin.content._typography-panel', ['name' => 'whatsNew[typography]', 'value' => $content['whatsNew']['typography'] ?? []])
         </section>
 
+        {{-- ============ Best Sellers ============ --}}
+        <section data-panel="bestSellersSection" class="{{ $panel }}">
+            @php($bs = (array) ($content['bestSellersSection'] ?? []))
+            <h2 class="text-lg font-bold text-navy-800">Best Sellers</h2>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The "Our Best Sellers" section on the landing page. The product cards come from the live catalogue automatically — set a product's Status to "Best seller" in the Products section to feature it here. Section is hidden entirely when no product is flagged.</p>
+            <div class="space-y-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
+                    <input type="text" name="bestSellersSection[eyebrow]" value="{{ $bs['eyebrow'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                    <input type="text" name="bestSellersSection[title]" value="{{ $bs['title'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                    <textarea name="bestSellersSection[subtitle]" rows="3" class="{{ $input }}">{{ $bs['subtitle'] ?? '' }}</textarea>
+                </label>
+                @include('admin.content._image-field', ['name' => 'bestSellersSection[backgroundImage]', 'value' => $bs['backgroundImage'] ?? '', 'fieldLabel' => 'Section background image (shown as uploaded, no dimming)', 'wide' => true])
+            </div>
+        </section>
+
+        {{-- ============ Categories Heading ============ --}}
+        <section data-panel="categoriesSection" class="{{ $panel }}">
+            @php($cs = (array) ($content['categoriesSection'] ?? []))
+            <h2 class="text-lg font-bold text-navy-800">Categories Heading</h2>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The "What are you craving today?" heading on the landing page, above the category tiles. The tiles themselves (images, which categories exist) are managed in the Menu Categories section.</p>
+            <div class="space-y-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
+                    <input type="text" name="categoriesSection[eyebrow]" value="{{ $cs['eyebrow'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                    <input type="text" name="categoriesSection[title]" value="{{ $cs['title'] ?? '' }}" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                    <textarea name="categoriesSection[subtitle]" rows="3" class="{{ $input }}">{{ $cs['subtitle'] ?? '' }}</textarea>
+                </label>
+            </div>
+        </section>
+
         {{-- ============ Custom Cake ============ --}}
         <section data-panel="customCake" class="{{ $panel }}">
             @php($cc = (array) ($content['customCake'] ?? []))
@@ -169,6 +212,20 @@
                 </label>
             </div>
             <div class="space-y-3">
+                @include('admin.content._image-field', ['name' => 'customCake[backgroundImage]', 'value' => $cc['backgroundImage'] ?? '', 'fieldLabel' => 'Section background image (behind Menu Categories above and this banner)', 'wide' => true])
+                @php($ccBgOpacity = ($cc['backgroundOpacity'] ?? '') !== '' ? (int) $cc['backgroundOpacity'] : 100)
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Background image opacity (<span data-opacity-readout>{{ $ccBgOpacity }}</span>%)</span>
+                    <input type="range" min="0" max="100" name="customCake[backgroundOpacity]" value="{{ $ccBgOpacity }}" data-opacity-range class="w-full accent-brand-500">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Card color</span>
+                    <div data-typography-color class="flex items-center gap-2">
+                        <input type="color" data-color-swatch value="{{ $cc['backgroundColor'] ?? '#ef7d1a' }}" title="Pick the card's background color" class="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-0.5">
+                        <input type="text" name="customCake[backgroundColor]" data-color-hex value="{{ $cc['backgroundColor'] ?? '#ef7d1a' }}" maxlength="7" placeholder="#ef7d1a" class="w-24 shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-mono uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        <span class="text-xs text-slate-400">The banner card itself — the image above is the backdrop behind the whole section.</span>
+                    </div>
+                </label>
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
                     <input type="text" name="customCake[eyebrow]" value="{{ $cc['eyebrow'] ?? '' }}" class="{{ $input }}">
@@ -928,7 +985,7 @@
                             <div class="mt-3">
                                 @include('admin.content._image-field', ['name' => "menuCategoryImages[$cat]", 'value' => $categoryImages[$cat] ?? '', 'fieldLabel' => 'Category image', 'crop' => 'circle'])
                                 <p class="mt-1 text-[0.7rem] text-slate-400">
-                                    The badge shown on the menu sidebar and the landing category grid — this is the only source; without one the category shows “no image”. Shown as a circle, so after choosing an image you can drag/zoom it to pick what's centered.
+                                    Used two places: a small circle icon on the /menu sidebar, and the full card photo on the landing page's category grid — this is the only source; without one the category shows "no image". The drag/zoom step after choosing an image is just to pick what's centered.
                                 </p>
                             </div>
 
@@ -992,8 +1049,17 @@
         // Sections whose previewed page ships partials/_editor-bridge — only
         // these get pointer-events enabled in the preview iframe (see
         // swapPreview's `editable` param and Controller::isEditablePreview).
-        // Pilot: franchise only; extend as more pages get the bridge wired in.
-        const EDITABLE_PREVIEW_SECTIONS = new Set(['franchise'])
+        // This is page-scoped, not tab-scoped: every tab below that PREVIEW_URLS
+        // doesn't redirect elsewhere renders on the SAME landing page, so they
+        // all have to be listed together even though not every one of them has
+        // data-editable-tagged fields yet — untagged fields are simply inert
+        // (the bridge only reacts to elements actually carrying the attribute),
+        // so listing a tab here ahead of its fields being tagged is harmless.
+        const EDITABLE_PREVIEW_SECTIONS = new Set([
+            'franchise', 'storesPage', 'authPanel', 'customCakeForm',
+            'announcement', 'banners', 'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake',
+            'storeLocator', 'newsletter', 'social', 'footer', 'legal', 'buttons',
+        ])
 
         // ---- Menu Promo bundle picker ----------------------------------------
         // Each slide has a searchable combobox ([data-bundle-search]): typing
@@ -1133,6 +1199,15 @@
         // with ?preview=1 so the public page renders the draft over saved
         // content. swapPreview (from _preview) double-buffers so the visible
         // pane never blanks while the new render loads.
+        //
+        // If the editor is actively typing inline inside the preview iframe
+        // itself (see the click-to-edit bridge below), a reload here would
+        // replace that iframe out from under them and lose their cursor mid-
+        // keystroke — so the draft is still staged (keeps it correct for
+        // anything else that reads it) but the actual swap is skipped. The
+        // 'field-blur' message handler calls refreshPreview() again once
+        // they're done, which naturally proceeds since nothing's editing by
+        // then.
         async function refreshPreview() {
             if (!window.swapPreview) return
             const fd = new FormData(contentForm)
@@ -1144,6 +1219,10 @@
                     body: fd,
                 })
             } catch { /* preview is best-effort */ }
+            const frame = document.getElementById('preview-frame')
+            let activelyEditing = false
+            try { activelyEditing = !!frame?.contentDocument?.activeElement?.isContentEditable } catch { /* cross-origin, shouldn't happen (same-origin preview) */ }
+            if (activelyEditing) return
             const sep = currentPreviewPath.includes('?') ? '&' : '?'
             swapPreview(currentPreviewPath + sep + 'preview=1&_=' + Date.now(), currentPreviewEditable)
         }
@@ -1151,29 +1230,44 @@
         let previewTimer
         const schedulePreview = () => { clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 500) }
 
+        // Nav renders two variants of each [data-tab] link (desktop dropdown
+        // on white, mobile panel on navy) — they need opposite text colors,
+        // so active/inactive classes are picked per element, not shared.
         const PILL_ACTIVE = ['bg-gradient-to-r', 'from-brand-500', 'to-brand-600', 'text-white', 'shadow-lg', 'shadow-brand-500/30']
-        const PILL_INACTIVE = ['text-navy-50/70']
+        const PILL_INACTIVE_MOBILE = ['text-navy-50/70']
+        const PILL_INACTIVE_DESKTOP = ['text-navy-700']
         const BADGE_ACTIVE = ['bg-white/25', 'text-white']
-        const BADGE_INACTIVE = ['bg-white/10', 'text-navy-50/70']
+        const BADGE_INACTIVE_MOBILE = ['bg-white/10', 'text-navy-50/70']
+        const BADGE_INACTIVE_DESKTOP = ['bg-slate-100', 'text-slate-500']
 
         function showSection(key) {
             if (!panels.some((p) => p.dataset.panel === key)) key = 'announcement'
             panels.forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== key))
             tabs.forEach((t) => {
                 const on = t.dataset.tab === key
+                const isDesktop = !!t.closest('[data-dropdown-panel]')
+                const pillInactive = isDesktop ? PILL_INACTIVE_DESKTOP : PILL_INACTIVE_MOBILE
                 PILL_ACTIVE.forEach((c) => t.classList.toggle(c, on))
-                PILL_INACTIVE.forEach((c) => t.classList.toggle(c, !on))
+                pillInactive.forEach((c) => t.classList.toggle(c, !on))
                 const badge = t.querySelector('[data-tab-badge]')
                 if (badge) {
+                    const badgeInactive = isDesktop ? BADGE_INACTIVE_DESKTOP : BADGE_INACTIVE_MOBILE
                     BADGE_ACTIVE.forEach((c) => badge.classList.toggle(c, on))
-                    BADGE_INACTIVE.forEach((c) => badge.classList.toggle(c, !on))
+                    badgeInactive.forEach((c) => badge.classList.toggle(c, !on))
                 }
             })
             document.querySelectorAll('[data-nav-group]').forEach((g) => {
                 const holds = !!g.querySelector(`[data-tab="${key}"]`)
-                const label = g.querySelector('[data-group-toggle]')
+                const label = g.querySelector('[data-accordion-toggle]')
                 label.classList.toggle('text-brand-400', holds)
                 label.classList.toggle('text-navy-50/50', !holds)
+            })
+            document.querySelectorAll('[data-dropdown]').forEach((d) => {
+                const holds = !!d.querySelector(`[data-tab="${key}"]`)
+                const toggle = d.querySelector('[data-dropdown-toggle]')
+                toggle.classList.toggle('bg-white/10', holds)
+                toggle.classList.toggle('text-white', holds)
+                toggle.classList.toggle('text-navy-50/70', !holds)
             })
             editorTitle.textContent = SECTION_LABELS[key] || 'Site Editor'
             sectionField.value = key
@@ -1186,7 +1280,7 @@
         tabs.forEach((t) => t.addEventListener('click', (e) => {
             e.preventDefault()
             showSection(t.dataset.tab)
-            setSidebarOpen(false)
+            if (typeof window.closeMobileNav === 'function') window.closeMobileNav()
         }))
         showSection(new URLSearchParams(location.search).get('section') || 'announcement')
 
@@ -1313,12 +1407,23 @@
         // focuses it — the existing focus:ring on every input is highlight
         // enough on its own.
         function revealField(field) {
-            const panel = field.closest('[data-panel]')
-            if (panel) showSection(panel.dataset.panel)
+            syncActiveSection(field)
             const row = listRowOf(field)
             if (row) openItemModal(row)
             field.scrollIntoView({ block: 'center' })
             field.focus()
+        }
+
+        // Lighter half of revealField: just keeps the sidebar's active tab
+        // honest (so e.g. a post-Save redirect lands on the right one) — no
+        // scroll/focus/modal-open. Used when the editor is already focused
+        // *inside the preview iframe* (see the click-to-edit bridge below),
+        // where stealing DOM focus back to a sidebar field, or popping a
+        // repeater row open over the preview, would be a bigger interruption
+        // than the tab indicator being briefly stale is worth.
+        function syncActiveSection(field) {
+            const panel = field.closest('[data-panel]')
+            if (panel) showSection(panel.dataset.panel)
         }
 
         // ---- validation-error locating -----------------------------------
@@ -1340,15 +1445,55 @@
 
         // ---- click-to-edit bridge ------------------------------------------
         // partials/_editor-bridge (loaded inside the preview iframe, only for
-        // sections in EDITABLE_PREVIEW_SECTIONS) posts the CMS path of
-        // whatever the editor clicked on the actual rendered page — jump
-        // straight to that field instead of making them hunt for it in the
-        // sidebar.
+        // sections in EDITABLE_PREVIEW_SECTIONS) makes tagged elements on the
+        // actual rendered page directly editable, and posts messages back as
+        // the editor interacts with them — see the bridge file for the full
+        // message-shape reference. Each case mirrors the interaction onto
+        // this form's real field so every bit of existing machinery (dirty
+        // state, Save/Reset, repeater-row titles, autosave-preview-refresh)
+        // keeps working unchanged; this listener is the only integration
+        // point.
         window.addEventListener('message', (e) => {
             if (e.origin !== window.location.origin) return
             if (!e.data || e.data.source !== 'bw-editor-bridge') return
             const field = contentForm.querySelector(`[name="${CSS.escape(dotPathToName(e.data.path))}"]`)
-            if (field) revealField(field)
+            if (!field) return
+            switch (e.data.type) {
+                case 'field-focus':
+                    syncActiveSection(field)
+                    break
+                case 'field-input': {
+                    // Enter is already intercepted in the bridge for anything
+                    // that isn't data-editable-multiline, but collapse stray
+                    // newlines here too as defense-in-depth for a plain
+                    // <input> target.
+                    let value = e.data.value ?? ''
+                    if (field.tagName !== 'TEXTAREA') value = value.replace(/\r?\n/g, ' ')
+                    if (field.value !== value) {
+                        field.value = value
+                        field.dispatchEvent(new Event('input', { bubbles: true }))
+                    }
+                    break
+                }
+                case 'field-blur':
+                    refreshPreview()
+                    break
+                case 'image': {
+                    const imageField = field.closest('[data-image-field]')
+                    if (!imageField) break
+                    // Must switch to this field's panel (and so un-hide it)
+                    // BEFORE clicking the file input below — a hidden
+                    // ancestor silently blocks the native picker from
+                    // opening.
+                    syncActiveSection(field)
+                    imageField.querySelector('[data-image-file]')?.click()
+                    break
+                }
+                default:
+                    // 'jump', and backward-compat for a bridge that only
+                    // ever sent {path} with no type.
+                    revealField(field)
+            }
         })
     </script>
 @endsection
