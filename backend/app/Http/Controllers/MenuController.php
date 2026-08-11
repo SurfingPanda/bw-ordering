@@ -56,6 +56,11 @@ class MenuController extends Controller
             'activeOrders' => ($user['id'] ?? null)
                 ? Order::where('user_id', $user['id'])->whereIn('status', ['pending', 'preparing'])->count()
                 : 0,
+            // Arms the click-to-edit bridge (see partials/_editor-bridge) and
+            // lifts the Site Editor preview iframe's pointer-events:none —
+            // only true for a real editor session previewing their own
+            // unsaved draft, never for a normal visitor.
+            'editable' => $this->isEditablePreview($request),
         ]);
     }
 }

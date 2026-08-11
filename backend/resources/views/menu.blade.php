@@ -55,14 +55,28 @@
     <script id="menu-category-images-data" type="application/json">{!! json_encode($categoryImages) !!}</script>
     <script id="menu-declared-categories-data" type="application/json">{!! json_encode($declaredCategories) !!}</script>
 
-    <div class="flex min-h-screen flex-col lg:h-screen lg:flex-row lg:overflow-hidden">
+    @php
+        // The real page locks to the viewport (lg:h-screen + overflow-hidden)
+        // so only the main column scrolls internally on desktop — but the
+        // Site Editor's preview iframe works by measuring the FULL document
+        // height and letting the outer pane scroll it (see admin/content/
+        // _preview.blade.php's fitPreview()), the same way every other
+        // previewed page renders. A height-locked, internally-scrolling page
+        // inside that iframe just reports its own locked height back as
+        // "the full document height", so the preview shows a cropped single
+        // screenful instead of the whole page. Drop the lock only in preview
+        // mode so the layout flows to its natural full height like everywhere
+        // else — the live site (real visitors, never previewed) is unaffected.
+        $previewMode = $editable ?? false;
+    @endphp
+    <div class="flex min-h-screen flex-col lg:flex-row {{ $previewMode ? '' : 'lg:h-screen lg:overflow-hidden' }}">
         {{-- categories sidebar — sticky at the top on mobile (where it's a
              horizontal-scroll bar, not a sidebar) so switching categories
              doesn't require scrolling back up; on lg+ it's already
              effectively pinned since the whole page is height-locked and
              only the main column scrolls (see the header's own comment
              below), so sticky is turned back off there. --}}
-        <aside class="sticky top-0 z-30 border-b border-navy-900/10 bg-navy-900 lg:static lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
+        <aside class="sticky top-0 z-30 border-b border-navy-900/10 bg-navbar lg:static lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
             <a href="/" class="hidden h-24 shrink-0 items-center justify-center px-4 lg:flex">
                 <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-20 w-auto">
             </a>
@@ -77,7 +91,7 @@
 
         {{-- main column: the one scrollable pane — header stays put via
              sticky, and this is the only element that scrolls on desktop. --}}
-        <div class="flex min-w-0 flex-1 flex-col lg:h-full lg:overflow-y-auto">
+        <div class="flex min-w-0 flex-1 flex-col {{ $previewMode ? '' : 'lg:h-full lg:overflow-y-auto' }}">
             <header class="z-20 border-b border-slate-100 bg-white/90 backdrop-blur lg:sticky lg:top-0">
                 <div class="flex h-16 items-center justify-between px-4 sm:px-6">
                     <h2 class="text-lg font-bold text-navy-800">Order Online</h2>
@@ -1008,5 +1022,8 @@
         renderAll();
     })();
     </script>
+    @if($editable ?? false)
+        @include('partials._editor-bridge')
+    @endif
 </body>
 </html>

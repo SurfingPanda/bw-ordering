@@ -139,7 +139,11 @@
             </nav>
 
             <div id="mobile-nav" class="hidden border-t border-navy-900/10 bg-navbar px-4 py-3 lg:hidden">
-                <ul class="flex flex-col gap-1 text-sm font-medium text-white/90">
+                {{-- Centered (not left-aligned) so these links clear the
+                     circular logo badge, which overflows past the header's
+                     bottom edge on the left and would otherwise sit right on
+                     top of the first item here. --}}
+                <ul class="flex flex-col items-center gap-1 text-center text-sm font-medium text-white/90">
                     <li><a href="{{ $menuHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Menu</a></li>
                     <li><a href="/stores" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Store</a></li>
                     <li><a href="/franchise" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Partner with us</a></li>

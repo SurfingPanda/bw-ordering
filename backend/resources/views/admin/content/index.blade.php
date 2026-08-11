@@ -1059,6 +1059,10 @@
             'franchise', 'storesPage', 'authPanel', 'customCakeForm',
             'announcement', 'banners', 'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake',
             'storeLocator', 'newsletter', 'social', 'footer', 'legal', 'buttons',
+            // All three map to the same /menu preview (see PREVIEW_URLS) — must
+            // be listed together so pointer-events stays consistent across tabs
+            // on that one page, not toggling on/off as the editor switches tabs.
+            'menuPromo', 'menuCategories', 'payment',
         ])
 
         // ---- Menu Promo bundle picker ----------------------------------------
