@@ -805,6 +805,7 @@
             <div class="space-y-4">
                 @include('admin.content._image-field', ['name' => 'authPanel[logo]', 'value' => $ap['logo'] ?? '', 'fieldLabel' => 'Logo'])
                 @include('admin.content._image-field', ['name' => 'authPanel[image]', 'value' => $ap['image'] ?? '', 'fieldLabel' => 'Panel image', 'wide' => true])
+                @include('admin.content._image-field', ['name' => 'authPanel[backgroundImage]', 'value' => $ap['backgroundImage'] ?? '', 'fieldLabel' => 'Page background (behind the card — shown faded/darkened)', 'wide' => true])
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Tagline</span>
                     <input type="text" name="authPanel[tagline]" value="{{ $ap['tagline'] ?? '' }}" class="{{ $input }}">

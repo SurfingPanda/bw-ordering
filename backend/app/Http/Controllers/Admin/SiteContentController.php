@@ -89,6 +89,9 @@ class SiteContentController extends Controller
                 'tagline' => '',
                 'script' => '',
                 'image' => '/images/Full Moymoy 2.png',
+                // The faded full-page backdrop behind the Login/Register/
+                // Forgot & Reset Password cards (auth/login.blade.php etc.).
+                'backgroundImage' => '/images/bakery-interior.jpg',
                 'showGoogle' => true,
                 'showFacebook' => true,
             ],

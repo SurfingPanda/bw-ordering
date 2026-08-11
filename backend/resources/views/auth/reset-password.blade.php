@@ -14,7 +14,7 @@
     <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 p-4 sm:p-6">
         {{-- bakery backdrop --}}
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
-            <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="h-full w-full object-cover">
+            <img data-editable="authPanel.backgroundImage" src="{{ $authPanel['backgroundImage'] ?? '/images/bakery-interior.jpg' }}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-br from-navy-900/85 via-navy-900/80 to-navy-800/80"></div>
             <div class="absolute -bottom-44 -right-24 h-[30rem] w-[30rem] rounded-full bg-brand-600/15 blur-3xl"></div>
         </div>
