@@ -50,6 +50,7 @@ class MyOrdersController extends Controller
             'orders' => $orders,
             'imgMap' => $imgMap,
             'cakeRequests' => $cakeRequests,
+            'nav' => $this->navConfig((array) app(SiteContentController::class)->cachedData()),
         ]);
     }
 }

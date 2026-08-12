@@ -62,6 +62,36 @@
             <script id="content-form-error-fields" type="application/json">{!! json_encode($errors->keys()) !!}</script>
         @endif
 
+        {{-- ============ Navigation Bar ============ --}}
+        <section data-panel="nav" class="{{ $panel }}">
+            @php($navContent = (array) ($content['nav'] ?? []))
+            @php($navLinks = (array) ($navContent['links'] ?? []))
+            <h2 class="text-lg font-bold text-navy-800">Navigation Bar</h2>
+            <p class="mb-5 mt-0.5 text-sm text-slate-500">The logo and nav bar background color, shared across every page's header. The three link destinations below only apply to the landing page's full nav (Menu / Store / Partner with us) — leave a field blank to use its default page.</p>
+            <div class="space-y-3">
+                @include('admin.content._image-field', ['name' => 'nav[logo]', 'value' => $navContent['logo'] ?? '', 'fieldLabel' => 'Logo'])
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Nav bar color</span>
+                    <div data-typography-color class="flex items-center gap-2">
+                        <input type="color" data-color-swatch value="{{ $navContent['color'] ?? '#083caa' }}" title="Pick the nav bar's background color" class="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-0.5">
+                        <input type="text" name="nav[color]" data-color-hex value="{{ $navContent['color'] ?? '#083caa' }}" maxlength="7" placeholder="#083caa" class="w-24 shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-mono uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">"Menu" link</span>
+                    <input type="text" name="nav[links][menu]" value="{{ $navLinks['menu'] ?? '' }}" placeholder="/menu?category=What's New" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">"Store" link</span>
+                    <input type="text" name="nav[links][store]" value="{{ $navLinks['store'] ?? '' }}" placeholder="/stores" class="{{ $input }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">"Partner with us" link</span>
+                    <input type="text" name="nav[links][franchise]" value="{{ $navLinks['franchise'] ?? '' }}" placeholder="/franchise" class="{{ $input }}">
+                </label>
+            </div>
+        </section>
+
         {{-- ============ Announcement ============ --}}
         <section data-panel="announcement" class="{{ $panel }}">
             <div class="flex items-start justify-between gap-3">

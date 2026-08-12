@@ -77,13 +77,18 @@
         @endif
 
         {{-- Nav --}}
-        <header class="sticky top-0 z-50 bg-navbar">
+        <header class="sticky top-0 z-50" style="background-color: {{ $nav['color'] ?? '#083caa' }};">
             @php $orderState = $btn('navOrder'); $signInState = $btn('navSignIn'); @endphp
             {{-- Nav "Menu"/"Order Now" open straight to What's New (falls back to
                  "All" on /menu itself if there's nothing new to show — see the
                  requestedTab handling in menu.blade.php) so first-time visitors
-                 see the newest products instead of the full unsorted catalogue. --}}
-            @php $menuHref = '/menu?category=' . urlencode("What's New"); @endphp
+                 see the newest products instead of the full unsorted catalogue,
+                 unless the Site Editor's Navigation Bar section overrides it. --}}
+            @php
+                $menuHref = $nav['links']['menu'] ?: ('/menu?category=' . urlencode("What's New"));
+                $storeHref = $nav['links']['store'] ?: '/stores';
+                $franchiseHref = $nav['links']['franchise'] ?: '/franchise';
+            @endphp
             <nav class="relative mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 {{-- Reserves layout width in the flex row; the actual circular
                      badge is absolutely positioned within it so it can spill
@@ -95,7 +100,7 @@
                          below, no z-index needed. --}}
                     <span aria-hidden="true" class="pointer-events-none absolute -bottom-12 left-0 h-24 w-24 rounded-full bg-brand-400/50 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100 sm:-bottom-14 sm:h-28 sm:w-28"></span>
                     <span class="absolute -bottom-12 left-0 flex h-24 w-24 items-center justify-center rounded-full bg-white p-2 shadow-lg transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 sm:-bottom-14 sm:h-28 sm:w-28">
-                        <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
+                        <img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
                     </span>
                 </a>
 
@@ -107,8 +112,8 @@
                 @endphp
                 <ul class="hidden items-center gap-7 text-sm font-medium text-white/90 lg:flex">
                     <li><a href="{{ $menuHref }}" class="{{ $navLink }}">Menu</a></li>
-                    <li><a href="/stores" class="{{ $navLink }}">Store</a></li>
-                    <li><a href="/franchise" class="{{ $navLink }}">Partner with us</a></li>
+                    <li><a href="{{ $storeHref }}" class="{{ $navLink }}">Store</a></li>
+                    <li><a href="{{ $franchiseHref }}" class="{{ $navLink }}">Partner with us</a></li>
                 </ul>
 
                 <div class="hidden items-center gap-3 lg:flex">
@@ -138,15 +143,15 @@
                 </button>
             </nav>
 
-            <div id="mobile-nav" class="hidden border-t border-navy-900/10 bg-navbar px-4 py-3 lg:hidden">
+            <div id="mobile-nav" class="hidden border-t border-navy-900/10 px-4 py-3 lg:hidden" style="background-color: {{ $nav['color'] ?? '#083caa' }};">
                 {{-- Centered (not left-aligned) so these links clear the
                      circular logo badge, which overflows past the header's
                      bottom edge on the left and would otherwise sit right on
                      top of the first item here. --}}
                 <ul class="flex flex-col items-center gap-1 text-center text-sm font-medium text-white/90">
                     <li><a href="{{ $menuHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Menu</a></li>
-                    <li><a href="/stores" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Store</a></li>
-                    <li><a href="/franchise" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Partner with us</a></li>
+                    <li><a href="{{ $storeHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Store</a></li>
+                    <li><a href="{{ $franchiseHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Partner with us</a></li>
                 </ul>
                 <div class="mt-3 flex gap-3">
                     @if($user)

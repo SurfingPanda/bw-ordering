@@ -26,6 +26,7 @@ class MenuController extends Controller
 
         return view('menu', [
             'products' => $products->cachedList(),
+            'nav' => $this->navConfig($content),
             // Not gated by supabase.session (this page is public) — read
             // whatever session the login flow already established, if any,
             // purely to toggle the header between the account dropdown and

@@ -520,5 +520,18 @@
                 dismissSaveError()
             }, true)
         }
+
+        // ---- clickable preview ----------------------------------------------
+        // The preview iframe defaults to pointer-events:none (look, don't touch —
+        // see admin/content/_preview.blade.php) since most Site Editor pages
+        // reload it live as you type. Products has no such live-draft (it's
+        // "saved content, updates on save"), so there's nothing unsafe about
+        // letting an editor actually browse the real /menu page in it — click
+        // categories, open a product's modal, use search — same as a visitor
+        // would. No ?preview=1 and no click-to-edit bridge involved: this is
+        // just normal interactive browsing of whatever's currently saved.
+        if (window.swapPreview) {
+            swapPreview('{{ route('menu', absolute: false) }}', true)
+        }
     </script>
 @endsection

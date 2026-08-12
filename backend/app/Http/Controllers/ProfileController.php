@@ -31,15 +31,18 @@ class ProfileController extends Controller
         $providers = collect((array) ($raw['identities'] ?? []))
             ->pluck('provider')->filter()->unique()->values()->all();
 
-        return view('profile', ['profile' => [
-            'email' => $raw['email'] ?? ($sessionUser['email'] ?? ''),
-            'name' => $meta['full_name'] ?? $meta['name'] ?? ($sessionUser['name'] ?? ''),
-            'contact' => (string) ($meta['contact_number'] ?? ''),
-            'addresses' => $this->readAddresses($meta),
-            'avatar' => trim((string) ($meta['avatar_url'] ?? '')),
-            'memberSince' => $raw['created_at'] ?? null,
-            'providers' => $providers,
-        ]]);
+        return view('profile', [
+            'profile' => [
+                'email' => $raw['email'] ?? ($sessionUser['email'] ?? ''),
+                'name' => $meta['full_name'] ?? $meta['name'] ?? ($sessionUser['name'] ?? ''),
+                'contact' => (string) ($meta['contact_number'] ?? ''),
+                'addresses' => $this->readAddresses($meta),
+                'avatar' => trim((string) ($meta['avatar_url'] ?? '')),
+                'memberSince' => $raw['created_at'] ?? null,
+                'providers' => $providers,
+            ],
+            'nav' => $this->navConfig((array) app(SiteContentController::class)->cachedData()),
+        ]);
     }
 
     /**

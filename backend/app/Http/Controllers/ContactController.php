@@ -24,6 +24,7 @@ class ContactController extends Controller
             // custom-cake wizard extends to logged-in users.
             'prefillName' => $user['name'] ?? '',
             'prefillEmail' => $user['email'] ?? '',
+            'nav' => $this->navConfig($content),
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
         ]);

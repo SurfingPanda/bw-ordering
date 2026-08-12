@@ -63,6 +63,7 @@ class FranchiseController extends Controller
 
         return view('franchise', [
             'fr' => $fr,
+            'nav' => $this->navConfig($content),
             // CMS footer/social so this page shares the landing page's footer
             // (same key-by-key default fallback LandingController::index applies).
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),

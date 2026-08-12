@@ -17,6 +17,7 @@
 @php
     $navGroups = [
         ['label' => 'Landing Page', 'items' => [
+            ['key' => 'nav', 'label' => 'Navigation Bar', 'icon' => 'toggle'],
             ['key' => 'announcement', 'label' => 'Announcement', 'icon' => 'megaphone'],
             ['key' => 'banners', 'label' => 'Promo Banners', 'icon' => 'image', 'count' => $navCounts['banners'] ?? null],
             ['key' => 'whatsNew', 'label' => "What's New", 'icon' => 'sparkle'],

@@ -21,6 +21,7 @@ class StoresController extends Controller
 
         return view('stores', [
             'stores' => app(StoreController::class)->cachedList(),
+            'nav' => $this->navConfig($content),
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
             'hero' => array_merge(LandingController::DEFAULT_CONTENT['storesPage'], (array) ($content['storesPage'] ?? [])),

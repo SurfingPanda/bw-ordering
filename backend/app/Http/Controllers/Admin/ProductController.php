@@ -7,6 +7,7 @@ use App\Http\Controllers\SiteContentController as PublicSiteContentController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
@@ -92,26 +93,40 @@ class ProductController extends Controller
         ];
         // Product ID must be unique: `distinct` catches duplicates within the
         // submitted grid, and the per-row unique rule checks the table while
-        // ignoring the row's own record (it may keep its existing code). A
-        // named card also needs a real price — nullable|min:0 above would
-        // otherwise let a blank price silently save as ₱0 (only skipped
-        // entirely-blank new cards are meant to be forgiving).
+        // ignoring the row's own record (it may keep its existing code).
         foreach (array_keys((array) $request->input('products', [])) as $k) {
             $rules["products.$k.product_id"] = [
                 'nullable', 'string', 'max:20', 'distinct',
                 Rule::unique('products', 'product_id')->ignore($request->input("products.$k.id")),
             ];
-            if (trim((string) $request->input("products.$k.name", '')) !== '') {
-                $rules["products.$k.price"] = ['required', 'numeric', 'min:0.01'];
-            }
         }
-        $request->validate($rules, [
+        $validator = Validator::make($request->all(), $rules, [
             'products.*.product_id.distinct' => 'Product ID :input is used by more than one product.',
             'products.*.product_id.unique' => 'Product ID :input is already taken by another product.',
             'products.*.product_id.max' => 'Product ID must be 20 characters or fewer.',
-            'products.*.price.required' => 'Every product needs a price.',
-            'products.*.price.min' => 'Price must be greater than ₱0.',
         ]);
+        // A named card also needs a real price — the base 'nullable|min:0'
+        // rule above would otherwise let a blank price silently save as ₱0
+        // (only entirely-blank new cards are meant to be forgiving). Named in
+        // the message (not a generic "Every product needs a price") so a
+        // failure on some OTHER row a save touches in passing doesn't read as
+        // if the row actually being edited lost its price.
+        $validator->after(function ($validator) use ($request) {
+            foreach ((array) $request->input('products', []) as $k => $p) {
+                $p = (array) $p;
+                $name = trim((string) ($p['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $price = $p['price'] ?? '';
+                if ($price === '' || $price === null) {
+                    $validator->errors()->add("products.$k.price", "\"{$name}\" needs a price.");
+                } elseif (! is_numeric($price) || (float) $price < 0.01) {
+                    $validator->errors()->add("products.$k.price", "\"{$name}\"'s price must be greater than ₱0.");
+                }
+            }
+        });
+        $validator->validate();
 
         // Product ID is assign-once: current codes, keyed by row id, so updates
         // can't change a code that's already set (the form field is read-only,

@@ -60,6 +60,7 @@ class AboutController extends Controller
 
         return view('about', [
             'ab' => $ab,
+            'nav' => $this->navConfig($content),
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
             // Click-to-edit affordances (see partials/_editor-bridge).

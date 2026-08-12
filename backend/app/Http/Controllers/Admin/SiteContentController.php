@@ -53,6 +53,7 @@ class SiteContentController extends Controller
      * neither edits nor overwrites them).
      */
     private const MANAGED_KEYS = [
+        'nav',
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
         'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'about', 'storeLocator',
         'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
@@ -290,6 +291,12 @@ class SiteContentController extends Controller
         foreach (self::MANAGED_KEYS as $key) {
             $updates[$key] = $request->input($key);
         }
+
+        $nav = (array) ($updates['nav'] ?? []);
+        $navColor = strtolower(trim((string) ($nav['color'] ?? '')));
+        $nav['color'] = preg_match('/^#[0-9a-f]{6}$/', $navColor) ? $navColor : '#083caa';
+        $nav['links'] = array_map(fn ($v) => trim((string) $v), (array) ($nav['links'] ?? []));
+        $updates['nav'] = $nav;
 
         $updates['announcement'] = (string) ($updates['announcement'] ?? '');
         $updates['announcementVisible'] = $request->boolean('announcementVisible');

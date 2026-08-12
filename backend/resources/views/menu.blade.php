@@ -76,9 +76,9 @@
              effectively pinned since the whole page is height-locked and
              only the main column scrolls (see the header's own comment
              below), so sticky is turned back off there. --}}
-        <aside class="sticky top-0 z-30 border-b border-navy-900/10 bg-navbar lg:static lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col">
+        <aside class="sticky top-0 z-30 border-b border-navy-900/10 lg:static lg:flex lg:h-full lg:w-60 lg:shrink-0 lg:flex-col" style="background-color: {{ $nav['color'] ?? '#083caa' }};">
             <a href="/" class="hidden h-24 shrink-0 items-center justify-center px-4 lg:flex">
-                <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-20 w-auto">
+                <img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" class="h-20 w-auto">
             </a>
             {{-- Categories scroll on their own only if they overflow the
                  viewport (many categories) — the logo above stays put either
@@ -256,14 +256,27 @@
         const DECLARED_CATEGORIES = JSON.parse(document.getElementById('menu-declared-categories-data').textContent || '[]');
         const STATUS_LABEL = { new: 'New', best_seller: 'Best Seller', bundle: 'Bundle', sold_out: 'Sold out' };
 
-        // "Includes: Jumbo Loaf ×1, Mongo Loaf ×2" — resolves a bundle's
-        // linked-product-id => quantity map to display names. '' for
-        // non-bundles or bundles with nothing linked yet.
+        // First calorie_info entry's amount × qty — only the first entry per
+        // linked product counts (see bundleCalorieLines below for why) —
+        // shared by the per-item breakdown (bundleIncludesText) and the
+        // bundle's total (bundleCalorieLines) so they can never disagree.
+        function linkedCalorieAmount(linked, qty) {
+            const first = (linked?.calorie_info || [])[0];
+            const amount = Number(first?.amount);
+            return (first && Number.isFinite(amount)) ? amount * Number(qty) : null;
+        }
+
+        // "Includes: Jumbo Loaf ×1 (123 kcal), Mongo Loaf ×2 (240 kcal)" —
+        // resolves a bundle's linked-product-id => quantity map to display
+        // names, with each item's own calorie contribution alongside it when
+        // known. '' for non-bundles or bundles with nothing linked yet.
         function bundleIncludesText(p) {
             if (p.type !== 'bundle' || !p.bundle_product_ids) return '';
             const parts = Object.entries(p.bundle_product_ids).map(([id, qty]) => {
                 const linked = PRODUCTS.find(x => x.id === id);
-                return linked ? `${linked.name} ×${qty}` : null;
+                if (!linked) return null;
+                const cal = linkedCalorieAmount(linked, qty);
+                return `${linked.name} ×${qty}${cal != null ? ` (${cal} kcal)` : ''}`;
             }).filter(Boolean);
             return parts.length ? `Includes: ${parts.join(', ')}` : '';
         }
@@ -584,13 +597,38 @@
             }
         }
 
+        // A bundle product never has calorie_info of its own — it's derived
+        // instead by summing each linked product's calories × the quantity
+        // included in the bundle (e.g. Jumbo Loaf + Mongo Loaf ×1 each ⇒ their
+        // calories added together). Only the first calorie_info entry per
+        // linked product counts — a product may log several units ("per
+        // piece" and "per whole" on the same item), but a bundle links whole
+        // items, so summing more than one entry per product would double-
+        // count. Silently produces nothing if no linked product has any
+        // calorie info yet (same as a regular product with none set).
+        function bundleCalorieLines(p) {
+            if (p.type !== 'bundle' || !p.bundle_product_ids) return [];
+            let total = 0;
+            let any = false;
+            Object.entries(p.bundle_product_ids).forEach(([id, qty]) => {
+                const linked = PRODUCTS.find(x => x.id === id);
+                const amount = linked ? linkedCalorieAmount(linked, qty) : null;
+                if (amount != null) {
+                    total += amount;
+                    any = true;
+                }
+            });
+            return any ? [`${total} kcal total`] : [];
+        }
+
         // A product can carry several calorie entries (e.g. "per piece" and
         // "per whole" on the same item). calorieText() joins them into one
         // line for the product modal's static pill; calorieLines() keeps
         // them as an array so the grid's hover chip can stack one entry per
         // row instead of wrapping "500 kcal per" onto its own line mid-phrase.
         function calorieLines(p) {
-            return (p.calorie_info || []).map(e => `${e.amount} kcal per ${e.unit || 'piece'}`);
+            const own = (p.calorie_info || []).map(e => `${e.amount} kcal per ${e.unit || 'piece'}`);
+            return own.length ? own : bundleCalorieLines(p);
         }
         function calorieText(p) {
             return calorieLines(p).join(' · ');

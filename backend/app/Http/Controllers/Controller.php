@@ -156,6 +156,21 @@ abstract class Controller
         return $email !== null && in_array($section, UserRole::grantsFor($email), true);
     }
 
+    /**
+     * Shared nav bar config (logo, background color, and the landing nav's
+     * link destinations) — CMS-editable from the Site Editor's Navigation Bar
+     * section, reused across every public page's header. $content is
+     * whatever CMS blob the calling controller already fetched.
+     */
+    protected function navConfig(array $content): array
+    {
+        $defaults = LandingController::DEFAULT_CONTENT['nav'];
+        $nav = array_merge($defaults, (array) ($content['nav'] ?? []));
+        $nav['links'] = array_merge($defaults['links'], (array) ($nav['links'] ?? []));
+
+        return $nav;
+    }
+
     /** Which items of the Site Editor sidebar's Admin group to show. */
     protected function editorNavAccess(?string $email): array
     {

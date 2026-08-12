@@ -45,6 +45,7 @@ class LegalController extends Controller
 
         return [
             'content' => $content,
+            'nav' => $this->navConfig($content),
             'footerContent' => array_merge(LandingController::DEFAULT_CONTENT['footer'], (array) ($content['footer'] ?? [])),
             'social' => (array) ($content['social'] ?? LandingController::DEFAULT_CONTENT['social']),
         ];

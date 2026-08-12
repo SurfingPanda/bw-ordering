@@ -23,7 +23,7 @@
     <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:px-6">
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-center gap-3">
-                <a href="/" class="shrink-0"><img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
+                <a href="/" class="shrink-0"><img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
                 <div>
                     <h1 class="text-2xl font-bold text-navy-800">My Orders</h1>
                     <p class="text-sm text-slate-500">Track and reorder your favorite treats.</p>

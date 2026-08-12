@@ -80,6 +80,7 @@ class CustomCakeController extends Controller
 
         return view('custom-cake', [
             'user' => $user,
+            'nav' => $this->navConfig($content),
             'form' => $form,
             'contactNumber' => $contactNumber,
             'savedAddresses' => $savedAddresses,

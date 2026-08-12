@@ -102,6 +102,7 @@ class CheckoutController extends Controller
             'stores' => app(StoreController::class)->cachedList(),
             'paymongoEnabled' => $paymongo->enabled(),
             'qrPayload' => data_get($content, 'payment.qrPayload', ''),
+            'nav' => $this->navConfig($content),
             'vouchers' => app(VoucherController::class)->active(),
             'user' => $user,
             'contactNumber' => $contactNumber,

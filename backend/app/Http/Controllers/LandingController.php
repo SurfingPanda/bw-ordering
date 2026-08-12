@@ -21,6 +21,18 @@ class LandingController extends Controller
      * save persists what the public pages were already rendering.
      */
     public const DEFAULT_CONTENT = [
+        // Shared nav bar chrome — logo + background color + the landing
+        // nav's link destinations. Reused across every public page's header
+        // (Controller::navConfig()), not just the landing page's own.
+        'nav' => [
+            'logo' => '/images/logo (1).png',
+            'color' => '#083caa',
+            'links' => [
+                'menu' => '',
+                'store' => '/stores',
+                'franchise' => '/franchise',
+            ],
+        ],
         'maintenance' => [
             'enabled' => false,
             'title' => 'We’ll be right back',
@@ -190,6 +202,7 @@ class LandingController extends Controller
         $user = session('supabase_user');
         $viewData = [
             'content' => $content,
+            'nav' => $this->navConfig($content),
             'user' => $user,
             'accountRoute' => $this->accountRoute($user['email'] ?? null),
             'bestSellers' => [],

@@ -14,7 +14,7 @@
          PayMongo payment we just reconciled via OrderCreationService::reconcile()). --}}
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div class="mx-auto flex h-20 max-w-6xl items-center px-4 sm:px-6">
-            <a href="/"><img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
+            <a href="/"><img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
         </div>
     </header>
     <main class="mx-auto max-w-xl px-4 py-12 sm:px-6">
@@ -54,7 +54,7 @@
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div class="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
             <div class="flex min-w-0 items-center gap-4">
-                <a href="/" class="shrink-0"><img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
+                <a href="/" class="shrink-0"><img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24"></a>
                 <ol class="hidden items-center gap-1 text-xs sm:flex">
                     <li id="step-pill-1" class="rounded-full bg-brand-500 px-3 py-1 font-bold text-white">1. Delivery &amp; Details</li>
                     <li id="step-pill-2" class="rounded-full bg-slate-200 px-3 py-1 font-bold text-slate-500">2. Payment</li>

@@ -39,7 +39,7 @@
              circular logo badge overflowing the bottom edge), but with just
              "Back to home" instead of the full Menu/Store/Partner nav and
              Sign In/Order Now buttons. --}}
-        <header class="sticky top-0 z-50 bg-navbar">
+        <header class="sticky top-0 z-50" style="background-color: {{ $nav['color'] ?? '#083caa' }};">
             <nav class="relative mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
                 {{-- Reserves layout width in the flex row; the actual circular
                      badge is absolutely positioned within it so it can spill
@@ -51,7 +51,7 @@
                          below, no z-index needed. --}}
                     <span aria-hidden="true" class="pointer-events-none absolute -bottom-12 left-0 h-24 w-24 rounded-full bg-brand-400/50 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100 sm:-bottom-14 sm:h-28 sm:w-28"></span>
                     <span class="absolute -bottom-12 left-0 flex h-24 w-24 items-center justify-center rounded-full bg-white p-2 shadow-lg transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 sm:-bottom-14 sm:h-28 sm:w-28">
-                        <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
+                        <img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
                     </span>
                 </a>
 
