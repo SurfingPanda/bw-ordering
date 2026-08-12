@@ -54,7 +54,7 @@ class SiteContentController extends Controller
      */
     private const MANAGED_KEYS = [
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
-        'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'storeLocator', 'storesPage',
+        'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'about', 'storeLocator',
         'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
     ];
 
@@ -124,6 +124,35 @@ class SiteContentController extends Controller
                     ['name' => 'Kiosk', 'price' => '₱1.2M – 1.8M', 'blurb' => 'A compact counter for malls and transit hubs — fast to open, high foot traffic.', 'features' => ['25–40 sqm space', 'Core bestseller menu', 'Equipment & signage', '2-week crew training'], 'featured' => false],
                     ['name' => 'Inline Store', 'price' => '₱2.5M – 3.5M', 'blurb' => 'The flagship bakeshop experience with full product range and seating.', 'features' => ['60–100 sqm space', 'Full menu + custom cakes', 'Bake-on-site setup', 'Dedicated launch support'], 'featured' => true],
                     ['name' => 'Master Franchise', 'price' => 'Let’s talk', 'blurb' => 'Develop multiple branches across an entire region or province.', 'features' => ['Territory rights', 'Multi-store rollout plan', 'Priority supply allocation', 'Executive business reviews'], 'featured' => false],
+                ],
+            ],
+            'about' => [
+                'hero' => [
+                    'eyebrow' => 'Our story',
+                    'title' => 'About bw Superbakeshop',
+                    'subtitle' => 'Freshly baked. Made with love. Ordered with ease. The same promise we’ve kept in every branch, every day.',
+                ],
+                'story' => [
+                    'eyebrow' => 'How it started',
+                    'heading' => 'From one neighborhood oven to a name you trust',
+                    'paragraph1' => 'What started as a small bakeshop with a simple promise — proper ingredients, honest recipes, and warm service — has grown into bw Superbakeshop: a trusted bakery brand with branches nationwide. Through the years, the ovens have gotten bigger and the menu has grown, but what goes into every cake, loaf, and pastry hasn’t changed.',
+                    'paragraph2' => 'Today, every branch still bakes the same way we started: fresh, every day, for the communities we’re part of — whether that’s a birthday cake picked up on the way home, a loaf grabbed for breakfast, or a custom celebration cake made to order.',
+                    'image' => '/images/mascot-chef.png',
+                ],
+                'values' => [
+                    'eyebrow' => 'What we stand for',
+                    'heading' => 'The values behind every bake',
+                    'items' => [
+                        ['icon' => '🌾', 'title' => 'Quality Ingredients', 'text' => 'We use trusted, quality ingredients in every recipe — a good bake starts long before it goes in the oven.'],
+                        ['icon' => '❤️', 'title' => 'Made With Love', 'text' => 'Every cake and loaf is prepared with the same care you’d expect from a home kitchen, just at bakery scale.'],
+                        ['icon' => '🏘️', 'title' => 'Community First', 'text' => 'We’re proud to be part of the neighborhoods we serve — from everyday treats to once-in-a-lifetime celebrations.'],
+                        ['icon' => '📦', 'title' => 'Ordered With Ease', 'text' => 'Visit a branch, order for delivery, or plan a custom cake — we’ve made it simple to get what you’re craving.'],
+                    ],
+                ],
+                'cta' => [
+                    'heading' => 'Come taste the difference',
+                    'subtitle' => 'Explore the full menu or find the bw Superbakeshop nearest you.',
+                    'backgroundColor' => '#083caa',
                 ],
             ],
         ];
@@ -285,8 +314,6 @@ class SiteContentController extends Controller
         $updates['storeLocator'] = (array) ($updates['storeLocator'] ?? []);
         $updates['storeLocator']['visible'] = $request->boolean('storeLocator.visible');
         $updates['storeLocator']['typography'] = SiteContent::normalizeTypography($updates['storeLocator']['typography'] ?? null);
-        $updates['storesPage'] = (array) ($updates['storesPage'] ?? []);
-        $updates['storesPage']['typography'] = SiteContent::normalizeTypography($updates['storesPage']['typography'] ?? null);
 
         // Custom Cake Page wizard: repeater rows → clean arrays (blank rows
         // drop out; a bad hex falls back to a neutral cream).
@@ -358,6 +385,17 @@ class SiteContentController extends Controller
         }, (array) ($fr['packages'] ?? [])));
         $updates['franchise'] = $fr;
 
+        $ab = (array) ($updates['about'] ?? []);
+        $ab['visible'] = array_map(fn ($v) => (bool) $v, (array) ($ab['visible'] ?? []));
+        $ab['hero'] = (array) ($ab['hero'] ?? []);
+        $ab['story'] = (array) ($ab['story'] ?? []);
+        $ab['values'] = (array) ($ab['values'] ?? []);
+        $ab['values']['items'] = array_values((array) ($ab['values']['items'] ?? []));
+        $ab['cta'] = (array) ($ab['cta'] ?? []);
+        $ctaColor = strtolower(trim((string) ($ab['cta']['backgroundColor'] ?? '')));
+        $ab['cta']['backgroundColor'] = preg_match('/^#[0-9a-f]{6}$/', $ctaColor) ? $ctaColor : '#083caa';
+        $updates['about'] = $ab;
+
         $fo = (array) ($updates['footer'] ?? []);
         $columns = array_values((array) ($fo['columns'] ?? []));
         $fo['columns'] = array_map(function ($col) {
@@ -378,6 +416,52 @@ class SiteContentController extends Controller
         $updates['legal'] = $legal;
 
         return $updates;
+    }
+
+    /**
+     * The /stores page's own hero (title/subtitle/background photo) — edited
+     * from the Find a Store admin page itself (not the main Site Editor
+     * content form), since that's where editors actually look for it. Its
+     * own small read-merge-write + redirect, same self-contained pattern as
+     * saveCategories() below.
+     */
+    public function updateStoresPage(Request $request)
+    {
+        // Gated by 'stores' (not 'content') — this form lives on the Find a
+        // Store admin page, same access check StoreController uses for it.
+        $email = $this->supabaseUser($request)['email'] ?? null;
+        abort_unless($this->canAccess($email, 'stores'), 403, 'Forbidden.');
+
+        $current = SiteContent::find(1)?->data ?? [];
+        $sp = (array) $request->input('storesPage', []);
+        $sp['typography'] = SiteContent::normalizeTypography($sp['typography'] ?? null);
+        $current['storesPage'] = $sp;
+
+        SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
+        Cache::forget('site-content');
+
+        return redirect()->route('admin.stores.index')->with('status', 'Store page header saved.');
+    }
+
+    /**
+     * Live-preview draft for the Page Header form on the Find a Store admin
+     * page — same session-stashed-draft mechanism as preview() above (read by
+     * Controller::previewDraft), scoped to just the `storesPage` key so the
+     * click-to-edit bridge on /stores works there without wiring this page
+     * into the main content-form's tab machinery.
+     */
+    public function previewStoresPage(Request $request)
+    {
+        $email = $this->supabaseUser($request)['email'] ?? null;
+        abort_unless($this->canAccess($email, 'stores'), 403, 'Forbidden.');
+
+        $current = SiteContent::find(1)?->data ?? [];
+        $sp = (array) $request->input('storesPage', []);
+        $sp['typography'] = SiteContent::normalizeTypography($sp['typography'] ?? null);
+        $current['storesPage'] = $sp;
+        $request->session()->put('content_draft', $current);
+
+        return response()->noContent();
     }
 
     private function linesToArray($text): array

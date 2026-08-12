@@ -6,7 +6,7 @@
     @include('admin.content._editor-nav', ['activeSection' => 'stores'])
 @endsection
 
-@section('preview-label', 'Live preview — saved content (updates on save)')
+@section('preview-label', 'Live preview — page header updates as you edit; branch list updates on save')
 @section('preview')
     @include('admin.content._preview', ['url' => route('stores', absolute: false)])
 @endsection
@@ -27,6 +27,26 @@
             </ul>
         </div>
     @endif
+
+    <div class="mb-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="text-lg font-bold text-navy-800">Page Header</h2>
+        <p class="mb-5 mt-0.5 text-sm text-slate-500">The dark hero at the top of the public /stores page (distinct from the "Store Locator" teaser on the landing page). Saved separately from the branch list below.</p>
+        <form id="stores-page-header-form" method="POST" action="{{ route('admin.stores.page-header') }}" class="space-y-3">
+            @csrf
+            @method('PUT')
+            <label class="block">
+                <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                <input type="text" name="storesPage[title]" value="{{ $storesPage['title'] ?? '' }}" class="{{ $input }}">
+            </label>
+            <label class="block">
+                <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                <textarea name="storesPage[subtitle]" rows="3" class="{{ $input }}">{{ $storesPage['subtitle'] ?? '' }}</textarea>
+            </label>
+            @include('admin.content._image-field', ['name' => 'storesPage[backgroundImage]', 'value' => $storesPage['backgroundImage'] ?? '', 'fieldLabel' => 'Background photo', 'wide' => true])
+            @include('admin.content._typography-panel', ['name' => 'storesPage[typography]', 'value' => $storesPage['typography'] ?? []])
+            <button type="submit" class="rounded-lg bg-navy-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600">Save page header</button>
+        </form>
+    </div>
 
     <form id="stores-form" method="POST" action="{{ route('admin.stores.sync') }}">
         @csrf
@@ -172,6 +192,69 @@
         storesForm.addEventListener('change', (e) => {
             const row = e.target.closest('[data-row]')
             if (row) syncSummary(row)
+        })
+
+        // ---- Page Header: live preview + click-to-edit bridge --------------
+        // Same mechanism as the main Site Editor (admin/content/index.blade.php):
+        // stage the current form as a session draft, reload the preview iframe
+        // with ?preview=1 (editable=true always — this page has no tabs, so
+        // there's nothing to gate it on), and mirror the click-to-edit bridge's
+        // postMessage events back onto this form's real fields.
+        const headerForm = document.getElementById('stores-page-header-form')
+        const storesPreviewUrl = '{{ route('stores', absolute: false) }}'
+
+        function dotPathToName(path) {
+            return path.split('.').map((part, i) => (i === 0 ? part : `[${part}]`)).join('')
+        }
+
+        async function refreshHeaderPreview() {
+            if (!window.swapPreview) return
+            const fd = new FormData(headerForm)
+            try {
+                await fetch('{{ route('admin.stores.page-header.preview') }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', Accept: 'application/json' },
+                    body: fd,
+                })
+            } catch { /* preview is best-effort */ }
+            const frame = document.getElementById('preview-frame')
+            let activelyEditing = false
+            try { activelyEditing = !!frame?.contentDocument?.activeElement?.isContentEditable } catch { /* same-origin, shouldn't happen */ }
+            if (activelyEditing) return
+            swapPreview(storesPreviewUrl + '?preview=1&_=' + Date.now(), true)
+        }
+
+        let headerPreviewTimer
+        const scheduleHeaderPreview = () => { clearTimeout(headerPreviewTimer); headerPreviewTimer = setTimeout(refreshHeaderPreview, 500) }
+
+        headerForm.addEventListener('input', scheduleHeaderPreview)
+        headerForm.addEventListener('change', scheduleHeaderPreview)
+        refreshHeaderPreview() // stage + swap to an editable preview on load
+
+        window.addEventListener('message', (e) => {
+            if (e.origin !== window.location.origin) return
+            if (!e.data || e.data.source !== 'bw-editor-bridge') return
+            const field = headerForm.querySelector(`[name="${CSS.escape(dotPathToName(e.data.path))}"]`)
+            if (!field) return
+            switch (e.data.type) {
+                case 'field-input': {
+                    let value = e.data.value ?? ''
+                    if (field.tagName !== 'TEXTAREA') value = value.replace(/\r?\n/g, ' ')
+                    if (field.value !== value) {
+                        field.value = value
+                        field.dispatchEvent(new Event('input', { bubbles: true }))
+                    }
+                    break
+                }
+                case 'field-blur':
+                    refreshHeaderPreview()
+                    break
+                case 'image': {
+                    const imageField = field.closest('[data-image-field]')
+                    imageField?.querySelector('[data-image-file]')?.click()
+                    break
+                }
+            }
         })
     </script>
 @endsection

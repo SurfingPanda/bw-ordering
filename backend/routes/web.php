@@ -153,6 +153,8 @@ Route::middleware('supabase.session')->group(function () {
     // everything, one "Save changes"; removed cards are deleted).
     Route::get('/admin/stores', [AdminStoreController::class, 'index'])->name('admin.stores.index');
     Route::post('/admin/stores/sync', [AdminStoreController::class, 'sync'])->name('admin.stores.sync');
+    Route::put('/admin/stores/page-header', [AdminSiteContentController::class, 'updateStoresPage'])->name('admin.stores.page-header');
+    Route::post('/admin/stores/page-header/preview', [AdminSiteContentController::class, 'previewStoresPage'])->name('admin.stores.page-header.preview');
 
     Route::get('/admin/vouchers', [AdminVoucherController::class, 'index'])->name('admin.vouchers.index');
     Route::post('/admin/vouchers/sync', [AdminVoucherController::class, 'sync'])->name('admin.vouchers.sync');

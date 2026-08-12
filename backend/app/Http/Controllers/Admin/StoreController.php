@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\SiteContentController as PublicSiteContentController;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -37,8 +39,12 @@ class StoreController extends Controller
     {
         $this->authorize($request);
 
+        $content = (array) app(PublicSiteContentController::class)->cachedData();
+        $storesPage = array_merge(LandingController::DEFAULT_CONTENT['storesPage'], (array) ($content['storesPage'] ?? []));
+
         return view('admin.stores.index', [
             'stores' => Store::orderBy('region')->orderBy('name')->get(),
+            'storesPage' => $storesPage,
         ] + $this->shell($request));
     }
 

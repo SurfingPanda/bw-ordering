@@ -96,6 +96,7 @@ class LandingController extends Controller
         'storesPage' => [
             'title' => 'Find a store',
             'subtitle' => '60+ branches nationwide. Search for the BW Superbakeshop nearest you.',
+            'backgroundImage' => '/images/bakery-interior.jpg',
         ],
         'newsletter' => [
             'title' => 'Get sweet deals in your inbox 🍰',

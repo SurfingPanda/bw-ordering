@@ -1,9 +1,23 @@
-{{-- Static "About Us" page — linked from the footer's Company column.
-     Content is fixed copy (not Site Editor content), same as
-     legal/privacy-policy.blade.php and legal/terms-of-service.blade.php.
-     $stats reuses the franchise page's real trust figures (Site Editor →
-     Franchise → Trust Stats) so this page never invents its own numbers. --}}
+{{-- "About Us" page — linked from the footer's Company column. Content comes
+     from the CMS blob's `about` key (Site Editor → Other Pages → About Page),
+     editable inline the same way franchise.blade.php is. --}}
 @php
+    $hero = $ab['hero'];
+    $story = $ab['story'];
+    $values = $ab['values'];
+    $cta = $ab['cta'];
+    // Highlight the brand name within the (free-text, admin-editable) hero
+    // title — same escape-then-wrap-known-substring approach franchise.blade.php
+    // uses, falling back to the plain escaped title untouched if the phrase
+    // isn't in there verbatim.
+    $heroTitleHtml = preg_replace(
+        '/bw superbakeshop/i',
+        '<span class="font-script font-normal text-brand-400">$0</span>',
+        e($hero['title'] ?? ''),
+    );
+    // Site Editor per-section toggles (about.visible.*); absent = shown.
+    $abVisible = (array) ($ab['visible'] ?? []);
+    $showSection = fn (string $key): bool => (bool) ($abVisible[$key] ?? true);
     $metaTitle = 'BW Superbakeshop | About Us';
     $metaDescription = 'Freshly baked, made with love, ordered with ease — the story and values behind bw Superbakeshop.';
 @endphp
@@ -21,83 +35,92 @@
 </head>
 <body>
     <div class="min-h-screen bg-white text-navy-800">
-        {{-- header --}}
-        <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
-            <div class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
-                <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="/images/logo (1).png" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
+        {{-- header — same look as the landing page's nav (sticky navy bar,
+             circular logo badge overflowing the bottom edge), but with just
+             "Back to home" instead of the full Menu/Store/Partner nav and
+             Sign In/Order Now buttons. --}}
+        <header class="sticky top-0 z-50 bg-navbar">
+            <nav class="relative mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
+                {{-- Reserves layout width in the flex row; the actual circular
+                     badge is absolutely positioned within it so it can spill
+                     past the header's bottom edge without affecting the rest
+                     of the nav's flex layout. --}}
+                <a href="/" class="group relative z-10 h-full w-20 shrink-0 sm:w-24">
+                    {{-- Soft glow behind the badge, fades in on hover — sits
+                         earlier in the DOM (and so behind) the badge span
+                         below, no z-index needed. --}}
+                    <span aria-hidden="true" class="pointer-events-none absolute -bottom-12 left-0 h-24 w-24 rounded-full bg-brand-400/50 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100 sm:-bottom-14 sm:h-28 sm:w-28"></span>
+                    <span class="absolute -bottom-12 left-0 flex h-24 w-24 items-center justify-center rounded-full bg-white p-2 shadow-lg transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-110 sm:-bottom-14 sm:h-28 sm:w-28">
+                        <img src="/images/logo (1).png" alt="bw Superbakeshop" width="225" height="225" class="h-full w-full object-contain">
+                    </span>
                 </a>
+
                 <div class="flex items-center gap-4">
-                    <a href="/" class="text-sm font-medium text-navy-700 transition hover:text-brand-600">← Back to home</a>
-                    <a href="/menu" class="hidden rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 sm:block">
-                        Order now
-                    </a>
+                    <a href="/" class="text-sm font-semibold text-white/90 transition hover:text-white">← Back to home</a>
                 </div>
-            </div>
+            </nav>
         </header>
 
         {{-- hero --}}
+        @if($showSection('hero'))
         <section class="relative overflow-hidden bg-navy-900">
             <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
             <div class="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-                <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">Our story</span>
-                <h1 class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">About <span class="font-script font-normal text-brand-400">bw Superbakeshop</span></h1>
-                <p class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">Freshly baked. Made with love. Ordered with ease. The same promise we've kept in every branch, every day.</p>
+                <span data-editable="about.hero.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-400">{{ $hero['eyebrow'] ?? '' }}</span>
+                <h1 data-editable="about.hero.title" class="mt-5 text-4xl font-bold leading-tight text-white sm:text-5xl">{!! $heroTitleHtml !!}</h1>
+                <p data-editable="about.hero.subtitle" data-editable-multiline class="mx-auto mt-5 max-w-xl text-base text-navy-50/80">{{ $hero['subtitle'] ?? '' }}</p>
             </div>
         </section>
+        @endif
 
         {{-- our story --}}
+        @if($showSection('story'))
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div class="grid items-center gap-10 lg:grid-cols-2">
                 <div>
-                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">How it started</span>
-                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">From one neighborhood oven to a name you trust</h2>
-                    <p class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
-                        What started as a small bakeshop with a simple promise — proper ingredients, honest recipes, and warm service — has grown into bw Superbakeshop: a trusted bakery brand with branches nationwide. Through the years, the ovens have gotten bigger and the menu has grown, but what goes into every cake, loaf, and pastry hasn't changed.
+                    <span data-editable="about.story.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $story['eyebrow'] ?? '' }}</span>
+                    <h2 data-editable="about.story.heading" class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $story['heading'] ?? '' }}</h2>
+                    <p data-editable="about.story.paragraph1" data-editable-multiline class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
+                        {{ $story['paragraph1'] ?? '' }}
                     </p>
-                    <p class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
-                        Today, every branch still bakes the same way we started: fresh, every day, for the communities we're part of — whether that's a birthday cake picked up on the way home, a loaf grabbed for breakfast, or a custom celebration cake made to order.
+                    <p data-editable="about.story.paragraph2" data-editable-multiline class="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
+                        {{ $story['paragraph2'] ?? '' }}
                     </p>
                 </div>
                 <div class="relative">
-                    {{-- Web-sized copy of "Full Moymoy 2.png" (the source
-                         export is 15 MB / 4394px — see the resize note in
-                         the git history). --}}
-                    <img src="/images/mascot-chef.png" alt="bw Superbakeshop chef mascot" loading="lazy" decoding="async" width="1100" height="977" class="mx-auto w-full max-w-lg">
+                    <img data-editable="about.story.image" src="{{ $story['image'] ?? '/images/mascot-chef.png' }}" alt="bw Superbakeshop chef mascot" loading="lazy" decoding="async" width="1100" height="977" class="mx-auto w-full max-w-lg">
                 </div>
             </div>
         </section>
+        @endif
 
         {{-- values --}}
+        @if($showSection('values'))
         <section class="bg-navy-50/60 py-16">
             <div class="mx-auto max-w-6xl px-4 sm:px-6">
                 <div class="mx-auto max-w-2xl text-center">
-                    <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">What we stand for</span>
-                    <h2 class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">The values behind every bake</h2>
+                    <span data-editable="about.values.eyebrow" class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">{{ $values['eyebrow'] ?? '' }}</span>
+                    <h2 data-editable="about.values.heading" class="mt-3 text-3xl font-bold text-navy-800 sm:text-4xl">{{ $values['heading'] ?? '' }}</h2>
                 </div>
                 <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    @foreach([
-                        ['icon' => '🌾', 'title' => 'Quality Ingredients', 'text' => 'We use trusted, quality ingredients in every recipe — a good bake starts long before it goes in the oven.'],
-                        ['icon' => '❤️', 'title' => 'Made With Love', 'text' => 'Every cake and loaf is prepared with the same care you\'d expect from a home kitchen, just at bakery scale.'],
-                        ['icon' => '🏘️', 'title' => 'Community First', 'text' => 'We\'re proud to be part of the neighborhoods we serve — from everyday treats to once-in-a-lifetime celebrations.'],
-                        ['icon' => '📦', 'title' => 'Ordered With Ease', 'text' => 'Visit a branch, order for delivery, or plan a custom cake — we\'ve made it simple to get what you\'re craving.'],
-                    ] as $v)
+                    @foreach($values['items'] ?? [] as $i => $v)
                         <div class="h-full rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-lg">
-                            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">{{ $v['icon'] }}</span>
-                            <h3 class="mt-4 text-base font-semibold text-navy-800">{{ $v['title'] }}</h3>
-                            <p class="mt-2 text-sm text-slate-500">{{ $v['text'] }}</p>
+                            <span data-editable="about.values.items.{{ $i }}.icon" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">{{ $v['icon'] ?? '' }}</span>
+                            <h3 data-editable="about.values.items.{{ $i }}.title" class="mt-4 text-base font-semibold text-navy-800">{{ $v['title'] ?? '' }}</h3>
+                            <p data-editable="about.values.items.{{ $i }}.text" data-editable-multiline class="mt-2 text-sm text-slate-500">{{ $v['text'] ?? '' }}</p>
                         </div>
                     @endforeach
                 </div>
             </div>
         </section>
+        @endif
 
         {{-- CTA --}}
         <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <div class="rounded-3xl bg-gradient-to-r from-navy-800 to-navy-900 px-8 py-12 text-center text-white shadow-xl sm:px-12">
-                <h2 class="text-2xl font-bold sm:text-3xl">Come taste the difference</h2>
-                <p class="mx-auto mt-2 max-w-md text-sm text-navy-50/80">Explore the full menu or find the bw Superbakeshop nearest you.</p>
+            <div class="rounded-3xl px-8 py-12 text-center text-white shadow-xl sm:px-12" style="background-color: {{ $cta['backgroundColor'] ?? '#083caa' }};">
+                <h2 data-editable="about.cta.heading" class="text-2xl font-bold sm:text-3xl">{{ $cta['heading'] ?? '' }}</h2>
+                <p data-editable="about.cta.subtitle" data-editable-multiline class="mx-auto mt-2 max-w-md text-sm text-navy-50/80">{{ $cta['subtitle'] ?? '' }}</p>
                 <div class="mt-6 flex flex-wrap justify-center gap-3">
                     <a href="/menu" class="rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Explore the menu
@@ -112,5 +135,8 @@
         {{-- footer --}}
         @include('partials.site-footer', ['f' => $footerContent, 'social' => $social])
     </div>
+    @if($editable ?? false)
+        @include('partials._editor-bridge')
+    @endif
 </body>
 </html>

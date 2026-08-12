@@ -413,24 +413,6 @@
             @include('admin.content._typography-panel', ['name' => 'storeLocator[typography]', 'value' => $sl['typography'] ?? []])
         </section>
 
-        {{-- ============ Find a Store Page (the /stores page's own hero) ============ --}}
-        <section data-panel="storesPage" class="{{ $panel }}">
-            @php($sp = (array) ($content['storesPage'] ?? []))
-            <h2 class="text-lg font-bold text-navy-800">Find a Store Page</h2>
-            <p class="mb-5 mt-0.5 text-sm text-slate-500">The dark hero at the top of the full /stores page (distinct from the “Store Locator” teaser on the landing page above). The branches themselves are managed on the separate Find a Store page.</p>
-            <div class="space-y-3">
-                <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
-                    <input type="text" name="storesPage[title]" value="{{ $sp['title'] ?? '' }}" class="{{ $input }}">
-                </label>
-                <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
-                    <textarea name="storesPage[subtitle]" rows="3" class="{{ $input }}">{{ $sp['subtitle'] ?? '' }}</textarea>
-                </label>
-            </div>
-            @include('admin.content._typography-panel', ['name' => 'storesPage[typography]', 'value' => $sp['typography'] ?? []])
-        </section>
-
         {{-- ============ Sweet Deals (newsletter) ============ --}}
         <section data-panel="newsletter" class="{{ $panel }}">
             @php($nl = (array) ($content['newsletter'] ?? []))
@@ -671,6 +653,143 @@
                     </div>
                     <template>@include('admin.content._faq-row', ['i' => '__IDX__', 'item' => []])</template>
                     <button type="button" data-add class="{{ $addBtn }}">+ Add FAQ</button>
+                </div>
+            </div>
+        </section>
+
+        {{-- ============ About Page ============ --}}
+        <section data-panel="about" class="hidden space-y-5">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                @php($ab = (array) ($content['about'] ?? []))
+                @php($abHero = (array) ($ab['hero'] ?? []))
+                @php($abStory = (array) ($ab['story'] ?? []))
+                @php($abValues = (array) ($ab['values'] ?? []))
+                @php($abVis = (array) ($ab['visible'] ?? []))
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">About — Hero</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The top of the /about page.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="about[visible][hero]" value="0">
+                            <input type="checkbox" name="about[visible][hero]" value="1" class="peer sr-only" @checked($abVis['hero'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="space-y-3">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
+                        <input type="text" name="about[hero][eyebrow]" value="{{ $abHero['eyebrow'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Title</span>
+                        <input type="text" name="about[hero][title]" value="{{ $abHero['title'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                        <textarea name="about[hero][subtitle]" rows="3" class="{{ $input }}">{{ $abHero['subtitle'] ?? '' }}</textarea>
+                    </label>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">About — Our Story</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The two-column story section with the mascot photo.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="about[visible][story]" value="0">
+                            <input type="checkbox" name="about[visible][story]" value="1" class="peer sr-only" @checked($abVis['story'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="space-y-3">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
+                        <input type="text" name="about[story][eyebrow]" value="{{ $abStory['eyebrow'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Heading</span>
+                        <input type="text" name="about[story][heading]" value="{{ $abStory['heading'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Paragraph 1</span>
+                        <textarea name="about[story][paragraph1]" rows="4" class="{{ $input }}">{{ $abStory['paragraph1'] ?? '' }}</textarea>
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Paragraph 2</span>
+                        <textarea name="about[story][paragraph2]" rows="4" class="{{ $input }}">{{ $abStory['paragraph2'] ?? '' }}</textarea>
+                    </label>
+                    @include('admin.content._image-field', ['name' => 'about[story][image]', 'value' => $abStory['image'] ?? '', 'fieldLabel' => 'Photo'])
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-navy-800">About — Values</h2>
+                        <p class="mb-5 mt-0.5 text-sm text-slate-500">The "values behind every bake" cards.</p>
+                    </div>
+                    <label class="flex shrink-0 cursor-pointer items-center gap-2 pt-1">
+                        <span class="text-xs font-medium text-slate-500">Show on page</span>
+                        <span class="relative inline-flex h-6 w-11 shrink-0 items-center">
+                            <input type="hidden" name="about[visible][values]" value="0">
+                            <input type="checkbox" name="about[visible][values]" value="1" class="peer sr-only" @checked($abVis['values'] ?? true)>
+                            <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                            <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="mb-5 space-y-3">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Eyebrow</span>
+                        <input type="text" name="about[values][eyebrow]" value="{{ $abValues['eyebrow'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Heading</span>
+                        <input type="text" name="about[values][heading]" value="{{ $abValues['heading'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                </div>
+                <div data-repeater>
+                    <div data-rows class="space-y-2">
+                        @foreach(array_values((array) ($abValues['items'] ?? [])) as $i => $item)
+                            @include('admin.content._about-value-row')
+                        @endforeach
+                    </div>
+                    <template>@include('admin.content._about-value-row', ['i' => '__IDX__', 'item' => []])</template>
+                    <button type="button" data-add class="{{ $addBtn }}">+ Add value</button>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                @php($abCta = (array) ($ab['cta'] ?? []))
+                <h2 class="text-lg font-bold text-navy-800">About — Closing Banner</h2>
+                <p class="mb-5 mt-0.5 text-sm text-slate-500">The "Come taste the difference" card at the bottom of the page.</p>
+                <div class="space-y-3">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Heading</span>
+                        <input type="text" name="about[cta][heading]" value="{{ $abCta['heading'] ?? '' }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Subtitle</span>
+                        <textarea name="about[cta][subtitle]" rows="2" class="{{ $input }}">{{ $abCta['subtitle'] ?? '' }}</textarea>
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Card color</span>
+                        <div data-typography-color class="flex items-center gap-2">
+                            <input type="color" data-color-swatch value="{{ $abCta['backgroundColor'] ?? '#083caa' }}" title="Pick the card's background color" class="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-0.5">
+                            <input type="text" name="about[cta][backgroundColor]" data-color-hex value="{{ $abCta['backgroundColor'] ?? '#083caa' }}" maxlength="7" placeholder="#083caa" class="w-24 shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-mono uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        </div>
+                    </label>
                 </div>
             </div>
         </section>
@@ -1046,7 +1165,7 @@
         // Sidebar tabs are real ?section= links (from _editor-nav) intercepted
         // below, so Stores/Vouchers/Products items — plain links to their own
         // pages — just navigate.
-        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', customCakeForm: '/custom-cake', storesPage: '/stores' }
+        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', about: '/about', customCakeForm: '/custom-cake' }
         // Sections whose previewed page ships partials/_editor-bridge — only
         // these get pointer-events enabled in the preview iframe (see
         // swapPreview's `editable` param and Controller::isEditablePreview).
@@ -1057,7 +1176,7 @@
         // (the bridge only reacts to elements actually carrying the attribute),
         // so listing a tab here ahead of its fields being tagged is harmless.
         const EDITABLE_PREVIEW_SECTIONS = new Set([
-            'franchise', 'storesPage', 'authPanel', 'customCakeForm',
+            'franchise', 'about', 'authPanel', 'customCakeForm',
             'announcement', 'banners', 'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake',
             'storeLocator', 'newsletter', 'social', 'footer', 'legal', 'buttons',
             // All three map to the same /menu preview (see PREVIEW_URLS) — must

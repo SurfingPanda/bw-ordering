@@ -79,7 +79,7 @@
 
         {{-- hero + search --}}
         <section class="relative overflow-hidden bg-navy-900">
-            <img src="/images/bakery-interior.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
+            <img data-editable="storesPage.backgroundImage" src="{{ $hero['backgroundImage'] ?? '/images/bakery-interior.jpg' }}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-b from-navy-900/85 via-navy-900/80 to-navy-900/90"></div>
             <div class="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
