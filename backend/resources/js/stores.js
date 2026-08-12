@@ -236,14 +236,16 @@ function renderOpenBadges() {
     cards.forEach((card) => {
         const store = stores.find((s) => s.name === card.dataset.storeCard)
         const open = store ? isStoreOpenNow(store.hours) : null
-        const row = card.querySelector('.flex.flex-wrap.items-center.gap-2')
+        // Below the address/hours/phone list (not the region/fulfillment
+        // pill row up top) — there's only one <ul> per card.
+        const list = card.querySelector('ul')
         let badge = card.querySelector('[data-open-badge]')
         if (open === null) { badge?.remove(); return }
         if (!badge) {
             badge = document.createElement('span')
             badge.setAttribute('data-open-badge', '')
-            badge.className = 'w-fit rounded-full px-3 py-1 text-xs font-semibold'
-            row?.appendChild(badge)
+            badge.className = 'mt-3 inline-block w-fit rounded-full px-3 py-1 text-xs font-semibold'
+            list?.insertAdjacentElement('afterend', badge)
         }
         badge.textContent = open ? 'Open now' : 'Closed'
         badge.classList.toggle('bg-emerald-50', open)
