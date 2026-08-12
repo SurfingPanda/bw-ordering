@@ -11,7 +11,7 @@
         ['key' => 'x', 'label' => 'X (Twitter)', 'icon' => '𝕏'],
     ];
 @endphp
-<footer id="site-footer" class="bg-navbar text-navy-50/80">
+<footer id="site-footer" class="text-navy-50/80" style="background-color: {{ $f['backgroundColor'] ?? '#083caa' }};">
     <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.5fr_2.5fr]">
         <div>
             <div class="flex items-center gap-2">

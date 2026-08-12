@@ -404,6 +404,8 @@ class SiteContentController extends Controller
         $updates['about'] = $ab;
 
         $fo = (array) ($updates['footer'] ?? []);
+        $footerColor = strtolower(trim((string) ($fo['backgroundColor'] ?? '')));
+        $fo['backgroundColor'] = preg_match('/^#[0-9a-f]{6}$/', $footerColor) ? $footerColor : '#083caa';
         $columns = array_values((array) ($fo['columns'] ?? []));
         $fo['columns'] = array_map(function ($col) {
             $col = (array) $col;

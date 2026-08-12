@@ -840,6 +840,13 @@
                         <span class="mb-1 block text-xs font-medium text-slate-500">Copyright line</span>
                         <input type="text" name="footer[copyright]" value="{{ $fo['copyright'] ?? '' }}" class="{{ $input }}">
                     </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Footer color</span>
+                        <div data-typography-color class="flex items-center gap-2">
+                            <input type="color" data-color-swatch value="{{ $fo['backgroundColor'] ?? '#083caa' }}" title="Pick the footer's background color" class="h-9 w-11 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-0.5">
+                            <input type="text" name="footer[backgroundColor]" data-color-hex value="{{ $fo['backgroundColor'] ?? '#083caa' }}" maxlength="7" placeholder="#083caa" class="w-24 shrink-0 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-mono uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        </div>
+                    </label>
                 </div>
             </div>
 

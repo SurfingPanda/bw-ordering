@@ -191,6 +191,69 @@ for (const store of stores) {
     markers.set(store.name, marker)
 }
 
+/* ---- open/closed badge -------------------------------------------------
+   `hours` is free text an editor typed in the Find a Store admin page (e.g.
+   "7:00 AM – 9:00 PM"), not a structured schedule — parsed defensively here
+   and only rendered when it actually matches the expected "H:MM AM/PM –
+   H:MM AM/PM" shape, using the visitor's own local clock (this is a
+   Philippines-only chain, so browser-local time is treated as store-local
+   time rather than converting time zones). Malformed/unrecognized hours text
+   just renders no badge instead of guessing. ------------------------------- */
+
+function parseClockTime(text) {
+    const m = text.trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/)
+    if (!m) return null
+    let hour = parseInt(m[1], 10)
+    const minute = parseInt(m[2], 10)
+    if (hour < 1 || hour > 12 || minute > 59) return null
+    const isPM = m[3].toUpperCase() === 'PM'
+    if (hour === 12) hour = 0
+    return (isPM ? hour + 12 : hour) * 60 + minute
+}
+
+function parseHoursRange(hours) {
+    if (!hours) return null
+    const parts = String(hours).split(/\s*[–—-]\s*/) // en dash, em dash, hyphen
+    if (parts.length !== 2) return null
+    const open = parseClockTime(parts[0])
+    const close = parseClockTime(parts[1])
+    return open == null || close == null ? null : { open, close }
+}
+
+// null = "couldn't tell" (unparseable hours text) — callers should render no badge.
+function isStoreOpenNow(hours, now = new Date()) {
+    const range = parseHoursRange(hours)
+    if (!range) return null
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    if (range.open === range.close) return true // same open/close time = 24 hours
+    // Overnight ranges (e.g. "10:00 PM – 2:00 AM") wrap past midnight.
+    return range.open < range.close
+        ? nowMinutes >= range.open && nowMinutes < range.close
+        : nowMinutes >= range.open || nowMinutes < range.close
+}
+
+function renderOpenBadges() {
+    cards.forEach((card) => {
+        const store = stores.find((s) => s.name === card.dataset.storeCard)
+        const open = store ? isStoreOpenNow(store.hours) : null
+        const row = card.querySelector('.flex.flex-wrap.items-center.gap-2')
+        let badge = card.querySelector('[data-open-badge]')
+        if (open === null) { badge?.remove(); return }
+        if (!badge) {
+            badge = document.createElement('span')
+            badge.setAttribute('data-open-badge', '')
+            badge.className = 'w-fit rounded-full px-3 py-1 text-xs font-semibold'
+            row?.appendChild(badge)
+        }
+        badge.textContent = open ? 'Open now' : 'Closed'
+        badge.classList.toggle('bg-emerald-50', open)
+        badge.classList.toggle('text-emerald-700', open)
+        badge.classList.toggle('bg-red-50', !open)
+        badge.classList.toggle('text-red-700', !open)
+    })
+}
+renderOpenBadges()
+
 /* ---- filtering + selection ------------------------------------------- */
 
 function visibleStores() {

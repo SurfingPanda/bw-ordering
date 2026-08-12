@@ -146,6 +146,7 @@ class LandingController extends Controller
             'brand' => 'Superbakeshop',
             'description' => 'Freshly baked. Made with love. Ordered with ease. Bringing bakeshop happiness to your doorstep.',
             'copyright' => '© 2026 BW Superbakeshop. All rights reserved.',
+            'backgroundColor' => '#083caa',
             'columns' => [
                 ['title' => 'Shop', 'links' => [
                     ['label' => 'Cakes', 'url' => '/menu'],
