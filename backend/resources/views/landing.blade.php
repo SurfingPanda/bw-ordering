@@ -398,7 +398,7 @@
             $firstStore = $mapStores->first();
         @endphp
         @if($sl['visible'] ?? true)
-        <section id="stores" class="relative overflow-hidden bg-navbar py-16">
+        <section id="stores" class="relative overflow-hidden py-16" style="background-color: {{ $sl['backgroundColor'] ?? '#083caa' }};">
             <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl"></div>
             <div class="relative mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-5 lg:items-center lg:gap-12">
                 <div class="lg:col-span-2" data-reveal>

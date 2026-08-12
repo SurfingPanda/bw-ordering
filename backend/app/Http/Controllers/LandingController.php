@@ -101,6 +101,7 @@ class LandingController extends Controller
             'title' => '60+ stores, always near you',
             'subtitle' => 'Find your nearest branch or simply order online for delivery and pickup.',
             'placeholder' => 'Enter your city or area',
+            'backgroundColor' => '#083caa',
             'visible' => true,
         ],
         // The /stores page's own hero — distinct from storeLocator above,
