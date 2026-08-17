@@ -56,4 +56,13 @@ class MenuHeaderTest extends TestCase
             ->assertSee('id="open-cart-fab"', false)
             ->assertSee('cart-count-icon', false);
     }
+
+    public function test_category_selection_keeps_the_url_and_browser_history_in_sync(): void
+    {
+        $this->get(route('menu'))
+            ->assertOk()
+            ->assertSee('syncCategoryUrl()', false)
+            ->assertSee("history.pushState({ category: active }", false)
+            ->assertSee("window.addEventListener('popstate'", false);
+    }
 }

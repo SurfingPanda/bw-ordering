@@ -417,7 +417,12 @@
                     badge = `<span class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white shadow ring-1 ring-black/5">${c.img ? `<img src="${c.img}" alt="" class="h-full w-full object-cover">` : ''}</span>`;
                 }
                 btn.innerHTML = badge + `<span>${c.name}</span>`;
-                btn.addEventListener('click', () => { active = c.name; tag = 'all'; renderAll(); });
+                btn.addEventListener('click', () => {
+                    active = c.name;
+                    tag = 'all';
+                    syncCategoryUrl();
+                    renderAll();
+                });
                 nav.appendChild(btn);
                 if (isActive) activeBtn = btn;
             });
@@ -434,6 +439,23 @@
                 });
             }
         }
+
+        // Keep the address bar aligned with the category currently shown.
+        // This makes copied links accurate and lets Back/Forward restore the
+        // menu state. "All" is represented by the clean /menu URL.
+        function syncCategoryUrl() {
+            const url = new URL(window.location.href);
+            if (active === 'All') url.searchParams.delete('category');
+            else url.searchParams.set('category', active);
+            history.pushState({ category: active }, '', url.pathname + url.search + url.hash);
+        }
+
+        window.addEventListener('popstate', () => {
+            const requested = new URLSearchParams(window.location.search).get('category');
+            active = requested && categories().some(c => c.name === requested) ? requested : 'All';
+            tag = 'all';
+            renderAll();
+        });
 
         // ---- product grid ----
         function inActiveCategory(p) {
