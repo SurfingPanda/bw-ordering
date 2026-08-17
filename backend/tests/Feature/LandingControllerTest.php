@@ -60,6 +60,32 @@ class LandingControllerTest extends TestCase
             ->assertSee('<a data-editable="footer.columns.0.links.1.label" href="/contact"', false);
     }
 
+    public function test_legacy_shop_footer_links_open_the_matching_menu_categories(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => [
+            'footer' => [
+                'columns' => [[
+                    'title' => 'Shop',
+                    'links' => [
+                        ['label' => 'Cakes', 'url' => '/menu'],
+                        ['label' => 'Breads', 'url' => '/menu'],
+                        ['label' => 'Pastries', 'url' => '/menu'],
+                        ['label' => 'Delicacies', 'url' => '/menu'],
+                    ],
+                ]],
+            ],
+        ]]);
+        Cache::forget('site-content');
+
+        $html = $this->get('/')->assertOk()->getContent();
+        foreach (['Cakes', 'Breads', 'Pastries', 'Delicacies'] as $category) {
+            $this->assertStringContainsString(
+                'href="/menu?category='.urlencode($category).'"',
+                $html,
+            );
+        }
+    }
+
     public function test_store_locator_search_submits_to_the_real_stores_search(): void
     {
         // The teaser used to be a plain link to /stores that ignored whatever

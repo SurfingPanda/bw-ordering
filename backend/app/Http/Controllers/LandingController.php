@@ -150,10 +150,10 @@ class LandingController extends Controller
             'backgroundColor' => '#083caa',
             'columns' => [
                 ['title' => 'Shop', 'links' => [
-                    ['label' => 'Cakes', 'url' => '/menu'],
-                    ['label' => 'Breads', 'url' => '/menu'],
-                    ['label' => 'Pastries', 'url' => '/menu'],
-                    ['label' => 'Delicacies', 'url' => '/menu'],
+                    ['label' => 'Cakes', 'url' => '/menu?category=Cakes'],
+                    ['label' => 'Breads', 'url' => '/menu?category=Breads'],
+                    ['label' => 'Pastries', 'url' => '/menu?category=Pastries'],
+                    ['label' => 'Delicacies', 'url' => '/menu?category=Delicacies'],
                 ]],
                 ['title' => 'Company', 'links' => [
                     ['label' => 'About Us', 'url' => '/about'],

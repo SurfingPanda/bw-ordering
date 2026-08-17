@@ -68,6 +68,16 @@
                                         && in_array($url, ['', '#', '/#'], true)) {
                                         $url = route($legacyPageRoutes[$labelKey], absolute: false);
                                     }
+                                    $legacyShopCategories = [
+                                        'cakes' => 'Cakes',
+                                        'breads' => 'Breads',
+                                        'pastries' => 'Pastries',
+                                        'delicacies' => 'Delicacies',
+                                    ];
+                                    if (isset($legacyShopCategories[$labelKey])
+                                        && in_array(rtrim($url, '/'), ['/menu'], true)) {
+                                        $url = route('menu', ['category' => $legacyShopCategories[$labelKey]], false);
+                                    }
                                 @endphp
                                 @php $linkPath = 'footer.columns.'.$loop->parent->index.'.links.'.$j.'.label'; @endphp
                                 @if(!$url)
