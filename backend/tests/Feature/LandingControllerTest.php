@@ -39,6 +39,27 @@ class LandingControllerTest extends TestCase
         $this->assertSame(4, substr_count($html, 'href="'.$expectedHref.'"'));
     }
 
+    public function test_legacy_footer_placeholders_link_to_their_real_pages(): void
+    {
+        SiteContent::create(['id' => 1, 'data' => [
+            'footer' => [
+                'columns' => [[
+                    'title' => 'Company',
+                    'links' => [
+                        ['label' => 'About Us', 'url' => '/#'],
+                        ['label' => 'Contact', 'url' => '/#'],
+                    ],
+                ]],
+            ],
+        ]]);
+        Cache::forget('site-content');
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<a data-editable="footer.columns.0.links.0.label" href="/about"', false)
+            ->assertSee('<a data-editable="footer.columns.0.links.1.label" href="/contact"', false);
+    }
+
     public function test_store_locator_search_submits_to_the_real_stores_search(): void
     {
         // The teaser used to be a plain link to /stores that ignored whatever

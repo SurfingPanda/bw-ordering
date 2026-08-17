@@ -55,7 +55,20 @@
                     <ul data-footer-panel class="hidden space-y-2 pb-4 text-sm sm:block sm:pb-0 sm:pt-4">
                         @foreach($col['links'] ?? [] as $j => $l)
                             <li>
-                                @php $url = $l['url'] ?? ''; @endphp
+                                @php
+                                    $url = trim((string) ($l['url'] ?? ''));
+                                    // Repair legacy CMS entries saved with placeholders
+                                    // instead of their real first-party pages.
+                                    $legacyPageRoutes = [
+                                        'about us' => 'about',
+                                        'contact' => 'contact',
+                                    ];
+                                    $labelKey = strtolower(trim((string) ($l['label'] ?? '')));
+                                    if (isset($legacyPageRoutes[$labelKey])
+                                        && in_array($url, ['', '#', '/#'], true)) {
+                                        $url = route($legacyPageRoutes[$labelKey], absolute: false);
+                                    }
+                                @endphp
                                 @php $linkPath = 'footer.columns.'.$loop->parent->index.'.links.'.$j.'.label'; @endphp
                                 @if(!$url)
                                     <a data-editable="{{ $linkPath }}" href="#" onclick="event.preventDefault()" aria-disabled="true" class="transition hover:text-brand-600">{{ $l['label'] }}</a>
