@@ -26,6 +26,9 @@ class GroqAssistantService
 {
     private const BASE = 'https://api.groq.com/openai/v1/chat/completions';
 
+    /** Google Gemini's OpenAI-compatible endpoint — same request/response shape as Groq. */
+    private const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
     /** Marker the model appends when it recommends specific items; parsed out below. */
     public const PRODUCT_MARKER = '@@PRODUCTS:';
 
@@ -62,9 +65,12 @@ class GroqAssistantService
     }
 
     /**
-     * Send the running transcript to Groq and return
-     * ['reply' => string, 'source' => 'groq'|'fallback', 'productNames' => string[]].
-     * Never throws — a gateway error yields a canned, still-useful reply.
+     * Send the running transcript to the LLM and return
+     * ['reply' => string, 'source' => string, 'productNames' => string[]].
+     * Never throws — every provider failing yields a canned, still-useful reply.
+     *
+     * `source` is one of: 'groq' (primary model), 'groq-mini' (smaller Groq
+     * model), 'gemini' (cross-provider fallback), 'fallback' (canned).
      *
      * @param  array<int, array{role:string, content:string}>  $history
      */
@@ -76,39 +82,62 @@ class GroqAssistantService
         );
 
         $primary = config('services.groq.model');
-        $fallback = config('services.groq.fallback_model');
+        $miniModel = config('services.groq.fallback_model');
 
+        // 1. Primary Groq model.
         $text = $this->call($primary, $messages);
+        if ($text !== null) {
+            return $this->parse($text, 'groq');
+        }
 
-        // One retry on the smaller/faster model if the primary is rate-limited
-        // or errored — the free tier's per-model limits are separate.
-        if ($text === null && $fallback && $fallback !== $primary) {
-            $text = $this->call($fallback, $messages);
+        // 2. Smaller/faster Groq model — the free tier's per-model limits are
+        //    separate, so it's often up when the primary is rate-limited.
+        if ($miniModel && $miniModel !== $primary) {
+            $text = $this->call($miniModel, $messages);
             if ($text !== null) {
-                return $this->parse($text, 'fallback');
+                return $this->parse($text, 'groq-mini');
             }
         }
 
-        if ($text === null) {
-            return [
-                'reply' => "Sorry — I'm having trouble thinking right now. You can browse the full menu, "
-                    ."find a branch on our Stores page, or reach the team through the Contact page.",
-                'source' => 'fallback',
-                'productNames' => [],
-            ];
+        // 3. Cross-provider fallback: Google Gemini via its OpenAI-compatible
+        //    endpoint. Skipped entirely when GEMINI_API_KEY is unset.
+        if ($geminiKey = config('services.gemini.key')) {
+            $text = $this->call(
+                config('services.gemini.model'),
+                $messages,
+                self::GEMINI_BASE,
+                $geminiKey,
+            );
+            if ($text !== null) {
+                return $this->parse($text, 'gemini');
+            }
         }
 
-        return $this->parse($text, 'groq');
+        // 4. Everything's down — canned but still points somewhere useful.
+        return [
+            'reply' => "Sorry — I'm having trouble thinking right now. You can browse the full menu, "
+                .'find a branch on our Stores page, or reach the team through the Contact page.',
+            'source' => 'fallback',
+            'productNames' => [],
+        ];
     }
 
-    /** One Groq call. Returns the assistant text, or null on any failure. */
-    private function call(string $model, array $messages): ?string
+    /**
+     * One chat-completions call against an OpenAI-compatible endpoint. Returns
+     * the assistant text, or null on any failure. Defaults to Groq; pass
+     * $endpoint/$key to hit another provider (e.g. Gemini) with the same shape.
+     */
+    private function call(string $model, array $messages, ?string $endpoint = null, ?string $key = null): ?string
     {
+        $endpoint ??= self::BASE;
+        $key ??= config('services.groq.key');
+        $label = $endpoint === self::BASE ? 'Groq' : 'Gemini';
+
         try {
-            $resp = Http::withToken(config('services.groq.key'))
+            $resp = Http::withToken($key)
                 ->timeout(20)
                 ->acceptJson()
-                ->post(self::BASE, [
+                ->post($endpoint, [
                     'model' => $model,
                     'messages' => $messages,
                     'temperature' => 0.4,
@@ -118,7 +147,7 @@ class GroqAssistantService
                 ]);
 
             if ($resp->failed()) {
-                Log::warning('Groq assistant call failed', [
+                Log::warning("{$label} assistant call failed", [
                     'model' => $model,
                     'status' => $resp->status(),
                     'body' => Str::limit($resp->body(), 300),
@@ -131,7 +160,7 @@ class GroqAssistantService
 
             return $text !== '' ? $text : null;
         } catch (\Throwable $e) {
-            Log::warning('Groq assistant call threw', ['model' => $model, 'error' => $e->getMessage()]);
+            Log::warning("{$label} assistant call threw", ['model' => $model, 'error' => $e->getMessage()]);
 
             return null;
         }
@@ -201,9 +230,20 @@ class GroqAssistantService
             if ($p->status) {
                 $bits[] = str_replace('_', ' ', $p->status);
             }
-            $cal = $p->calorie_info[0] ?? null;
-            if (is_array($cal) && isset($cal['amount'])) {
-                $bits[] = trim($cal['amount'].' '.($cal['unit'] ?? 'cal'));
+            // Spell out "kcal per <unit>" (matching the menu UI) and keep every
+            // entry — a product may log both "per piece" and "per whole". The
+            // old "410 piece" form read as a quantity, so the model would deny
+            // knowing an item's calories even with the number right in front of it.
+            $cals = [];
+            foreach ((array) $p->calorie_info as $c) {
+                $c = (array) $c;
+                if (($c['amount'] ?? '') === '' || $c['amount'] === null) {
+                    continue;
+                }
+                $cals[] = $c['amount'].' kcal per '.(trim((string) ($c['unit'] ?? '')) ?: 'piece');
+            }
+            if ($cals) {
+                $bits[] = 'calories: '.implode('; ', $cals);
             }
             $allergens = array_filter((array) $p->features);
             if ($allergens) {

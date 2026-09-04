@@ -29,6 +29,11 @@ class AssistantController extends Controller
     public function chat(Request $request)
     {
         abort_unless($this->groq->enabled(), 404);
+        // Editors can switch the assistant off site-wide (Site Editor → Buttons
+        // → "Moymoy AI Assistant"). Keep the endpoint in lockstep with the
+        // widget so "disabled" isn't just "hidden".
+        $settings = (array) app(SiteContentController::class)->cachedData();
+        abort_if(($settings['assistant']['enabled'] ?? true) === false, 404);
 
         $data = $request->validate([
             'conversation_id' => ['nullable', 'string', 'alpha_dash', 'max:40'],

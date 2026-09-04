@@ -88,13 +88,49 @@ class AssistantChatTest extends TestCase
     public function test_a_groq_outage_still_returns_a_usable_reply(): void
     {
         $this->enableGroq();
-        config(['services.groq.fallback_model' => null]);
+        config(['services.groq.fallback_model' => null, 'services.gemini.key' => null]);
         Http::fake(['api.groq.com/*' => Http::response('nope', 500)]);
 
         $res = $this->ask('plan me a dessert table for 30 people')->assertOk();
 
         $res->assertJsonPath('source', 'fallback');
         $this->assertNotEmpty($res->json('reply'));
+    }
+
+    public function test_falls_back_to_gemini_when_groq_is_down(): void
+    {
+        $this->enableGroq();
+        config(['services.gemini.key' => 'gem-key', 'services.gemini.model' => 'gemini-test']);
+
+        Http::fake([
+            'api.groq.com/*' => Http::response('rate limited', 429),
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'choices' => [['message' => ['content' => 'For a birthday, the Classic Mocha Cake is a crowd-pleaser!']]],
+            ]),
+        ]);
+
+        $res = $this->ask('what would you suggest for a birthday?')->assertOk();
+
+        $res->assertJsonPath('source', 'gemini')
+            ->assertJsonPath('reply', 'For a birthday, the Classic Mocha Cake is a crowd-pleaser!');
+
+        // Groq was tried first (both models), then Gemini with its own key.
+        Http::assertSent(fn ($req) => str_contains($req->url(), 'api.groq.com'));
+        Http::assertSent(fn ($req) => str_contains($req->url(), 'generativelanguage.googleapis.com')
+            && $req['model'] === 'gemini-test'
+            && $req->hasHeader('Authorization', 'Bearer gem-key'));
+    }
+
+    public function test_gemini_fallback_is_skipped_when_no_gemini_key(): void
+    {
+        $this->enableGroq();
+        config(['services.gemini.key' => null]);
+        Http::fake(['*' => Http::response('down', 500)]);
+
+        $res = $this->ask('what would you suggest for a birthday?')->assertOk();
+
+        $res->assertJsonPath('source', 'fallback');
+        Http::assertNotSent(fn ($req) => str_contains($req->url(), 'generativelanguage.googleapis.com'));
     }
 
     public function test_payload_is_validated(): void

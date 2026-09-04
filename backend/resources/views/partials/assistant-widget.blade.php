@@ -17,7 +17,17 @@
      This is a presentation-only layer: the request/response contract, the Groq
      and rule-based logic, the @@PRODUCTS handling, and the cart shape it writes
      (`bw_cart` = { productId: qty }) are all unchanged. --}}
-@if(config('services.groq.key') && ! ($editable ?? false))
+@php
+    // Rendered when: GROQ_API_KEY is set, not inside the Site Editor preview
+    // iframe, and the editor hasn't switched the launcher off (Site Editor →
+    // Buttons → "Moymoy AI Assistant"; absent key ⇒ on by default).
+    $bwAssistantOn = config('services.groq.key') && ! ($editable ?? false);
+    if ($bwAssistantOn) {
+        $bwSiteContent = (array) app(\App\Http\Controllers\SiteContentController::class)->cachedData();
+        $bwAssistantOn = (bool) ($bwSiteContent['assistant']['enabled'] ?? true);
+    }
+@endphp
+@if($bwAssistantOn)
 <style>
     @keyframes bw-a-dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
     @keyframes bw-a-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -142,7 +152,7 @@
         </div>
 
         {{-- Conversation --}}
-        <div id="bw-a-log" class="flex-1 space-y-4 overflow-y-auto bg-[#faf6f1] px-4 py-4 text-sm" aria-live="polite"></div>
+        <div id="bw-a-log" class="min-w-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden bg-[#faf6f1] px-4 py-4 text-sm" aria-live="polite"></div>
 
         {{-- Quick actions (compact) — only once a conversation is underway.
              Visibility via inline style so Tailwind's `flex` never fights a
@@ -271,7 +281,7 @@
                 const a = document.createElement('a');
                 a.href = m[0];
                 a.textContent = m[0];
-                a.className = 'font-medium text-brand-600 underline underline-offset-2';
+                a.className = 'font-medium text-brand-600 underline underline-offset-2 break-all';
                 if (m[0].startsWith('http')) { a.target = '_blank'; a.rel = 'noopener'; }
                 frag.appendChild(a);
                 last = m.index + m[0].length;
@@ -283,9 +293,13 @@
         // ---- building blocks ---------------------------------------------
         function bubble(role, content) {
             const b = document.createElement('div');
+            // `[overflow-wrap:anywhere]` so a long unbroken token the model can
+            // emit — a street address run, a bare URL, a "tel:(045)…" string —
+            // wraps inside the bubble instead of spilling past max-w and
+            // dragging a phantom horizontal scrollbar onto the log.
             b.className = role === 'user'
-                ? 'ml-auto max-w-[86%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-brand-500 px-3.5 py-2.5 text-white'
-                : 'mr-auto max-w-[86%] whitespace-pre-wrap rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5 text-navy-800 shadow-sm ring-1 ring-navy-900/5';
+                ? 'ml-auto max-w-[86%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl rounded-br-md bg-brand-500 px-3.5 py-2.5 text-white'
+                : 'mr-auto max-w-[86%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5 text-navy-800 shadow-sm ring-1 ring-navy-900/5';
             b.appendChild(textWithLinks(content));
             return b;
         }

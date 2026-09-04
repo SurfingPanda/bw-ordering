@@ -20,8 +20,10 @@ return new class extends Migration
             $table->string('user_email')->nullable();
             $table->string('role', 16);              // user | assistant
             $table->text('content');
-            // 'rules' (answered locally, no API call), 'groq', or 'fallback'
-            // (Groq errored / rate-limited and the canned reply was used).
+            // How the assistant turn was produced: 'rules' (answered locally, no
+            // API call), 'groq' (primary model), 'groq-mini' (smaller Groq
+            // model), 'gemini' (cross-provider fallback), or 'fallback' (every
+            // provider failed and the canned reply was used).
             $table->string('source', 16)->nullable();
             $table->timestamps();
         });

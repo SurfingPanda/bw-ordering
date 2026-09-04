@@ -1058,6 +1058,26 @@
             </div>
 
             <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
+                <h2 class="text-lg font-bold text-navy-800">Moymoy AI Assistant</h2>
+                <p class="mb-5 mt-0.5 text-sm text-slate-500">The floating “Chat with Moymoy AI” launcher on the public pages (landing, menu, stores, franchise, about, custom cake). Turn it off to hide the chat head and the assistant site-wide.</p>
+                @php($asst = (array) ($content['assistant'] ?? []))
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-navy-800">Show the Moymoy chat launcher</p>
+                        <p class="mt-0.5 text-xs text-slate-500">When off, visitors don’t see the chat head and the assistant is unavailable.</p>
+                    </div>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="checkbox" name="assistant[enabled]" value="1" class="peer sr-only" @checked($asst['enabled'] ?? true)>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
+                @unless(config('services.groq.key'))
+                    <p class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">The assistant also needs a <code>GROQ_API_KEY</code> on the server. Until that’s set it stays hidden regardless of this toggle.</p>
+                @endunless
+            </div>
+
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
                 <h2 class="text-lg font-bold text-navy-800">Buttons & Calls-to-Action</h2>
                 <p class="mb-5 mt-0.5 text-sm text-slate-500">Control each action button across your site. Visible = shown and working, Disabled = shown but clicking does nothing, Hidden = removed from the live site.</p>
                 @php($buttons = (array) ($content['buttons'] ?? []))

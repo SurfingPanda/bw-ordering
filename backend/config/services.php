@@ -64,4 +64,18 @@ return [
         'fallback_model' => env('GROQ_FALLBACK_MODEL', 'openai/gpt-oss-20b'),
     ],
 
+    // Google Gemini — the cross-provider fallback for the shop assistant, tried
+    // only after both Groq models have failed (see GroqAssistantService::reply()).
+    // Reached through Gemini's OpenAI-compatible endpoint so the same HTTP call
+    // is reused. Config-gated: no GEMINI_API_KEY ⇒ the fallback tier is skipped
+    // and the assistant drops straight to the canned reply. Groq stays the
+    // primary/gate either way — this key alone doesn't enable the widget.
+    // Google retires model IDs fast (2.0-flash / 2.5-flash already 404 for new
+    // keys) — check https://ai.google.dev/gemini-api/docs/models if this errors.
+    // 3.6-flash is a thinking model, hence GroqAssistantService's generous max_tokens.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+    ],
+
 ];

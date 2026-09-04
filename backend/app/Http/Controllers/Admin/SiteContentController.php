@@ -56,7 +56,7 @@ class SiteContentController extends Controller
         'nav',
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
         'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'about', 'storeLocator',
-        'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons',
+        'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons', 'assistant',
     ];
 
     /**
@@ -85,6 +85,9 @@ class SiteContentController extends Controller
                 ],
             ],
             'payment' => ['qrPayload' => '', 'qrImage' => ''],
+            // The public "Moymoy" chat launcher — on unless an editor turns it
+            // off (it still also needs GROQ_API_KEY set on the server).
+            'assistant' => ['enabled' => true],
             'authPanel' => [
                 'logo' => '/images/logo (1).png',
                 'tagline' => '',
@@ -349,6 +352,11 @@ class SiteContentController extends Controller
         $updates['authPanel']['typography'] = SiteContent::normalizeTypography($updates['authPanel']['typography'] ?? null);
         $updates['social'] = (array) ($updates['social'] ?? []);
         $updates['buttons'] = (array) ($updates['buttons'] ?? []);
+
+        // Moymoy chat launcher on/off (absent checkbox ⇒ off; default form
+        // state is checked, so a first save with no interaction persists on).
+        $updates['assistant'] = (array) ($updates['assistant'] ?? []);
+        $updates['assistant']['enabled'] = $request->boolean('assistant.enabled');
 
         $updates['maintenance'] = (array) ($updates['maintenance'] ?? []);
         $updates['maintenance']['enabled'] = $request->boolean('maintenance.enabled');
