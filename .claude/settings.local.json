@@ -58,13 +58,7 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8000/api/vouchers/active)",
       "Bash(netstat -ano)",
       "Bash(tasklist)",
-      "PowerShell(cd C:\\\\Users\\\\Admin\\\\bw-ordering\\\\backend; Start-Process -WindowStyle Hidden C:\\\\xampp\\\\php8\\\\php.exe -ArgumentList 'artisan','serve','--port=8010'; Start-Sleep -Seconds 3; \"server up:\"; \\(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8010/up\\).StatusCode)",
-      "Bash(C:/xampp/php8/php artisan *)",
-      "PowerShell(wsl -l -v)",
-      "Bash(git ls-tree *)",
-      "Bash(git check-ignore *)",
-      "PowerShell(C:\\\\xampp\\\\php8\\\\php \"C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Admin-bw-ordering\\\\8e05f2ee-c870-416d-9787-aabc05831515\\\\scratchpad\\\\list-products.php\")",
-      "Artifact"
+      "Bash(python -c \"from PIL import Image; im=Image.open\\('Screenshot_1.png'\\); print\\(im.size, im.mode\\)\")"
     ]
   }
 }
