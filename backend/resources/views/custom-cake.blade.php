@@ -544,5 +544,6 @@
 @if($editable ?? false)
     @include('partials._editor-bridge')
 @endif
+@include('partials.assistant-widget')
 </body>
 </html>

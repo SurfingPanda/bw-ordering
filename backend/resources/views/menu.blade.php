@@ -1027,6 +1027,10 @@
         document.getElementById('open-cart').addEventListener('click', () => document.getElementById('cart-drawer').classList.remove('hidden'));
         document.getElementById('open-cart-fab').addEventListener('click', () => document.getElementById('cart-drawer').classList.remove('hidden'));
 
+        // The Moymoy assistant widget writes bw_cart directly — re-read it and
+        // re-render so the cart panel and product cards reflect the add.
+        window.addEventListener('bw-cart-changed', () => { cart = readCart(); renderAll(); });
+
         // ---- account dropdown (mirrors Menu.jsx's MenuHeader: click to
         // toggle, outside-click or Escape closes) ----
         const menuBtn = document.getElementById('account-menu-btn');
@@ -1063,5 +1067,6 @@
     @if($editable ?? false)
         @include('partials._editor-bridge')
     @endif
+    @include('partials.assistant-widget')
 </body>
 </html>

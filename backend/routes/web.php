@@ -49,6 +49,11 @@ Route::post('/custom-cake', [CustomCakeController::class, 'store'])->name('custo
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
 
+// Shop assistant widget (public — guests + signed-in). 404s when GROQ_API_KEY
+// is unset. Throttled per IP since it's on every marketing page and unauthed.
+Route::post('/assistant/chat', [\App\Http\Controllers\AssistantController::class, 'chat'])
+    ->middleware('throttle:20,1')->name('assistant.chat');
+
 // The SPA's Dashboard.jsx was literally `return <Menu/>` — signed-in customers
 // land on the menu. Kept as a redirect because old links/OAuth callbacks still
 // point at /dashboard.

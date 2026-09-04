@@ -770,6 +770,16 @@
         updateBadge();
         renderCardControls();
 
+        // The Moymoy assistant widget writes bw_cart directly (not via add()
+        // above), so re-read it and refresh the badge / open drawer / card
+        // pills when it says the cart changed.
+        window.addEventListener('bw-cart-changed', function () {
+            cart = readCart();
+            updateBadge();
+            renderCardControls();
+            if (!document.getElementById('mini-cart-drawer').classList.contains('hidden')) renderDrawer();
+        });
+
         // Shared product detail modal (partials/product-modal.blade.php),
         // populated from whichever card's data-* attrs was clicked. Only the
         // price + qty-stepper + "Add to cart" footer is landing-specific; the
@@ -888,5 +898,6 @@
 @if($editable ?? false)
     @include('partials._editor-bridge')
 @endif
+@include('partials.assistant-widget')
 </body>
 </html>

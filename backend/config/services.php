@@ -47,4 +47,21 @@ return [
     // Where the frontend lives, for PayMongo success/cancel redirects.
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
+    // Groq (free-tier hosted LLM) powers the public shop assistant widget.
+    // When `key` is unset the widget doesn't render and POST /assistant/chat
+    // 404s — same silent-disable pattern as PayMongo above. `model` is the
+    // primary model; `fallback_model` is tried once when the primary errors.
+    //
+    // Groq churns its catalogue — verify a model still exists with
+    //   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
+    // before pinning it. As of 2026-09 the Llama IDs are gone; the gpt-oss
+    // pair below are current. They're reasoning models (a separate `reasoning`
+    // field precedes `content`), which is why GroqAssistantService asks for a
+    // generous max_tokens.
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+        'fallback_model' => env('GROQ_FALLBACK_MODEL', 'openai/gpt-oss-20b'),
+    ],
+
 ];
