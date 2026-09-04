@@ -47,4 +47,35 @@ return [
     // Where the frontend lives, for PayMongo success/cancel redirects.
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
+    // Groq (free-tier hosted LLM) powers the public shop assistant widget.
+    // When `key` is unset the widget doesn't render and POST /assistant/chat
+    // 404s — same silent-disable pattern as PayMongo above. `model` is the
+    // primary model; `fallback_model` is tried once when the primary errors.
+    //
+    // Groq churns its catalogue — verify a model still exists with
+    //   curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"
+    // before pinning it. As of 2026-09 the Llama IDs are gone; the gpt-oss
+    // pair below are current. They're reasoning models (a separate `reasoning`
+    // field precedes `content`), which is why GroqAssistantService asks for a
+    // generous max_tokens.
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+        'fallback_model' => env('GROQ_FALLBACK_MODEL', 'openai/gpt-oss-20b'),
+    ],
+
+    // Google Gemini — the cross-provider fallback for the shop assistant, tried
+    // only after both Groq models have failed (see GroqAssistantService::reply()).
+    // Reached through Gemini's OpenAI-compatible endpoint so the same HTTP call
+    // is reused. Config-gated: no GEMINI_API_KEY ⇒ the fallback tier is skipped
+    // and the assistant drops straight to the canned reply. Groq stays the
+    // primary/gate either way — this key alone doesn't enable the widget.
+    // Google retires model IDs fast (2.0-flash / 2.5-flash already 404 for new
+    // keys) — check https://ai.google.dev/gemini-api/docs/models if this errors.
+    // 3.6-flash is a thinking model, hence GroqAssistantService's generous max_tokens.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+    ],
+
 ];
