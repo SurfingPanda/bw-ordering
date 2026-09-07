@@ -70,8 +70,14 @@
                 <h3 class="text-lg font-bold text-navy-800">Log out?</h3>
                 <p class="mt-2 text-sm leading-relaxed text-slate-500">You'll be signed out of the Site Editor.</p>
                 <div class="mt-6 flex justify-end gap-3">
-                    <button type="button" onclick="hideLogoutConfirm()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50">Cancel</button>
-                    <button type="button" onclick="document.getElementById('logout-form').submit()" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">Log out</button>
+                    <button type="button" id="logout-cancel-btn" onclick="hideLogoutConfirm()" class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
+                    <button type="button" id="logout-confirm-btn" onclick="confirmLogout()" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-70">
+                        <svg id="logout-confirm-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span id="logout-confirm-label">Log out</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -146,6 +152,18 @@
             if (e && e.target !== e.currentTarget) return
             const el = document.getElementById('logout-confirm-modal')
             if (el) { el.classList.add('hidden'); el.classList.remove('flex') }
+        }
+        window.confirmLogout = function () {
+            const btn = document.getElementById('logout-confirm-btn')
+            if (btn && btn.disabled) return
+            if (btn) btn.disabled = true
+            const cancel = document.getElementById('logout-cancel-btn')
+            if (cancel) cancel.disabled = true
+            const spinner = document.getElementById('logout-confirm-spinner')
+            if (spinner) spinner.classList.remove('hidden')
+            const label = document.getElementById('logout-confirm-label')
+            if (label) label.textContent = 'Logging out…'
+            document.getElementById('logout-form').submit()
         }
     </script>
     @yield('scripts')
