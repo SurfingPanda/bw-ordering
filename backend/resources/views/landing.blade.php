@@ -800,26 +800,41 @@
         var buildOrderFooter = function (footer, d) {
             var qty = 1;
             footer.innerHTML = `
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <span class="text-3xl font-extrabold text-brand-600">${d.price || ''}</span>
-                    <div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
-                        <button type="button" data-qty-minus aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">&minus;</button>
-                        <span data-qty class="w-5 text-center text-sm font-bold text-navy-800">1</span>
-                        <button type="button" data-qty-plus aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
+                <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Price</p>
+                        <span class="text-3xl font-extrabold text-brand-600">${d.price || ''}</span>
+                    </div>
+                    <div class="shrink-0">
+                        <p class="mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Quantity</p>
+                        <div class="flex items-center rounded-lg border border-slate-200">
+                            <button type="button" data-qty-minus aria-label="Decrease quantity" class="flex h-9 w-9 items-center justify-center rounded-l-lg text-lg text-navy-800 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent">&minus;</button>
+                            <span data-qty aria-live="polite" class="w-9 border-x border-slate-200 py-1.5 text-center text-sm font-bold text-navy-800">1</span>
+                            <button type="button" data-qty-plus aria-label="Increase quantity" class="flex h-9 w-9 items-center justify-center rounded-r-lg text-lg text-navy-800 transition hover:bg-slate-50 active:bg-slate-100">+</button>
+                        </div>
                     </div>
                 </div>
-                <button type="button" data-add-to-cart-modal class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Add to cart
+                <button type="button" data-add-to-cart-modal class="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-brand-500 disabled:translate-y-0">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg>
+                    <span data-add-label>Add to cart</span>
                 </button>`;
             var qtyEl = footer.querySelector('[data-qty]');
-            var setQty = function (q) { qty = Math.max(1, q); qtyEl.textContent = qty; };
-            footer.querySelector('[data-qty-minus]').addEventListener('click', function () { setQty(qty - 1); });
+            var minusBtn = footer.querySelector('[data-qty-minus]');
+            var addBtn = footer.querySelector('[data-add-to-cart-modal]');
+            var addLabel = footer.querySelector('[data-add-label]');
+            var setQty = function (q) { qty = Math.max(1, q); qtyEl.textContent = qty; minusBtn.disabled = qty <= 1; };
+            minusBtn.addEventListener('click', function () { setQty(qty - 1); });
             footer.querySelector('[data-qty-plus]').addEventListener('click', function () { setQty(qty + 1); });
-            footer.querySelector('[data-add-to-cart-modal]').addEventListener('click', function () {
+            addBtn.addEventListener('click', function () {
                 add(d.id, qty);
                 renderCardControls();
-                pmModal.close();
-                openDrawer();
+                // Brief in-place confirmation before handing off to the
+                // drawer, instead of the modal just vanishing.
+                addBtn.disabled = true;
+                addBtn.classList.add('bg-green-600');
+                addBtn.classList.remove('bg-brand-600', 'hover:bg-brand-500');
+                addLabel.textContent = '✓ Added to cart';
+                setTimeout(function () { pmModal.close(); openDrawer(); }, 900);
             });
             setQty(1);
         };

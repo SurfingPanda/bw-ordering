@@ -73,6 +73,21 @@
     z-index: 30;
 }
 
+/* Product detail modal (partials/product-modal.blade.php): fade + slight
+   rise/scale as it opens. The shell toggles between .hidden (display:none)
+   and .flex, so the card goes from not-rendered to rendered on open — enough
+   to re-trigger this animation every time, no JS class juggling needed. */
+@keyframes modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+}
+#product-modal.flex > div {
+    animation: modal-in 0.25s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+    #product-modal.flex > div { animation: none; }
+}
+
 /* Slim, trackless scrollbar for scrollable panels with rounded corners (the
    edit/product modals): the default chunky scrollbar's opaque track + arrow
    buttons paint over the border-radius and square off the panel's edges.

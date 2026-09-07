@@ -1015,21 +1015,27 @@
             }, (footer) => {
                 footer.innerHTML = `
                     ${bundleIncludesText(p) ? `<p class="mb-4 text-sm font-medium text-brand-600">${bundleIncludesText(p)}</p>` : ''}
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <span class="flex items-baseline gap-2">
-                            <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>
-                            ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
-                        </span>
-                        ${!soldOut && qty > 0 ? `<div class="flex shrink-0 items-center gap-3 rounded-full bg-slate-100 px-2 py-1.5">
-                            <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">−</button>
-                            <span class="w-5 text-center text-sm font-bold text-navy-800">${qty}</span>
-                            <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-800 shadow-sm transition hover:bg-slate-50">+</button>
+                    <div class="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Price</p>
+                            <span class="flex items-baseline gap-2">
+                                <span class="text-3xl font-extrabold text-brand-600">${peso(p.price)}</span>
+                                ${onSale ? `<span class="text-sm text-slate-400 line-through">${peso(p.original_price)}</span>` : ''}
+                            </span>
+                        </div>
+                        ${!soldOut && qty > 0 ? `<div class="shrink-0">
+                            <p class="mb-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Quantity</p>
+                            <div class="flex items-center rounded-lg border border-slate-200">
+                                <button type="button" data-dec="${p.id}" aria-label="Decrease quantity" class="flex h-9 w-9 items-center justify-center rounded-l-lg text-lg text-navy-800 transition hover:bg-slate-50 active:bg-slate-100">−</button>
+                                <span class="w-9 border-x border-slate-200 py-1.5 text-center text-sm font-bold text-navy-800">${qty}</span>
+                                <button type="button" data-add="${p.id}" aria-label="Increase quantity" class="flex h-9 w-9 items-center justify-center rounded-r-lg text-lg text-navy-800 transition hover:bg-slate-50 active:bg-slate-100">+</button>
+                            </div>
                         </div>` : ''}
                     </div>
                     ${soldOut
-                        ? '<span class="mt-5 flex items-center justify-center rounded-full bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
+                        ? '<span class="mt-5 flex items-center justify-center rounded-lg bg-slate-100 px-6 py-3.5 text-sm font-semibold text-slate-400">Sold out</span>'
                         : qty === 0
-                            ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Add to cart</button>`
+                            ? `<button type="button" data-add="${p.id}" class="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-brand-500"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /><path d="M16 10v-4" /><path d="M14 8h4" /></svg> Add to cart</button>`
                             : ''}`;
                 footer.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => add(btn.dataset.add)));
                 footer.querySelectorAll('[data-dec]').forEach(btn => btn.addEventListener('click', () => dec(btn.dataset.dec)));

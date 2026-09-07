@@ -28,51 +28,55 @@
         });
         pmModal.close();
 --}}
-<div id="product-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-    <div class="scrollbar-slim relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-        <button type="button" id="pm-close" aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-white">
+<div id="product-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-navy-900/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="pm-name">
+    <div class="scrollbar-slim relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <button type="button" id="pm-close" aria-label="Close" class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-navy-800 shadow transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <line x1="6" y1="6" x2="18" y2="18" />
                 <line x1="6" y1="18" x2="18" y2="6" />
             </svg>
         </button>
         <div class="grid md:grid-cols-2">
-            <span id="pm-img-container" class="relative block h-64 w-full overflow-hidden bg-slate-100 md:h-full md:min-h-[28rem]">
+            <span id="pm-img-container" class="group relative block h-64 w-full overflow-hidden bg-slate-50 md:h-full md:min-h-[28rem]">
                 {{-- object-cover (not -contain): contain avoided cropping
                      portrait photos but left visible top/bottom letterbox
                      gaps on bg-slate-100 for other aspect ratios — a filled
                      box reads cleaner than a gap, even if it means cropping
-                     some images' edges. --}}
-                <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover">
+                     some images' edges. Subtle zoom on desktop hover only. --}}
+                <img id="pm-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out md:group-hover:scale-[1.03]">
                 <span id="pm-img-fallback" class="absolute inset-0 hidden items-center justify-center text-xs font-medium text-slate-400">no image</span>
             </span>
-            <div class="flex flex-col p-8 sm:p-10">
-                <span id="pm-tag" class="hidden w-fit rounded-full bg-orange-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600"></span>
-                <div class="mt-4 flex items-start gap-1">
-                    <h3 id="pm-name" class="min-w-0 text-3xl font-extrabold text-navy-900"></h3>
+            <div class="flex flex-col p-6 sm:p-10">
+                <span id="pm-tag" class="hidden w-fit rounded-lg bg-brand-50 px-2.5 py-1 text-[0.7rem] font-bold uppercase tracking-wide text-brand-600"></span>
+                <div class="mt-3 flex items-start gap-2">
+                    <h3 id="pm-name" class="line-clamp-2 min-w-0 text-2xl font-bold leading-tight text-navy-900 sm:text-3xl"></h3>
                     <span id="pm-serving-note" class="hidden mt-1 shrink-0 whitespace-nowrap text-[10px] font-semibold text-red-500"></span>
                 </div>
-                <p id="pm-desc" class="hidden mt-4 text-base leading-relaxed text-slate-500"></p>
-                <span id="pm-calories" class="hidden mt-5 w-fit items-center gap-1.5 rounded-full bg-navy-50 px-3.5 py-1.5 text-sm font-semibold text-navy-700"></span>
-                <div id="pm-allergens-wrap" class="hidden mt-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
-                    <p id="pm-allergens" class="mt-1.5 text-sm leading-relaxed text-slate-600"></p>
+                <p id="pm-desc" class="hidden mt-2 max-w-prose text-sm leading-relaxed text-slate-500"></p>
+                <span id="pm-calories" class="hidden mt-4 w-fit items-center gap-1.5 rounded-lg bg-navy-50 px-3 py-1 text-xs font-semibold text-navy-700"></span>
+
+                <div id="pm-info-heading" class="hidden mt-6">
+                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Product Information</p>
                 </div>
-                <div id="pm-meta-wrap" class="hidden mt-6 grid grid-cols-2 gap-4">
+                <div id="pm-allergens-wrap" class="hidden mt-3">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Allergens</p>
+                    <p id="pm-allergens" class="mt-1 text-sm leading-relaxed text-navy-800"></p>
+                </div>
+                <div id="pm-meta-wrap" class="hidden mt-4 grid grid-cols-2 gap-4">
                     <div id="pm-netweight-wrap" class="hidden">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Net Weight</p>
-                        <p id="pm-netweight" class="mt-1.5 text-sm font-semibold text-navy-700"></p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Net Weight</p>
+                        <p id="pm-netweight" class="mt-1 text-sm font-semibold text-navy-800"></p>
                     </div>
                     <div id="pm-storage-wrap" class="hidden">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Storage Condition</p>
-                        <p id="pm-storage" class="mt-1.5 text-sm font-semibold text-navy-700"></p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Storage Condition</p>
+                        <p id="pm-storage" class="mt-1 text-sm font-semibold text-navy-800"></p>
                     </div>
                 </div>
-                <div class="mt-8 border-t border-slate-100 pt-6">
+                <div class="mt-6 border-t border-slate-200 pt-6">
                     <div id="pm-footer"></div>
                     <p class="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
                         <span aria-hidden="true" class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-50 text-[11px]">✅</span>
-                        Made fresh daily with quality ingredients. Satisfaction guaranteed.
+                        Made fresh daily with quality ingredients.
                     </p>
                 </div>
             </div>
@@ -184,6 +188,10 @@ window.ProductModal = (function () {
             storageWrap.classList.toggle('hidden', !d.storageCondition);
 
             document.getElementById('pm-meta-wrap').classList.toggle('hidden', !d.netWeight && !d.storageCondition);
+
+            // "Product Information" only earns its heading when there's at
+            // least one detail under it.
+            document.getElementById('pm-info-heading').classList.toggle('hidden', !allergens.length && !d.netWeight && !d.storageCondition);
 
             var footer = document.getElementById('pm-footer');
             footer.innerHTML = '';
