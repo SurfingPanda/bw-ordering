@@ -13,14 +13,7 @@
 </head>
 <body>
     <div class="min-h-screen bg-white text-navy-800">
-        <header class="sticky top-0 z-50 border-b border-slate-100 bg-white">
-            <div class="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
-                <a href="/" class="flex min-w-0 items-center gap-2">
-                    <img src="{{ $nav['logo'] ?? '/images/logo (1).png' }}" alt="bw Superbakeshop" class="h-14 w-20 shrink-0 object-cover sm:h-16 sm:w-24">
-                </a>
-                <a href="/" class="text-sm font-medium text-navy-700 transition hover:text-brand-600">&larr; Back to home</a>
-            </div>
-        </header>
+        @include('partials.site-nav')
 
         <section class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
             <span class="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Legal</span>
