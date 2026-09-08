@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\Http\Request;
  */
 class OrderController extends Controller
 {
+    use RecordsAuditLog;
+
     public const STATUSES = ['pending', 'preparing', 'completed', 'cancelled'];
 
     private function authorize(Request $request): void
@@ -59,10 +62,14 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($id);
+        $was = $order->status;
         $order->update(['status' => $data['status']]);
 
+        $ref = 'Order #'.strtoupper(substr($order->id, 0, 8));
+        $this->audit($request, 'order.status_updated', $ref, "Status {$was} → {$data['status']}", ['from' => $was, 'to' => $data['status']]);
+
         return redirect()->route('admin.orders', array_filter(['status' => $request->input('filter')]))
-            ->with('status', 'Order #'.strtoupper(substr($order->id, 0, 8))." marked {$data['status']}.");
+            ->with('status', $ref." marked {$data['status']}.");
     }
 
     /** Manually set payment (e.g. cash collected) — mirrors the JSON rules. */
@@ -75,9 +82,13 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($id);
+        $was = $order->payment_status;
         $order->update(['payment_status' => $data['payment_status']]);
 
+        $ref = 'Order #'.strtoupper(substr($order->id, 0, 8));
+        $this->audit($request, 'order.payment_updated', $ref, "Payment {$was} → {$data['payment_status']}", ['from' => $was, 'to' => $data['payment_status']]);
+
         return redirect()->route('admin.orders', array_filter(['status' => $request->input('filter')]))
-            ->with('status', 'Order #'.strtoupper(substr($order->id, 0, 8)).' payment set to '.$data['payment_status'].'.');
+            ->with('status', $ref.' payment set to '.$data['payment_status'].'.');
     }
 }

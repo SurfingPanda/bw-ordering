@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\SiteContentController as PublicSiteContentController;
 use App\Models\Product;
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
  */
 class ProductController extends Controller
 {
+    use RecordsAuditLog;
+
     private function authorize(Request $request): void
     {
         $email = $this->supabaseUser($request)['email'] ?? null;
@@ -187,6 +190,11 @@ class ProductController extends Controller
         }
 
         Cache::forget('products.index');
+
+        $this->audit($request, 'product.saved', 'Product grid', count($keptIds).' kept, '.count($removed).' archived', [
+            'kept' => count($keptIds),
+            'archived' => count($removed),
+        ]);
 
         return redirect()->route('admin.products.index')->with('status', 'Products saved.');
     }

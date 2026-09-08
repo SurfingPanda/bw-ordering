@@ -51,7 +51,7 @@
     // follow the account's access: role defaults + per-user grants from
     // Users & Roles (see Controller::editorNavAccess). Pages that don't pass
     // $navAccess fall back to showing everything to admins.
-    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true] : []);
+    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true, 'audit' => true] : []);
     $adminItems = [];
     if (! empty($navAccess['users'])) {
         $adminItems[] = ['key' => 'users', 'label' => 'Users & Roles', 'icon' => 'users', 'href' => route('admin.users')];
@@ -68,6 +68,15 @@
     if ($adminItems) {
         $navGroups[] = ['label' => 'Management', 'items' => $adminItems];
     }
+
+    // Audit Log — its own group, sat right beside Management. Editors + admins
+    // (falls back to $isAdminUser so it still shows on the pages whose
+    // controllers pass a hand-rolled $navAccess without the 'audit' key).
+    if (! empty($navAccess['audit']) || ! empty($isAdminUser)) {
+        $navGroups[] = ['label' => 'Audit Log', 'standalone' => true, 'items' => [
+            ['key' => 'audit', 'label' => 'Audit Log', 'icon' => 'clock', 'href' => route('admin.audit-log')],
+        ]];
+    }
     $activeSection = $activeSection ?? null;
 @endphp
 
@@ -75,6 +84,17 @@
 <nav class="hidden min-w-0 flex-1 items-center gap-1 lg:flex" aria-label="Site Editor sections">
     @foreach($navGroups as $group)
         @php($groupActive = in_array($activeSection, array_column($group['items'], 'key'), true))
+        {{-- A "standalone" group (Audit Log) renders as a plain link, no
+             dropdown — it's a single destination, nothing to choose between. --}}
+        @if(! empty($group['standalone']) && isset($group['items'][0]['href']))
+            @php($only = $group['items'][0])
+            <a href="{{ $only['href'] }}"
+                class="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition {{ $groupActive ? 'bg-white/10 text-white' : 'text-navy-50/70 hover:bg-white/5 hover:text-white' }}">
+                <x-admin-icon :name="$only['icon']" class="h-4 w-4 shrink-0" />
+                <span>{{ $group['label'] }}</span>
+            </a>
+            @continue
+        @endif
         <div class="relative" data-dropdown>
             <button type="button" data-dropdown-toggle
                 class="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition {{ $groupActive ? 'bg-white/10 text-white' : 'text-navy-50/70 hover:bg-white/5 hover:text-white' }}">
@@ -103,6 +123,16 @@
 <div id="mobile-nav-panel" class="invisible absolute inset-x-0 top-full z-40 max-h-[calc(100vh-4rem)] -translate-y-1 overflow-y-auto border-t border-white/10 bg-navy-900 p-3 opacity-0 transition-all duration-150 lg:hidden">
     @foreach($navGroups as $group)
         @php($groupActive = in_array($activeSection, array_column($group['items'], 'key'), true))
+        {{-- Standalone group (Audit Log): a single link, no accordion. --}}
+        @if(! empty($group['standalone']) && isset($group['items'][0]['href']))
+            @php($only = $group['items'][0])
+            <a href="{{ $only['href'] }}"
+                class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition {{ $groupActive ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30' : 'text-navy-50/70 hover:bg-white/5 hover:text-white' }}">
+                <x-admin-icon :name="$only['icon']" class="h-5 w-5 shrink-0" />
+                <span>{{ $group['label'] }}</span>
+            </a>
+            @continue
+        @endif
         <div data-nav-group="{{ $group['label'] }}">
             <button type="button" data-accordion-toggle
                 class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $groupActive ? 'text-brand-400' : 'text-navy-50/50' }} hover:text-navy-50/90">

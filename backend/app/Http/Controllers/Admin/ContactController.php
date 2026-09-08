@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Illuminate\Http\Request;
  */
 class ContactController extends Controller
 {
+    use RecordsAuditLog;
+
     public const STATUSES = ['new', 'read', 'replied'];
 
     private function authorizeStaff(Request $request): void
@@ -55,7 +58,11 @@ class ContactController extends Controller
             'status' => 'required|in:'.implode(',', self::STATUSES),
         ]);
 
+        $was = $contactMessage->status;
         $contactMessage->update(['status' => $data['status']]);
+
+        $ref = "Message #{$contactMessage->id}".($contactMessage->name ? " from {$contactMessage->name}" : '');
+        $this->audit($request, 'contact_message.status_updated', $ref, "Status {$was} → {$data['status']}", ['from' => $was, 'to' => $data['status']]);
 
         return redirect()->route('admin.contact-messages', array_filter(['status' => $request->input('filter')]))
             ->with('status', "Message #{$contactMessage->id} marked as {$data['status']}.");

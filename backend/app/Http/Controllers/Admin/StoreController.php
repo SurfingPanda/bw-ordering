@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SiteContentController as PublicSiteContentController;
@@ -19,6 +20,8 @@ use Illuminate\Validation\Rule;
  */
 class StoreController extends Controller
 {
+    use RecordsAuditLog;
+
     private function authorize(Request $request): void
     {
         $email = $this->supabaseUser($request)['email'] ?? null;
@@ -103,6 +106,11 @@ class StoreController extends Controller
         }
 
         Cache::forget('stores.index');
+
+        $this->audit($request, 'store.saved', 'Store grid', count($keptIds).' kept, '.count($removed).' removed', [
+            'kept' => count($keptIds),
+            'removed' => count($removed),
+        ]);
 
         return redirect()->route('admin.stores.index')->with('status', 'Stores saved.');
     }

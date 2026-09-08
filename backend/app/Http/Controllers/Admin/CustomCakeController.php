@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\CustomCakeRequest;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class CustomCakeController extends Controller
 {
+    use RecordsAuditLog;
+
     public const STATUSES = ['new', 'quoted', 'closed'];
 
     private function authorizeStaff(Request $request): void
@@ -57,7 +60,11 @@ class CustomCakeController extends Controller
             'status' => 'required|in:'.implode(',', self::STATUSES),
         ]);
 
+        $was = $customCakeRequest->status;
         $customCakeRequest->update(['status' => $data['status']]);
+
+        $ref = "Custom cake #{$customCakeRequest->id}".($customCakeRequest->name ? " ({$customCakeRequest->name})" : '');
+        $this->audit($request, 'custom_cake.status_updated', $ref, "Status {$was} → {$data['status']}", ['from' => $was, 'to' => $data['status']]);
 
         return redirect()->route('admin.custom-cakes', array_filter(['status' => $request->input('filter')]))
             ->with('status', "Request #{$customCakeRequest->id} marked as {$data['status']}.");

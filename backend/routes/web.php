@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\CustomCakeController as AdminCustomCakeController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -163,4 +164,7 @@ Route::middleware('supabase.session')->group(function () {
 
     Route::get('/admin/vouchers', [AdminVoucherController::class, 'index'])->name('admin.vouchers.index');
     Route::post('/admin/vouchers/sync', [AdminVoucherController::class, 'sync'])->name('admin.vouchers.sync');
+
+    // Audit Log — read-only history of the staff actions above (admin only).
+    Route::get('/admin/audit-log', [AdminAuditLogController::class, 'index'])->name('admin.audit-log');
 });

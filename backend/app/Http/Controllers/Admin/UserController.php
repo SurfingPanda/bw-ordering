@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController as ApiUserController;
 use App\Models\UserRole;
@@ -15,6 +16,8 @@ use Illuminate\Http\Request;
  */
 class UserController extends Controller
 {
+    use RecordsAuditLog;
+
     private function authorizeAdmin(Request $request): void
     {
         $email = $this->supabaseUser($request)['email'] ?? null;
@@ -70,8 +73,12 @@ class UserController extends Controller
             return back()->withErrors(['role' => 'You cannot remove your own admin access.']);
         }
 
+        $wasRole = $this->effectiveRole($email) ?? 'customer';
+
         if ($data['role'] === 'customer') {
             UserRole::where('email', $email)->delete();
+
+            $this->audit($request, 'user.role_updated', $email, "Role {$wasRole} → customer", ['from' => $wasRole, 'to' => 'customer']);
 
             return back()->with('status', "{$email} is now a customer (no staff role).");
         }
@@ -80,6 +87,12 @@ class UserController extends Controller
             ? [] // admins open everything already
             : array_values(array_diff($data['access'] ?? [], self::ROLE_SECTIONS[$data['role']] ?? []));
         UserRole::updateOrCreate(['email' => $email], ['role' => $data['role'], 'permissions' => $grants]);
+
+        $this->audit($request, 'user.role_updated', $email, "Role {$wasRole} → {$data['role']}", array_filter([
+            'from' => $wasRole,
+            'to' => $data['role'],
+            'grants' => $grants ?: null,
+        ]));
 
         return back()->with('status', "Updated {$email} — {$data['role']}".($grants ? ', +'.count($grants).' extra section'.(count($grants) === 1 ? '' : 's').'.' : '.'));
     }

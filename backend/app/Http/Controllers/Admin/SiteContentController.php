@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SiteContentController as PublicSiteContentController;
@@ -32,6 +33,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class SiteContentController extends Controller
 {
+    use RecordsAuditLog;
+
     /** Mirrors frontend/src/lib/content.js's LANDING_BUTTONS. */
     public const LANDING_BUTTONS = [
         ['key' => 'navOrder', 'label' => 'Order Now', 'group' => 'Navigation bar'],
@@ -264,6 +267,12 @@ class SiteContentController extends Controller
         SiteContent::updateOrCreate(['id' => 1], ['data' => array_merge($current, $updates)]);
         Cache::forget('site-content');
 
+        $section = (string) $request->input('section', '');
+        $this->audit($request, 'content.updated', $section ? "Section: {$section}" : 'Site content', 'Saved '.(count($updates) === 1 ? '1 section' : count($updates).' sections'), array_filter([
+            'section' => $section ?: null,
+            'keys' => implode(', ', array_keys($updates)),
+        ]));
+
         // `section` is a hidden input the form's tab JS keeps in sync, so the
         // editor lands back on the tab they saved from.
         return redirect()->route('admin.content', array_filter(['section' => $request->input('section')]))
@@ -457,6 +466,8 @@ class SiteContentController extends Controller
         SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
         Cache::forget('site-content');
 
+        $this->audit($request, 'content.stores_page_updated', 'Find a Store page header', 'Header/typography saved');
+
         return redirect()->route('admin.stores.index')->with('status', 'Store page header saved.');
     }
 
@@ -519,6 +530,8 @@ class SiteContentController extends Controller
         SiteContent::updateOrCreate(['id' => 1], ['data' => $current]);
         Cache::forget('site-content');
 
+        $this->audit($request, 'content.categories_saved', 'Menu categories', count($declared).' '.\Illuminate\Support\Str::plural('category', count($declared)).' declared', ['categories' => implode(', ', $declared)]);
+
         return redirect()->route('admin.content', ['section' => 'menuCategories'])->with('status', 'Categories saved.');
     }
 
@@ -544,6 +557,8 @@ class SiteContentController extends Controller
             SiteContent::updateOrCreate(['id' => 1], ['data' => $content]);
             Cache::forget('site-content');
             Cache::forget('products.index');
+
+            $this->audit($request, 'content.category_renamed', "\"{$category}\" → \"{$to}\"", 'Products in this category were re-labelled', ['from' => $category, 'to' => $to]);
         }
 
         return redirect()->route('admin.content', ['section' => 'menuCategories'])
@@ -566,6 +581,9 @@ class SiteContentController extends Controller
         SiteContent::updateOrCreate(['id' => 1], ['data' => $content]);
         Cache::forget('site-content');
         Cache::forget('products.index');
+
+        $movedTo = ($to !== '' && $to !== 'Other') ? $to : 'Other';
+        $this->audit($request, 'content.category_deleted', "\"{$category}\"", "Products moved to {$movedTo}", ['category' => $category, 'reassigned_to' => $movedTo]);
 
         // back(): reachable from both the Menu Categories tab and the
         // Products toolbar's 🗑 button — return to whichever sent it.

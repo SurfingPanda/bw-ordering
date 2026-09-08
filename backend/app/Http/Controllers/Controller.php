@@ -179,6 +179,7 @@ abstract class Controller
             'orders' => $this->canAccess($email, 'orders'),
             'customCakes' => $this->canAccess($email, 'custom-cakes'),
             'contactMessages' => $this->canAccess($email, 'contact-messages'),
+            'audit' => $this->isEditor($email),
         ];
     }
 }

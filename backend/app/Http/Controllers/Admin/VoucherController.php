@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RecordsAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\Voucher;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\Validation\Rule;
  */
 class VoucherController extends Controller
 {
+    use RecordsAuditLog;
+
     private function authorize(Request $request): void
     {
         $email = $this->supabaseUser($request)['email'] ?? null;
@@ -92,6 +95,11 @@ class VoucherController extends Controller
         if (! empty($removed)) {
             Voucher::whereIn('id', array_values($removed))->delete();
         }
+
+        $this->audit($request, 'voucher.saved', 'Voucher grid', count($keptIds).' kept, '.count($removed).' removed', [
+            'kept' => count($keptIds),
+            'removed' => count($removed),
+        ]);
 
         return redirect()->route('admin.vouchers.index')->with('status', 'Vouchers saved.');
     }
