@@ -473,12 +473,10 @@
         function render(animateLast) {
             log.textContent = '';
             if (messages.length === 0) {
-                // Centre the welcome + actions in the empty conversation area so
-                // it reads as one balanced block instead of stranded at the top.
-                const center = document.createElement('div');
-                center.className = 'flex min-h-full flex-col justify-center py-1';
-                center.appendChild(welcomeBlock());
-                log.appendChild(center);
+                // Welcome + actions sit just below the header — vertically
+                // centring them in the tall log area left a big empty band
+                // under the header.
+                log.appendChild(welcomeBlock());
             } else {
                 log.appendChild(bubble('assistant', GREETING));
                 messages.forEach(m => log.appendChild(turnEl(m)));

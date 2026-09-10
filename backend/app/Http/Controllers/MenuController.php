@@ -46,6 +46,9 @@ class MenuController extends Controller
             // Editor-controlled "What's New" promo banner + category badge
             // images (content.menuPromo / content.menuCategoryImages) —
             // mirrors Menu.jsx's MenuPromoBanner and CategorySidebar.
+            // Editable delivery fee / VAT (Site Editor → "Fees & Tax") for the
+            // cart drawer's totals preview — draft-aware via $content.
+            'pricing' => SiteContent::pricingConfig($content),
             'menuPromo' => $content['menuPromo'] ?? ['enabled' => true, 'slides' => []],
             'categoryImages' => $content['menuCategoryImages'] ?? [],
             // Declared categories (Site Editor → Menu Categories) so the

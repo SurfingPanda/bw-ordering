@@ -149,7 +149,7 @@
                                 </button>
                                 <button type="button" data-speed="express" class="speed-card flex items-center justify-between rounded-xl border p-3 text-left transition">
                                     <span><span class="block text-sm font-semibold text-navy-800">Express Delivery</span><span class="block text-xs text-slate-500">15–25 mins</span></span>
-                                    <span class="text-sm font-bold text-brand-600">₱149.00</span>
+                                    <span class="express-price text-sm font-bold text-brand-600"></span>
                                 </button>
                             </div>
                             <input type="hidden" name="delivery_speed" id="delivery_speed" value="standard">
@@ -251,7 +251,7 @@
 
     <script>
     (function () {
-        const { peso, DELIVERY_FEE, computeTotals, renderTotalsHTML } = window.OrderPricing;
+        const { peso, DELIVERY_FEE, EXPRESS_DELIVERY_FEE, computeTotals, renderTotalsHTML } = window.OrderPricing;
         // Default picture for items without an image (same as /menu); if it
         // fails to load, onerror clears the img leaving the plain gray box.
         const FALLBACK_IMG = 'https://xhy0hjgguaqll6zn.public.blob.vercel-storage.com/custom-cake-refs/1781654816384-p23ferfqoq.png';
@@ -343,6 +343,7 @@
             document.getElementById('summary-totals').innerHTML = renderTotalsHTML(t, { deliveryLabel: mode === 'pickup' ? 'Pickup' : 'Delivery Fee' });
 
             document.querySelector('.standard-price').textContent = t.freeDelivery ? 'FREE' : peso(DELIVERY_FEE);
+            document.querySelector('.express-price').textContent = EXPRESS_DELIVERY_FEE > 0 ? peso(EXPRESS_DELIVERY_FEE) : 'FREE';
 
             const placeBtn = document.getElementById('place-order');
             if (placeBtn) {

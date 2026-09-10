@@ -59,7 +59,7 @@ class SiteContentController extends Controller
         'nav',
         'maintenance', 'announcement', 'announcementVisible', 'announcementTypography', 'banners', 'bannersVisible',
         'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake', 'customCakeForm', 'newsletter', 'franchise', 'about', 'storeLocator',
-        'footer', 'legal', 'menuPromo', 'payment', 'authPanel', 'social', 'buttons', 'assistant',
+        'footer', 'legal', 'menuPromo', 'payment', 'pricing', 'authPanel', 'social', 'buttons', 'assistant',
     ];
 
     /**
@@ -88,6 +88,10 @@ class SiteContentController extends Controller
                 ],
             ],
             'payment' => ['qrPayload' => '', 'qrImage' => ''],
+            // Delivery fee + VAT knobs for the "Fees & Tax" section. Same
+            // shape SiteContent::pricingConfig() normalizes to; the fallback
+            // values live in SiteContent::PRICING_DEFAULTS.
+            'pricing' => SiteContent::PRICING_DEFAULTS,
             // The public "Moymoy" chat launcher — on unless an editor turns it
             // off (it still also needs GROQ_API_KEY set on the server).
             'assistant' => ['enabled' => true],
@@ -254,11 +258,22 @@ class SiteContentController extends Controller
             'franchise.email' => ['nullable', 'email'],
             'menuPromo.slides.*.bundlePrice' => ['nullable', 'numeric', 'min:0'],
             'customCakeForm.colors.*.hex' => ['nullable', 'regex:/^#[0-9a-f]{3,8}$/i'],
+            // Fees & Tax — numeric guards so a typo can't silently coerce a fee
+            // to ₱0 or a stray VAT rate to something absurd.
+            'pricing.deliveryFee' => ['nullable', 'numeric', 'min:0'],
+            'pricing.expressFee' => ['nullable', 'numeric', 'min:0'],
+            'pricing.freeDeliveryMin' => ['nullable', 'numeric', 'min:0'],
+            'pricing.vatRate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ], [
             'franchise.email.email' => 'Franchise contact email must be a valid email address.',
             'menuPromo.slides.*.bundlePrice.numeric' => 'Bundle price must be a number.',
             'menuPromo.slides.*.bundlePrice.min' => "Bundle price can't be negative.",
             'customCakeForm.colors.*.hex.regex' => "One of the frosting colors isn't a valid color.",
+            'pricing.deliveryFee.numeric' => 'Standard delivery fee must be a number.',
+            'pricing.expressFee.numeric' => 'Express delivery fee must be a number.',
+            'pricing.freeDeliveryMin.numeric' => 'The free-delivery threshold must be a number.',
+            'pricing.vatRate.numeric' => 'VAT rate must be a number.',
+            'pricing.vatRate.max' => 'VAT rate must be between 0 and 100.',
         ]);
 
         $current = SiteContent::find(1)?->data ?? [];
@@ -354,6 +369,20 @@ class SiteContentController extends Controller
         $updates['customCakeForm'] = $ccf;
         $updates['newsletter'] = (array) ($updates['newsletter'] ?? []);
         $updates['payment'] = (array) ($updates['payment'] ?? []);
+
+        // Fees & Tax — run the raw fields through the same normalizer the rest
+        // of the app reads with (blank ⇒ default, clamped non-negative, VAT
+        // 0–100), then overlay the two enable toggles (checkbox+hidden pairs,
+        // absent ⇒ off). Stored in exactly the shape pricingConfig() returns,
+        // so OrderCreationService and the checkout preview can't disagree.
+        $updates['pricing'] = array_merge(
+            SiteContent::pricingConfig(['pricing' => (array) ($updates['pricing'] ?? [])]),
+            [
+                'vatEnabled' => $request->boolean('pricing.vatEnabled'),
+                'deliveryEnabled' => $request->boolean('pricing.deliveryEnabled'),
+            ],
+        );
+
         $updates['authPanel'] = (array) ($updates['authPanel'] ?? []);
         // Unchecked checkboxes don't submit — coerce to real booleans.
         $updates['authPanel']['showGoogle'] = $request->boolean('authPanel.showGoogle');

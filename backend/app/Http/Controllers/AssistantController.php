@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AssistantMessage;
 use App\Models\Product;
+use App\Models\SiteContent;
 use App\Services\GroqAssistantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -106,12 +107,25 @@ class AssistantController extends Controller
             );
         }
 
-        // Delivery fee / shipping.
+        // Delivery fee / shipping. Figures come from the Site Editor's
+        // "Fees & Tax" settings so this canned answer never drifts from what
+        // checkout actually charges.
         if ($has('/\b(delivery fee|delivery charge|shipping fee|how much.*(deliver|delivery|shipping)|free delivery|delivery cost)\b/')) {
-            return $this->canned(
-                "Standard delivery is ₱79, and it's free for orders of ₱1,000 or more. Express delivery is a flat ₱149. "
-                ."Cash payment is pickup only. All prices include 12% VAT."
-            );
+            $pc = SiteContent::pricingConfig();
+            $money = fn ($n) => '₱'.rtrim(rtrim(number_format($n, 2), '0'), '.');
+            if (! $pc['deliveryEnabled']) {
+                $delivery = 'Delivery is free on every order right now.';
+            } else {
+                $delivery = "Standard delivery is {$money($pc['deliveryFee'])}";
+                $delivery .= $pc['freeDeliveryMin'] > 0
+                    ? ", and it's free for orders of {$money($pc['freeDeliveryMin'])} or more."
+                    : '.';
+                $delivery .= " Express delivery is a flat {$money($pc['expressFee'])}.";
+            }
+            $vat = $pc['vatEnabled']
+                ? ' All prices include '.rtrim(rtrim(number_format($pc['vatRate'], 2), '0'), '.').'% VAT.'
+                : '';
+            return $this->canned("{$delivery} Cash payment is pickup only.{$vat}");
         }
 
         // Payment methods.

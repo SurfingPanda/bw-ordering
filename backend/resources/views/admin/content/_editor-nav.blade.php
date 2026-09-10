@@ -34,6 +34,7 @@
             ['key' => 'menuPromo', 'label' => 'Menu Promo', 'icon' => 'megaphone'],
             ['key' => 'vouchers', 'label' => 'Vouchers', 'icon' => 'ticket', 'count' => $navCounts['vouchers'] ?? null, 'href' => route('admin.vouchers.index')],
             ['key' => 'payment', 'label' => 'Payment QR', 'icon' => 'qr'],
+            ['key' => 'pricing', 'label' => 'Fees & Tax', 'icon' => 'ticket'],
         ]],
         ['label' => 'Other Pages', 'items' => [
             ['key' => 'authPanel', 'label' => 'Login Page', 'icon' => 'login'],

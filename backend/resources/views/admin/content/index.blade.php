@@ -960,6 +960,70 @@
             </div>
         </section>
 
+        {{-- ============ Fees & Tax ============ --}}
+        <section data-panel="pricing" class="{{ $panel }} space-y-4">
+            <div>
+                <h2 class="text-lg font-bold text-navy-800">Fees &amp; Tax</h2>
+                <p class="mt-0.5 text-sm text-slate-500">The delivery fee and VAT applied at checkout. Orders are always re-priced on the server when placed, so changes here affect <strong>new orders only</strong> — never ones already placed or paid.</p>
+            </div>
+            @php($pr = (array) ($content['pricing'] ?? []))
+            @php($prd = \App\Models\SiteContent::PRICING_DEFAULTS)
+
+            {{-- Delivery --}}
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-navy-800">Charge a delivery fee</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Turn off to ship every delivery order free — the Delivery line still shows, as “FREE”. Pickup orders are never charged either way.</p>
+                    </div>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="hidden" name="pricing[deliveryEnabled]" value="0">
+                        <input type="checkbox" name="pricing[deliveryEnabled]" value="1" class="peer sr-only" @checked($pr['deliveryEnabled'] ?? $prd['deliveryEnabled'])>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
+                <div class="grid gap-4 p-4 sm:grid-cols-3">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Standard delivery (₱)</span>
+                        <input type="number" min="0" step="0.01" inputmode="decimal" name="pricing[deliveryFee]" value="{{ $pr['deliveryFee'] ?? $prd['deliveryFee'] }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Express delivery (₱)</span>
+                        <input type="number" min="0" step="0.01" inputmode="decimal" name="pricing[expressFee]" value="{{ $pr['expressFee'] ?? $prd['expressFee'] }}" class="{{ $input }}">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">Free standard delivery over (₱)</span>
+                        <input type="number" min="0" step="0.01" inputmode="decimal" name="pricing[freeDeliveryMin]" value="{{ $pr['freeDeliveryMin'] ?? $prd['freeDeliveryMin'] }}" class="{{ $input }}">
+                        <span class="mt-1 block text-[11px] text-slate-400">Set to 0 to remove the free-delivery threshold.</span>
+                    </label>
+                </div>
+            </div>
+
+            {{-- VAT --}}
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+                    <div>
+                        <p class="text-sm font-medium text-navy-800">Add VAT</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Turn off to remove the VAT line entirely — nothing is added to the order total.</p>
+                    </div>
+                    <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input type="hidden" name="pricing[vatEnabled]" value="0">
+                        <input type="checkbox" name="pricing[vatEnabled]" value="1" class="peer sr-only" @checked($pr['vatEnabled'] ?? $prd['vatEnabled'])>
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-500"></span>
+                        <span class="relative ml-0.5 inline-block h-5 w-5 transform rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
+                <div class="p-4">
+                    <label class="block max-w-[12rem]">
+                        <span class="mb-1 block text-xs font-medium text-slate-500">VAT rate (%)</span>
+                        <input type="number" min="0" max="100" step="0.01" inputmode="decimal" name="pricing[vatRate]" value="{{ $pr['vatRate'] ?? $prd['vatRate'] }}" class="{{ $input }}">
+                        <span class="mt-1 block text-[11px] text-slate-400">Added on top of the discounted subtotal, matching the current checkout.</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
         {{-- ============ Login Page ============ --}}
         <section data-panel="authPanel" class="{{ $panel }}">
             <h2 class="text-lg font-bold text-navy-800">Login Page</h2>
@@ -1229,7 +1293,7 @@
         // Sidebar tabs are real ?section= links (from _editor-nav) intercepted
         // below, so Stores/Vouchers/Products items — plain links to their own
         // pages — just navigate.
-        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', authPanel: '/login', franchise: '/franchise', about: '/about', customCakeForm: '/custom-cake' }
+        const PREVIEW_URLS = { menuPromo: '/menu', menuCategories: '/menu', payment: '/menu', pricing: '/menu', authPanel: '/login', franchise: '/franchise', about: '/about', customCakeForm: '/custom-cake' }
         // Sections whose previewed page ships partials/_editor-bridge — only
         // these get pointer-events enabled in the preview iframe (see
         // swapPreview's `editable` param and Controller::isEditablePreview).
@@ -1243,10 +1307,10 @@
             'franchise', 'about', 'authPanel', 'customCakeForm',
             'announcement', 'banners', 'whatsNew', 'categoriesSection', 'bestSellersSection', 'customCake',
             'storeLocator', 'newsletter', 'social', 'footer', 'legal', 'buttons',
-            // All three map to the same /menu preview (see PREVIEW_URLS) — must
+            // These all map to the same /menu preview (see PREVIEW_URLS) — must
             // be listed together so pointer-events stays consistent across tabs
             // on that one page, not toggling on/off as the editor switches tabs.
-            'menuPromo', 'menuCategories', 'payment',
+            'menuPromo', 'menuCategories', 'payment', 'pricing',
         ])
 
         // ---- Menu Promo bundle picker ----------------------------------------

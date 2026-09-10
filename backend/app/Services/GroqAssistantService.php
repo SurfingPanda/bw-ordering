@@ -283,19 +283,25 @@ class GroqAssistantService
 
     private function deliveryBlock(): string
     {
-        $fee = OrderCreationService::DELIVERY_FEE;
-        $free = OrderCreationService::FREE_DELIVERY_MIN;
-        $express = OrderCreationService::EXPRESS_DELIVERY_FEE;
-        $vat = (int) round(OrderCreationService::VAT_RATE * 100);
+        // Editable in the Site Editor's "Fees & Tax" section.
+        $pc = SiteContent::pricingConfig();
+        $num = fn ($n) => rtrim(rtrim(number_format($n, 2), '0'), '.');
 
-        return implode("\n", [
-            "- Order online for pickup or delivery; choose a branch at checkout.",
-            "- Standard delivery is ₱{$fee}, free for orders of ₱".number_format($free).' or more.',
-            "- Express delivery is a flat ₱{$express} (never free).",
-            "- Cash payment is pickup only. Online payment (GCash / card / Maya / GrabPay) and QR Ph are available where enabled.",
-            "- All prices shown include {$vat}% VAT.",
-            "- Custom / personalized cakes are arranged through the custom cake page (/custom-cake); guests can submit a request without an account.",
-        ]);
+        $lines = ['- Order online for pickup or delivery; choose a branch at checkout.'];
+        if (! $pc['deliveryEnabled']) {
+            $lines[] = '- Delivery is currently free on every order.';
+        } else {
+            $lines[] = "- Standard delivery is ₱{$num($pc['deliveryFee'])}"
+                .($pc['freeDeliveryMin'] > 0 ? ', free for orders of ₱'.$num($pc['freeDeliveryMin']).' or more.' : '.');
+            $lines[] = "- Express delivery is a flat ₱{$num($pc['expressFee'])} (never free).";
+        }
+        $lines[] = '- Cash payment is pickup only. Online payment (GCash / card / Maya / GrabPay) and QR Ph are available where enabled.';
+        if ($pc['vatEnabled']) {
+            $lines[] = "- All prices shown include {$num($pc['vatRate'])}% VAT.";
+        }
+        $lines[] = '- Custom / personalized cakes are arranged through the custom cake page (/custom-cake); guests can submit a request without an account.';
+
+        return implode("\n", $lines);
     }
 
     private function aboutBlock(): string

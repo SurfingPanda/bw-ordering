@@ -50,6 +50,52 @@ class SiteContent extends Model
         return self::buttonState($buttons, $key) === 'disabled';
     }
 
+    /**
+     * Fallback delivery-fee / VAT settings. The Site Editor's "Fees & Tax"
+     * section (admin/content → `pricing`) overrides any of these; these values
+     * are what a fresh site (no `pricing` saved yet) charges. Kept in sync
+     * with OrderCreationService's own constants.
+     */
+    public const PRICING_DEFAULTS = [
+        'vatEnabled' => true,
+        'vatRate' => 12.0,          // percent
+        'deliveryEnabled' => true,
+        'deliveryFee' => 79.0,      // standard delivery, pesos
+        'expressFee' => 149.0,      // express delivery, pesos (flat)
+        'freeDeliveryMin' => 1000.0, // subtotal for free standard delivery; 0 = never
+    ];
+
+    /**
+     * Normalize the Site Editor's `pricing` blob into a fully-populated,
+     * type-safe array. Pass the CMS blob to read it from there (so a live
+     * preview draft is honoured); omit to load the saved row.
+     *
+     * Consumed by both OrderCreationService (the authoritative order math)
+     * and partials/order-pricing (the client-side checkout preview) so the
+     * two can never disagree on what a delivery fee or VAT rate is.
+     */
+    public static function pricingConfig(?array $blob = null): array
+    {
+        if ($blob === null) {
+            $blob = self::find(1)?->data ?? [];
+        }
+        $p = (array) ($blob['pricing'] ?? []);
+        $d = self::PRICING_DEFAULTS;
+        // Blank / non-numeric ⇒ fall back to the default; only an explicit
+        // number (including 0) is taken as-is. So clearing a fee field is
+        // "leave it at the default", while typing 0 is "make it free".
+        $num = fn ($v, float $default) => is_numeric($v) ? max(0, (float) $v) : $default;
+
+        return [
+            'vatEnabled' => (bool) ($p['vatEnabled'] ?? $d['vatEnabled']),
+            'vatRate' => min(100, $num($p['vatRate'] ?? null, $d['vatRate'])),
+            'deliveryEnabled' => (bool) ($p['deliveryEnabled'] ?? $d['deliveryEnabled']),
+            'deliveryFee' => $num($p['deliveryFee'] ?? null, $d['deliveryFee']),
+            'expressFee' => $num($p['expressFee'] ?? null, $d['expressFee']),
+            'freeDeliveryMin' => $num($p['freeDeliveryMin'] ?? null, $d['freeDeliveryMin']),
+        ];
+    }
+
     /** Fixed option lists for the admin Typography panel's enum fields (admin/content/_typography-panel.blade.php). */
     public const TYPOGRAPHY_WEIGHTS = ['300', '400', '500', '600', '700', '800'];
 

@@ -143,10 +143,14 @@ class OrderCreationService
             ];
         }
 
+        // Editable fee/tax settings (Site Editor → "Fees & Tax").
+        $pricing = SiteContent::pricingConfig();
+
         // Voucher discount (validated against the DB — forged codes are ignored).
         $discount = 0;
         $voucherCode = null;
-        $freeDelivery = $subtotal >= self::FREE_DELIVERY_MIN;
+        $freeDelivery = ! $pricing['deliveryEnabled']
+            || ($pricing['freeDeliveryMin'] > 0 && $subtotal >= $pricing['freeDeliveryMin']);
         if (! empty($data['voucher'])) {
             $voucher = Voucher::where('code', strtoupper(trim($data['voucher'])))
                 ->where('active', true)
@@ -174,14 +178,19 @@ class OrderCreationService
         // delivery-fee calc ignored `delivery_speed` entirely and always charged
         // the standard ₱79 fee for any delivery order — fixed here so express
         // orders are actually billed the ₱149 express fee the checkout UI quotes.)
-        if ($deliveryType === 'pickup') {
+        //
+        // The fee amounts and the VAT rate are the Site Editor's "Fees & Tax"
+        // settings (site_content → `pricing`), read straight from the row — not
+        // the 10-minute CMS cache — so a just-saved change applies to the very
+        // next order. They fall back to the constants above when nothing is set.
+        if ($deliveryType === 'pickup' || ! $pricing['deliveryEnabled']) {
             $delivery = 0;
         } elseif ($deliverySpeed === 'express') {
-            $delivery = self::EXPRESS_DELIVERY_FEE;
+            $delivery = $pricing['expressFee'];
         } else {
-            $delivery = $freeDelivery ? 0 : self::DELIVERY_FEE;
+            $delivery = $freeDelivery ? 0 : $pricing['deliveryFee'];
         }
-        $vat = $discounted * self::VAT_RATE;
+        $vat = $pricing['vatEnabled'] ? $discounted * ($pricing['vatRate'] / 100) : 0.0;
         $total = $discounted + $vat + $delivery;
 
         return Order::create([
