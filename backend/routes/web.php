@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\AssistantChatController as AdminAssistantChatController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\CustomCakeController as AdminCustomCakeController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -126,6 +127,9 @@ Route::middleware('supabase.session')->group(function () {
     // Contact form submissions — staff review queue (new/read/replied).
     Route::get('/admin/contact-messages', [AdminContactController::class, 'index'])->name('admin.contact-messages');
     Route::post('/admin/contact-messages/{contactMessage}/status', [AdminContactController::class, 'updateStatus'])->name('admin.contact-messages.status');
+
+    // Public Moymoy assistant transcripts â€” grouped by browser conversation.
+    Route::get('/admin/assistant-chats', [AdminAssistantChatController::class, 'index'])->name('admin.assistant-chats');
 
     // Users / role manager (port of AdminUsers.jsx — admin only). One POST
     // saves a row's role + extra access grants together (the Edit modal).

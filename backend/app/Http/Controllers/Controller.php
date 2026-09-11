@@ -138,8 +138,8 @@ abstract class Controller
      * canAccess() combines both. Section keys match UserRole::SECTIONS.
      */
     public const ROLE_SECTIONS = [
-        'editor' => ['content', 'products', 'stores', 'vouchers', 'contact-messages'],
-        'cashier' => ['orders', 'custom-cakes', 'contact-messages'],
+        'editor' => ['content', 'products', 'stores', 'vouchers', 'contact-messages', 'assistant-chats'],
+        'cashier' => ['orders', 'custom-cakes', 'contact-messages', 'assistant-chats'],
     ];
 
     /** True if this account may open the given admin section. */
@@ -179,6 +179,7 @@ abstract class Controller
             'orders' => $this->canAccess($email, 'orders'),
             'customCakes' => $this->canAccess($email, 'custom-cakes'),
             'contactMessages' => $this->canAccess($email, 'contact-messages'),
+            'assistantChats' => $this->canAccess($email, 'assistant-chats'),
             'audit' => $this->isEditor($email),
         ];
     }

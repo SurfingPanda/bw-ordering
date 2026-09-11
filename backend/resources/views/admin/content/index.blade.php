@@ -1032,7 +1032,13 @@
             <div class="space-y-4">
                 @include('admin.content._image-field', ['name' => 'authPanel[logo]', 'value' => $ap['logo'] ?? '', 'fieldLabel' => 'Logo'])
                 @include('admin.content._image-field', ['name' => 'authPanel[image]', 'value' => $ap['image'] ?? '', 'fieldLabel' => 'Panel image', 'wide' => true])
-                @include('admin.content._image-field', ['name' => 'authPanel[backgroundImage]', 'value' => $ap['backgroundImage'] ?? '', 'fieldLabel' => 'Page background (behind the card — shown faded/darkened)', 'wide' => true])
+                @include('admin.content._image-field', ['name' => 'authPanel[backgroundImage]', 'value' => $ap['backgroundImage'] ?? '', 'fieldLabel' => 'Page background (behind the card — use the opacity slider below to fade it)', 'wide' => true])
+                @php($apBgOpacity = ($ap['backgroundOpacity'] ?? '') !== '' ? (int) $ap['backgroundOpacity'] : 100)
+                <label class="block">
+                    <span class="mb-1 block text-xs font-medium text-slate-500">Page background opacity (<span data-opacity-readout>{{ $apBgOpacity }}</span>%)</span>
+                    <input type="range" min="0" max="100" name="authPanel[backgroundOpacity]" value="{{ $apBgOpacity }}" data-opacity-range class="w-full accent-brand-500">
+                    <span class="mt-1 block text-xs text-slate-400">Lower it to fade the backdrop image further behind the sign-in card.</span>
+                </label>
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-slate-500">Tagline</span>
                     <input type="text" name="authPanel[tagline]" value="{{ $ap['tagline'] ?? '' }}" class="{{ $input }}">

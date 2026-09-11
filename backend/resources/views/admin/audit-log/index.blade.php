@@ -120,11 +120,25 @@
                                     <span class="block text-slate-500">{{ $log->summary }}</span>
                                 @endif
                                 @if($log->meta)
-                                    <span class="mt-1 block text-xs text-slate-400">
+                                    <dl class="mt-1.5 space-y-1 text-xs">
                                         @foreach($log->meta as $k => $v)
-                                            <span class="mr-2 whitespace-nowrap">{{ $k }}: <span class="font-semibold text-slate-500">{{ is_scalar($v) ? $v : json_encode($v) }}</span></span>
+                                            @php($parts = is_scalar($v) ? preg_split('/\s+·\s+/', (string) $v) : [json_encode($v)])
+                                            <div class="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+                                                <dt class="shrink-0 font-semibold uppercase tracking-wide text-slate-400">{{ $k }}</dt>
+                                                <dd class="text-slate-600">
+                                                    @if(count($parts) > 1)
+                                                        <ul class="list-disc space-y-0.5 pl-4">
+                                                            @foreach($parts as $part)
+                                                                <li>{{ $part }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    @else
+                                                        {{ $parts[0] }}
+                                                    @endif
+                                                </dd>
+                                            </div>
                                         @endforeach
-                                    </span>
+                                    </dl>
                                 @endif
                                 @unless($log->target || $log->summary || $log->meta)
                                     <span class="text-slate-300">—</span>
@@ -152,6 +166,27 @@
                     @endif
                     @if($log->summary)
                         <p class="text-sm text-slate-500">{{ $log->summary }}</p>
+                    @endif
+                    @if($log->meta)
+                        <dl class="mt-2 space-y-1 text-xs">
+                            @foreach($log->meta as $k => $v)
+                                @php($parts = is_scalar($v) ? preg_split('/\s+·\s+/', (string) $v) : [json_encode($v)])
+                                <div>
+                                    <dt class="font-semibold uppercase tracking-wide text-slate-400">{{ $k }}</dt>
+                                    <dd class="text-slate-600">
+                                        @if(count($parts) > 1)
+                                            <ul class="list-disc space-y-0.5 pl-4">
+                                                @foreach($parts as $part)
+                                                    <li>{{ $part }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            {{ $parts[0] }}
+                                        @endif
+                                    </dd>
+                                </div>
+                            @endforeach
+                        </dl>
                     @endif
                     <p class="mt-2 text-xs text-slate-400">
                         {{ $log->actor_name ?: 'Unknown' }} · {{ $log->actor_email ?: '—' }}

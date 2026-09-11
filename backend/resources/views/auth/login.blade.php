@@ -15,10 +15,11 @@
 </head>
 <body>
     <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-navy-700 via-navy-800 to-navy-900 p-4 sm:p-6">
-        {{-- bakery backdrop --}}
+        {{-- bakery backdrop — opacity is editor-controlled (Login Page ▸ Page
+             background opacity); blank/absent falls back to fully opaque. --}}
+        @php($authBgOpacity = ($authPanel['backgroundOpacity'] ?? '') !== '' ? (int) $authPanel['backgroundOpacity'] : 100)
         <div class="pointer-events-none absolute inset-0 overflow-hidden">
-            <img data-editable="authPanel.backgroundImage" src="{{ $authPanel['backgroundImage'] ?? '/images/bakery-interior.jpg' }}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="h-full w-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-br from-navy-900/85 via-navy-900/80 to-navy-800/80"></div>
+            <img data-editable="authPanel.backgroundImage" src="{{ $authPanel['backgroundImage'] ?? '/images/bakery-interior.jpg' }}" alt="" aria-hidden="true" loading="lazy" decoding="async" class="h-full w-full object-cover" style="opacity: {{ $authBgOpacity / 100 }};">
             <div class="absolute -bottom-44 -right-24 h-[30rem] w-[30rem] rounded-full bg-brand-600/15 blur-3xl"></div>
         </div>
 
@@ -112,8 +113,12 @@
                             <a href="{{ route('password.request') }}" class="font-medium text-brand-600 hover:text-brand-500">Forgot Password?</a>
                         </div>
 
-                        <button type="submit" class="w-full rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 focus:ring-2 focus:ring-brand-500/40">
-                            Sign In
+                        <button type="submit" id="login-submit" class="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 focus:ring-2 focus:ring-brand-500/40">
+                            <svg id="login-submit-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+                            </svg>
+                            <span id="login-submit-label">Sign In</span>
                         </button>
                     </form>
 
@@ -180,6 +185,10 @@
             rememberBox.checked = true;
         }
 
+        var submitBtn = document.getElementById('login-submit');
+        var submitSpinner = document.getElementById('login-submit-spinner');
+        var submitLabel = document.getElementById('login-submit-label');
+
         form.addEventListener('submit', function () {
             try {
                 if (rememberBox.checked) {
@@ -188,6 +197,28 @@
                     window.localStorage.removeItem(STORAGE_KEY);
                 }
             } catch (e) {}
+
+            // Only fires once the browser's own required-field validation passes,
+            // so it's safe to lock the button into its loading state here.
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.7';
+                submitBtn.style.cursor = 'not-allowed';
+                if (submitSpinner) submitSpinner.classList.remove('hidden');
+                if (submitLabel) submitLabel.textContent = 'Signing in…';
+            }
+        });
+
+        // Back/forward cache can restore this page with the button still
+        // disabled from a previous submit — reset it so sign-in stays usable.
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted && submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '';
+                submitBtn.style.cursor = '';
+                if (submitSpinner) submitSpinner.classList.add('hidden');
+                if (submitLabel) submitLabel.textContent = 'Sign In';
+            }
         });
     })();
     </script>

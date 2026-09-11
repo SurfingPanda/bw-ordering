@@ -63,6 +63,39 @@ class SiteContentController extends Controller
     ];
 
     /**
+     * Managed content key → the plain-English name the Audit Log shows for it,
+     * so "what changed" reads like the Site Editor's own tabs instead of raw
+     * blob keys. Keys not listed fall back to Str::headline().
+     */
+    private const CONTENT_SECTION_LABELS = [
+        'nav' => 'Navigation Bar',
+        'maintenance' => 'Maintenance Mode',
+        'announcement' => 'Announcement text',
+        'announcementVisible' => 'Announcement visibility',
+        'announcementTypography' => 'Announcement typography',
+        'banners' => 'Promo Banners',
+        'bannersVisible' => 'Promo Banners visibility',
+        'whatsNew' => "What's New section",
+        'categoriesSection' => 'Categories heading',
+        'bestSellersSection' => 'Best Sellers section',
+        'customCake' => 'Custom Cake banner',
+        'customCakeForm' => 'Custom Cake page',
+        'newsletter' => 'Sweet Deals section',
+        'franchise' => 'Franchise page',
+        'about' => 'About page',
+        'storeLocator' => 'Store Locator',
+        'footer' => 'Footer',
+        'legal' => 'Legal pages',
+        'menuPromo' => 'Menu Promo',
+        'payment' => 'Payment QR',
+        'pricing' => 'Fees & Tax',
+        'authPanel' => 'Login page',
+        'social' => 'Social links',
+        'buttons' => 'Button labels',
+        'assistant' => 'Shop assistant',
+    ];
+
+    /**
      * Form pre-fill defaults for every managed section: the landing page's
      * own defaults plus the sections no ported page holds defaults for yet
      * (menuPromo, payment, authPanel, franchise — values carried over from
@@ -282,11 +315,12 @@ class SiteContentController extends Controller
         SiteContent::updateOrCreate(['id' => 1], ['data' => array_merge($current, $updates)]);
         Cache::forget('site-content');
 
-        $section = (string) $request->input('section', '');
-        $this->audit($request, 'content.updated', $section ? "Section: {$section}" : 'Site content', 'Saved '.(count($updates) === 1 ? '1 section' : count($updates).' sections'), array_filter([
-            'section' => $section ?: null,
-            'keys' => implode(', ', array_keys($updates)),
-        ]));
+        [$auditTarget, $auditSummary, $auditMeta] = $this->describeContentSave(
+            $current,
+            $updates,
+            (string) $request->input('section', ''),
+        );
+        $this->audit($request, 'content.updated', $auditTarget, $auditSummary, $auditMeta);
 
         // `section` is a hidden input the form's tab JS keeps in sync, so the
         // editor lands back on the tab they saved from.
@@ -388,6 +422,10 @@ class SiteContentController extends Controller
         $updates['authPanel']['showGoogle'] = $request->boolean('authPanel.showGoogle');
         $updates['authPanel']['showFacebook'] = $request->boolean('authPanel.showFacebook');
         $updates['authPanel']['typography'] = SiteContent::normalizeTypography($updates['authPanel']['typography'] ?? null);
+        // Page-background opacity — blank keeps the default (100), otherwise
+        // clamp the slider value into 0–100 so the auth views can divide by 100.
+        $apOpacity = $updates['authPanel']['backgroundOpacity'] ?? '';
+        $updates['authPanel']['backgroundOpacity'] = $apOpacity === '' ? '' : (string) max(0, min(100, (int) $apOpacity));
         $updates['social'] = (array) ($updates['social'] ?? []);
         $updates['buttons'] = (array) ($updates['buttons'] ?? []);
 
@@ -471,6 +509,127 @@ class SiteContentController extends Controller
         $updates['legal'] = $legal;
 
         return $updates;
+    }
+
+    /**
+     * Turn a Site Editor save into a plain-English audit entry: which tab the
+     * editor was on, which sections' values actually changed, and — for Fees &
+     * Tax — the exact before → after of every VAT / delivery field they moved.
+     *
+     * The form re-submits *every* managed section on every save, so the old
+     * "Saved 25 sections" + full key dump told you nothing. Here each submitted
+     * section is compared (order-insensitively) against what was already
+     * stored, and only real changes are reported.
+     *
+     * @return array{0: string, 1: string, 2: array}  [target, summary, meta]
+     */
+    private function describeContentSave(array $current, array $updates, string $section): array
+    {
+        $label = fn (string $key) => self::CONTENT_SECTION_LABELS[$key] ?? \Illuminate\Support\Str::headline($key);
+
+        $tab = $section !== '' ? $label($section) : null;
+        $target = $tab ? "{$tab} tab" : 'Site content';
+
+        // Fees & Tax gets field-level treatment; every other section is a
+        // simple "did its stored value change?" check.
+        $feeChanges = $this->describePricingChanges(
+            $current['pricing'] ?? null,
+            $updates['pricing'] ?? [],
+        );
+
+        $changedLabels = [];
+        foreach ($updates as $key => $newValue) {
+            if ($key === 'pricing') {
+                continue;
+            }
+            if ($this->canonicalJson($current[$key] ?? null) !== $this->canonicalJson($newValue)) {
+                $changedLabels[] = $label($key);
+            }
+        }
+        if ($feeChanges) {
+            $changedLabels[] = $label('pricing');
+        }
+
+        if (! $changedLabels) {
+            return [
+                $target,
+                $tab ? "Saved the {$tab} tab with no changes." : 'Saved with no changes.',
+                array_filter(['Editor tab' => $tab]),
+            ];
+        }
+
+        sort($changedLabels);
+
+        // `summary` is a VARCHAR(255) — keep it a headline and let `meta` carry
+        // the full list, so a save touching many sections can't overflow it.
+        $count = count($changedLabels);
+        $summary = match (true) {
+            $count === 1 => "Changed: {$changedLabels[0]}.",
+            $count <= 3 => 'Changed: '.implode(', ', $changedLabels).'.',
+            default => "Changed {$count} sections (see details).",
+        };
+
+        $meta = array_filter([
+            'Editor tab' => $tab,
+            'Sections changed' => implode(', ', $changedLabels),
+            // e.g. "VAT charge: on → off · Standard delivery fee: ₱79.00 → ₱99.00"
+            'Fees & Tax' => $feeChanges ? implode(' · ', $feeChanges) : null,
+        ]);
+
+        return [$target, \Illuminate\Support\Str::limit($summary, 250), $meta];
+    }
+
+    /**
+     * Compare the stored vs. submitted Fees & Tax settings (both normalised
+     * through SiteContent::pricingConfig, so a never-saved site compares
+     * against the documented defaults) and return one
+     * "Field: old → new" line per VAT / delivery value the editor changed.
+     */
+    private function describePricingChanges($stored, array $submitted): array
+    {
+        $before = SiteContent::pricingConfig(['pricing' => (array) $stored]);
+        $after = SiteContent::pricingConfig(['pricing' => $submitted]);
+
+        $peso = fn ($n) => '₱'.number_format((float) $n, 2);
+        $onOff = fn ($b) => $b ? 'on' : 'off';
+        $pct = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.').'%';
+
+        $fields = [
+            'vatEnabled' => ['VAT charge', $onOff],
+            'vatRate' => ['VAT rate', $pct],
+            'deliveryEnabled' => ['Delivery charge', $onOff],
+            'deliveryFee' => ['Standard delivery fee', $peso],
+            'expressFee' => ['Express delivery fee', $peso],
+            'freeDeliveryMin' => ['Free-delivery minimum', fn ($n) => (float) $n > 0 ? $peso($n) : 'never'],
+        ];
+
+        $lines = [];
+        foreach ($fields as $key => [$name, $format]) {
+            if ($before[$key] !== $after[$key]) {
+                $lines[] = "{$name}: {$format($before[$key])} → {$format($after[$key])}";
+            }
+        }
+
+        return $lines;
+    }
+
+    /** Recursively key-sort, then JSON-encode, so two arrays that differ only
+     *  in key order (normalised sub-keys, repeater metadata) compare as equal.
+     *  List rows keep their order — numeric keys sort into the same sequence. */
+    private function canonicalJson($value): string
+    {
+        $sort = function (&$node) use (&$sort) {
+            if (is_array($node)) {
+                ksort($node);
+                foreach ($node as &$child) {
+                    $sort($child);
+                }
+                unset($child);
+            }
+        };
+        $sort($value);
+
+        return (string) json_encode($value);
     }
 
     /**

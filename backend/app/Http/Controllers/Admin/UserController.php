@@ -41,7 +41,7 @@ class UserController extends Controller
             // Site Editor shell (this page lives in its Admin sidebar group).
             'navCounts' => SiteContentController::navCounts(),
             'isAdminUser' => true, // authorizeAdmin() above guarantees it
-            'navAccess' => ['users' => true, 'orders' => true, 'customCakes' => true],
+            'navAccess' => ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true, 'assistantChats' => true, 'audit' => true],
         ]);
     }
 
