@@ -25,6 +25,7 @@
         $sections = [
             'orders' => 'Orders', 'custom-cakes' => 'Custom Cakes', 'products' => 'Products',
             'contact-messages' => 'Contact Messages', 'assistant-chats' => 'Moymoy Chats',
+            'ratings' => 'Site Ratings',
             'content' => 'Site Content', 'stores' => 'Stores', 'vouchers' => 'Vouchers',
         ];
         $roleDefaults = \App\Http\Controllers\Controller::ROLE_SECTIONS;

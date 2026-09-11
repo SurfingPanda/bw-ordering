@@ -138,7 +138,7 @@ abstract class Controller
      * canAccess() combines both. Section keys match UserRole::SECTIONS.
      */
     public const ROLE_SECTIONS = [
-        'editor' => ['content', 'products', 'stores', 'vouchers', 'contact-messages', 'assistant-chats'],
+        'editor' => ['content', 'products', 'stores', 'vouchers', 'contact-messages', 'assistant-chats', 'ratings'],
         'cashier' => ['orders', 'custom-cakes', 'contact-messages', 'assistant-chats'],
     ];
 
@@ -180,6 +180,7 @@ abstract class Controller
             'customCakes' => $this->canAccess($email, 'custom-cakes'),
             'contactMessages' => $this->canAccess($email, 'contact-messages'),
             'assistantChats' => $this->canAccess($email, 'assistant-chats'),
+            'ratings' => $this->canAccess($email, 'ratings'),
             'audit' => $this->isEditor($email),
         ];
     }

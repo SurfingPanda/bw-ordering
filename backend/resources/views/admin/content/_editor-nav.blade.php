@@ -52,7 +52,7 @@
     // follow the account's access: role defaults + per-user grants from
     // Users & Roles (see Controller::editorNavAccess). Pages that don't pass
     // $navAccess fall back to showing everything to admins.
-    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true, 'assistantChats' => true, 'audit' => true] : []);
+    $navAccess = $navAccess ?? (! empty($isAdminUser) ? ['users' => true, 'orders' => true, 'customCakes' => true, 'contactMessages' => true, 'assistantChats' => true, 'ratings' => true, 'audit' => true] : []);
     $adminItems = [];
     if (! empty($navAccess['users'])) {
         $adminItems[] = ['key' => 'users', 'label' => 'Users & Roles', 'icon' => 'users', 'href' => route('admin.users')];
@@ -68,6 +68,9 @@
     }
     if (! empty($navAccess['assistantChats'])) {
         $adminItems[] = ['key' => 'assistantChats', 'label' => 'Moymoy Chats', 'icon' => 'sparkle', 'href' => route('admin.assistant-chats')];
+    }
+    if (! empty($navAccess['ratings'])) {
+        $adminItems[] = ['key' => 'ratings', 'label' => 'Site Ratings', 'icon' => 'star', 'href' => route('admin.ratings')];
     }
     if ($adminItems) {
         $navGroups[] = ['label' => 'Management', 'items' => $adminItems];

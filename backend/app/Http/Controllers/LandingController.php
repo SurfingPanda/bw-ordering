@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\SiteRating;
 use App\Models\SiteContent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -38,6 +39,10 @@ class LandingController extends Controller
             'title' => 'We’ll be right back',
             'message' => 'Our landing page is getting a fresh bake. Please check back soon — thanks for your patience!',
         ],
+        // Controls the one-question experience-rating prompt rendered near
+        // the end of the landing page. Its actual answers live in
+        // site_ratings; this only controls whether and when it appears.
+        'siteRating' => SiteRating::PROMPT_DEFAULTS,
         'announcement' => '🚚 Free delivery on orders over ₱1,000  •  Freshly baked every morning  •  Order now and taste the love!',
         'banners' => [
             ['img' => '/images/Gemini_Generated_Image_wrt1thwrt1thwrt1.png', 'alt' => 'For the Best Dad — cake promo'],
@@ -200,6 +205,7 @@ class LandingController extends Controller
         // saved sub-objects still fall back cleanly key-by-key.
         $content = array_merge(self::DEFAULT_CONTENT, $saved);
         $content['maintenance'] = array_merge(self::DEFAULT_CONTENT['maintenance'], $content['maintenance'] ?? []);
+        $content['siteRating'] = array_merge(self::DEFAULT_CONTENT['siteRating'], (array) ($content['siteRating'] ?? []));
 
         $user = session('supabase_user');
         $viewData = [

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\SiteContentController as AdminSiteContentController;
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
+use App\Http\Controllers\Admin\SiteRatingController as AdminSiteRatingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\AboutController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MyOrdersController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\SiteRatingController;
 use App\Http\Controllers\StoresController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +52,10 @@ Route::post('/custom-cake', [CustomCakeController::class, 'store'])->name('custo
 // Contact form (public — guests can send a message too).
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
+
+// Lightweight, voluntary 1-5 star site-experience prompt on the landing page.
+Route::post('/site-rating', [SiteRatingController::class, 'store'])
+    ->middleware('throttle:5,1')->name('site-rating.store');
 
 // Shop assistant widget (public — guests + signed-in). 404s when GROQ_API_KEY
 // is unset. Throttled per IP since it's on every marketing page and unauthed.
@@ -130,6 +136,10 @@ Route::middleware('supabase.session')->group(function () {
 
     // Public Moymoy assistant transcripts â€” grouped by browser conversation.
     Route::get('/admin/assistant-chats', [AdminAssistantChatController::class, 'index'])->name('admin.assistant-chats');
+
+    // Rating prompt controls + visitor rating report.
+    Route::get('/admin/ratings', [AdminSiteRatingController::class, 'index'])->name('admin.ratings');
+    Route::put('/admin/ratings/settings', [AdminSiteRatingController::class, 'updateSettings'])->name('admin.ratings.settings');
 
     // Users / role manager (port of AdminUsers.jsx — admin only). One POST
     // saves a row's role + extra access grants together (the Edit modal).
