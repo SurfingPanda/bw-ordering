@@ -42,6 +42,7 @@ class AuditLog extends Model
         'content.categories_saved' => 'Menu categories saved',
         'content.category_renamed' => 'Menu category renamed',
         'content.category_deleted' => 'Menu category deleted',
+        'asset.uploaded' => 'Image uploaded',
         'product.saved' => 'Products saved',
         'store.saved' => 'Stores saved',
         'voucher.saved' => 'Vouchers saved',
