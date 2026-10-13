@@ -25,6 +25,7 @@ Route::get('/stores', [StoreController::class, 'index']);
 Route::get('/config/payments', [OrderController::class, 'paymentConfig']);
 
 // PayMongo webhook (public; gated by signature verification in the controller).
+Route::post('/webhooks/xendit', [OrderController::class, 'xenditWebhook']);
 Route::post('/webhooks/paymongo', [OrderController::class, 'paymongoWebhook']);
 
 // Products catalogue (menu is public; editing requires admin/editor).

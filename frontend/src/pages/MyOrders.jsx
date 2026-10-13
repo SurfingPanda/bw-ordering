@@ -27,6 +27,7 @@ const PAYMENT_LABEL = {
   gcash: 'GCash',
   qrph: 'QRPH',
   cash: 'Cash on Pickup',
+  xendit: 'Online (Xendit)',
   paymongo: 'Online (PayMongo)',
 }
 

@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 // Verifies a Supabase access token and attaches a normalized user to the
@@ -37,6 +38,10 @@ class SupabaseAuth
 
     private function resolveUser(string $jwt): ?array
     {
+        if ($this->localMode()) {
+            return $this->verifyLocal($jwt);
+        }
+
         // 1. Offline HS256 verification when the shared JWT secret is set.
         $secret = config('supabase.jwt_secret');
         if ($secret) {
@@ -48,6 +53,23 @@ class SupabaseAuth
 
         // 2. Fallback: validate against Supabase's auth API (cached briefly).
         return $this->verifyViaApi($jwt);
+    }
+
+    private function localMode(): bool
+    {
+        return app()->environment('local')
+            && empty(config('supabase.url'))
+            && empty(config('supabase.jwt_secret'));
+    }
+
+    private function verifyLocal(string $token): ?array
+    {
+        $user = PersonalAccessToken::findToken($token)?->tokenable;
+        if (! $user) {
+            return null;
+        }
+
+        return $this->normalize('local-'.$user->id, $user->email, ['name' => $user->name]);
     }
 
     private function verifyViaApi(string $jwt): ?array

@@ -22,6 +22,8 @@ const EXPRESS_FEE = 149
 const FREE_DELIVERY_MIN = 1000
 
 const STEPS = ['Cart', 'Delivery', 'Details', 'Payment', 'Confirmation']
+const ONLINE_GATEWAYS = ['xendit', 'paymongo']
+const GATEWAY_NAME = { xendit: 'Xendit', paymongo: 'PayMongo' }
 
 function readCheckout() {
   if (typeof localStorage === 'undefined') return null
@@ -96,7 +98,7 @@ export default function Checkout() {
     getSiteContent()
       .then((c) => setQrPayload(c?.payment?.qrPayload || ''))
       .catch(() => {})
-    fetchPaymentConfig().then((cfg) => setPaymongoEnabled(!!cfg.paymongo)).catch(() => {})
+    fetchPaymentConfig().then((cfg) => setOnlineGateway(cfg.gateway || (cfg.paymongo ? 'paymongo' : null))).catch(() => {})
     // Branches for the Pickup option (same source as the store locator).
     api.get('/stores').then((res) => setStores(res.data || [])).catch(() => {})
     // Re-verify cart prices/availability against the server before paying.
@@ -139,7 +141,7 @@ export default function Checkout() {
           } catch {
             // best-effort
           }
-          setPayMethod(order.payment_method || 'paymongo')
+          setPayMethod(order.payment_method || 'xendit')
           setPlacedOrder(order)
           setStep('done')
           window.scrollTo({ top: 0 })
@@ -158,7 +160,8 @@ export default function Checkout() {
   // Wizard step: 'form' (Delivery + Details) → 'payment' → 'done' (Confirmation).
   const [step, setStep] = useState('form')
   const [payMethod, setPayMethod] = useState('qrph') // qrph | cash | paymongo (cash = pickup only)
-  const [paymongoEnabled, setPaymongoEnabled] = useState(false)
+  const [onlineGateway, setOnlineGateway] = useState(null)
+  const isOnline = ONLINE_GATEWAYS.includes(payMethod)
   // True while we verify a payment after returning from the PayMongo hosted page.
   // Seeded from the URL so the empty-cart guard doesn't flash on return.
   const [verifying, setVerifying] = useState(() => {
@@ -292,7 +295,7 @@ export default function Checkout() {
 
       // PayMongo: hand off to the hosted checkout. Keep the cart until payment is
       // confirmed on return, so a cancel can be retried.
-      if (payMethod === 'paymongo') {
+      if (isOnline) {
         const url = await payOrder(order.id)
         if (url) {
           window.location.href = url
@@ -571,13 +574,13 @@ export default function Checkout() {
           {/* 4. Payment */}
           <Section step="4" title="Payment Method">
             <div className="space-y-3">
-              {paymongoEnabled && (
+              {onlineGateway && (
                 <PayCard
-                  active={payMethod === 'paymongo'}
-                  onClick={() => setPayMethod('paymongo')}
+                  active={isOnline}
+                  onClick={() => setPayMethod(onlineGateway)}
                   icon="💳"
                   title="Pay online (GCash / Card / Maya)"
-                  subtitle="Secure checkout powered by PayMongo"
+                  subtitle={`Secure checkout powered by ${GATEWAY_NAME[onlineGateway] || 'our payment partner'}`}
                 />
               )}
               <PayCard
@@ -627,9 +630,9 @@ export default function Checkout() {
               </p>
             )}
 
-            {payMethod === 'paymongo' && (
+            {isOnline && (
               <p className="mt-4 rounded-xl border border-slate-200 p-4 text-sm text-slate-600">
-                💳 You’ll be redirected to PayMongo’s secure checkout to pay {peso(total)} with
+                💳 You’ll be redirected to {GATEWAY_NAME[payMethod]}’s secure checkout to pay {peso(total)} with
                 GCash, a card, or Maya, then brought back here once it’s done.
               </p>
             )}
@@ -651,7 +654,7 @@ export default function Checkout() {
               ? 'Placing order…'
               : payMethod === 'qrph'
                 ? `I've Paid · ${peso(total)}`
-                : payMethod === 'paymongo'
+                : isOnline
                   ? `Pay online · ${peso(total)}`
                   : `Place Order · ${peso(total)}`}
             {!placing && <ArrowIcon className="h-4 w-4" />}
@@ -832,7 +835,14 @@ function PayCard({ active, onClick, icon, title, subtitle }) {
   )
 }
 
-const PAY_LABEL = { qrph: 'QRPH', cash: 'Cash on Pickup', cod: 'Cash on Delivery', gcash: 'GCash' }
+const PAY_LABEL = {
+  qrph: 'QRPH',
+  cash: 'Cash on Pickup',
+  cod: 'Cash on Delivery',
+  gcash: 'GCash',
+  xendit: 'Online (Xendit)',
+  paymongo: 'Online (PayMongo)',
+}
 
 function Confirmation({ order, payMethod }) {
   const ref = order ? String(order.id).slice(0, 8).toUpperCase() : '—'

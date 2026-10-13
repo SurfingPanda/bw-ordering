@@ -35,6 +35,14 @@ return [
         ],
     ],
 
+    'payment_gateway' => env('PAYMENT_GATEWAY', 'xendit'),
+
+    'xendit' => [
+        'secret' => env('XENDIT_SECRET_KEY'),
+        'webhook_token' => env('XENDIT_WEBHOOK_TOKEN'),
+        'methods' => array_filter(array_map('trim', explode(',', env('XENDIT_METHODS', '')))),
+    ],
+
     // PayMongo (hosted Checkout Sessions). When `secret` is unset, online
     // payment is simply disabled and the app keeps using the manual QR / cash.
     'paymongo' => [

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Voucher;
 use App\Services\PayMongoService;
+use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -33,7 +34,7 @@ class OrderController extends Controller
             'items.*.product_id' => 'required|string',
             'items.*.qty' => 'required|integer|min:1',
             'voucher' => 'nullable|string',
-            'payment_method' => 'nullable|in:qrph,cash,paymongo',
+            'payment_method' => 'nullable|in:qrph,cash,xendit,paymongo',
             'delivery_type' => 'nullable|in:delivery,pickup',
             'delivery_speed' => 'nullable|in:standard,express',
             'fulfillment_store_id' => 'nullable|integer',
@@ -163,17 +164,32 @@ class OrderController extends Controller
         return response()->json($order, 201);
     }
 
-    /** Public: which online payment methods are available (drives the UI). */
-    public function paymentConfig(PayMongoService $paymongo)
+    public function paymentConfig(XenditService $xendit, PayMongoService $paymongo)
     {
-        return response()->json(['paymongo' => $paymongo->enabled()]);
+        return response()->json([
+            'xendit' => $xendit->enabled(),
+            'paymongo' => $paymongo->enabled(),
+            'gateway' => $this->gateway($xendit, $paymongo),
+        ]);
     }
 
-    /**
-     * Start a PayMongo hosted checkout for an order the user owns. Returns the
-     * checkout page URL for the frontend to redirect to.
-     */
-    public function pay(Request $request, string $id, PayMongoService $paymongo)
+    private function gateway(XenditService $xendit, PayMongoService $paymongo, ?string $preferred = null): ?string
+    {
+        $enabled = array_keys(array_filter([
+            'xendit' => $xendit->enabled(),
+            'paymongo' => $paymongo->enabled(),
+        ]));
+
+        foreach ([$preferred, config('services.payment_gateway')] as $name) {
+            if ($name && in_array($name, $enabled, true)) {
+                return $name;
+            }
+        }
+
+        return $enabled[0] ?? null;
+    }
+
+    public function pay(Request $request, string $id, XenditService $xendit, PayMongoService $paymongo)
     {
         $user = $this->supabaseUser($request);
         $order = Order::findOrFail($id);
@@ -181,7 +197,9 @@ class OrderController extends Controller
         if (($order->user_id ?? null) !== ($user['id'] ?? null)) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
-        if (! $paymongo->enabled()) {
+
+        $gateway = $this->gateway($xendit, $paymongo, $order->payment_method);
+        if (! $gateway) {
             return response()->json(['message' => 'Online payment is not available.'], 422);
         }
         if ($order->payment_status === 'paid') {
@@ -193,24 +211,27 @@ class OrderController extends Controller
         $cancel = $front.'/checkout?payment=cancelled&order='.$order->id;
 
         try {
-            $session = $paymongo->createCheckoutSession($order, $success, $cancel);
+            $session = $gateway === 'xendit'
+                ? $xendit->createCheckoutSession($order, $success, $cancel)
+                : $paymongo->createCheckoutSession($order, $success, $cancel);
         } catch (\Throwable $e) {
-            Log::error('PayMongo checkout failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+            Log::error('Online checkout failed', ['gateway' => $gateway, 'order' => $order->id, 'error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Could not start the payment. Please try again.'], 502);
         }
 
-        $order->update(['payment_ref' => $session['id'], 'payment_method' => 'paymongo']);
+        if (empty($session['id']) || empty($session['url'])) {
+            Log::error('Online checkout returned no session', ['gateway' => $gateway, 'order' => $order->id]);
+
+            return response()->json(['message' => 'Could not start the payment. Please try again.'], 502);
+        }
+
+        $order->update(['payment_ref' => $session['id'], 'payment_method' => $gateway]);
 
         return response()->json(['checkout_url' => $session['url']]);
     }
 
-    /**
-     * Fetch a single order (owner or admin). For a pending PayMongo order this
-     * also reconciles payment with the gateway — covers localhost where the
-     * webhook can't reach us.
-     */
-    public function show(Request $request, string $id, PayMongoService $paymongo)
+    public function show(Request $request, string $id, XenditService $xendit, PayMongoService $paymongo)
     {
         $user = $this->supabaseUser($request);
         $order = Order::findOrFail($id);
@@ -220,9 +241,14 @@ class OrderController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        if ($order->payment_status !== 'paid' && $order->payment_ref && $paymongo->enabled()) {
-            $session = $paymongo->getCheckoutSession($order->payment_ref);
-            if ($paymongo->sessionIsPaid($session)) {
+        if ($order->payment_status !== 'paid' && $order->payment_ref) {
+            $paid = false;
+            if ($order->payment_method === 'xendit' && $xendit->enabled()) {
+                $paid = $xendit->invoiceIsPaid($xendit->getInvoice($order->payment_ref));
+            } elseif ($order->payment_method === 'paymongo' && $paymongo->enabled()) {
+                $paid = $paymongo->sessionIsPaid($paymongo->getCheckoutSession($order->payment_ref));
+            }
+            if ($paid) {
                 $order->update(['payment_status' => 'paid']);
             }
         }
@@ -230,7 +256,30 @@ class OrderController extends Controller
         return $order;
     }
 
-    /** PayMongo webhook — marks the order paid when the gateway confirms. */
+    public function xenditWebhook(Request $request, XenditService $xendit)
+    {
+        if (! $xendit->verifyWebhook($request->header('x-callback-token'))) {
+            return response()->json(['message' => 'Invalid token.'], 400);
+        }
+
+        $invoiceId = $request->input('id');
+        $orderId = $request->input('external_id');
+
+        if (is_string($invoiceId) && is_string($orderId) && $xendit->enabled()) {
+            $order = Order::where('id', $orderId)
+                ->where('payment_method', 'xendit')
+                ->where('payment_ref', $invoiceId)
+                ->first();
+
+            if ($order && $order->payment_status !== 'paid'
+                && $xendit->invoiceIsPaid($xendit->getInvoice($invoiceId))) {
+                $order->update(['payment_status' => 'paid']);
+            }
+        }
+
+        return response()->json(['received' => true]);
+    }
+
     public function paymongoWebhook(Request $request, PayMongoService $paymongo)
     {
         if (! $paymongo->verifyWebhook($request->header('Paymongo-Signature'), $request->getContent())) {
