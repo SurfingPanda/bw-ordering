@@ -3,7 +3,7 @@
      region/search filtering and selection. --}}
 @php
     $dirHref = fn ($address) => 'https://www.google.com/maps/dir/?api=1&destination='.urlencode($address);
-    $regions = ['All', 'Luzon', 'Visayas', 'Mindanao'];
+    $regions = collect(['All'])->merge($stores->pluck('region')->filter()->unique()->sort()->values())->all();
     $mapStores = $stores->map(fn ($s) => [
         'name' => $s->name,
         'region' => $s->region,

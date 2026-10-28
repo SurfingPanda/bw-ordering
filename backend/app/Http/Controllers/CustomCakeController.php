@@ -102,6 +102,9 @@ class CustomCakeController extends Controller
             'flavor' => 'required|string|max:120',
             'size' => 'required|string|max:60',
             'frosting_color' => 'required|string|max:30',
+            'shape' => 'sometimes|required|in:Round,Square,Rectangle',
+            'theme' => 'sometimes|required|in:None,Anime,Cartoon,Superhero,Princess,Space,Custom,Naruto,Luffy,Pikachu,Hello Kitty,SpongeBob,Mermaid,Cocomelon,Unicorn,Dinosaur',
+            'character_name' => 'nullable|string|max:100',
             'delivery_type' => 'required|in:delivery,pickup',
             'address' => 'required_if:delivery_type,delivery|nullable|string|max:500',
             'fulfillment_branch' => 'required_if:delivery_type,pickup|nullable|string|max:120',
@@ -122,6 +125,11 @@ class CustomCakeController extends Controller
             'needed_by.after_or_equal' => 'The "needed by" date can\'t be in the past.',
             'reference_image.max' => 'The reference image must be 10MB or smaller.',
         ]);
+
+        // Discard a character left over after returning to the classic theme.
+        if (($data['theme'] ?? 'None') === 'None') {
+            $data['character_name'] = null;
+        }
 
         // Values from the mode not chosen shouldn't linger (typed an address,
         // then switched to pickup — or picked a branch, then switched back).

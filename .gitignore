@@ -24,6 +24,7 @@ secrets.json
 
 # Markdown files
 *.md
+!payment.md
 
 # Dependencies
 /vendor/

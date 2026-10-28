@@ -96,6 +96,7 @@
                 <div class="flex h-16 items-center justify-between px-4 sm:px-6">
                     <h2 class="text-lg font-bold text-navy-800">Order Online</h2>
                     <div class="flex items-center gap-4">
+                        @include('partials.location-picker', ['locationLight' => true])
                         @if($user)
                             @if($isAdmin)
                                 <a href="{{ route('admin.dashboard') }}" class="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600">Admin</a>

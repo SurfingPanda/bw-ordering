@@ -362,6 +362,10 @@ searchInput.addEventListener('input', () => {
     applyFilters()
 })
 
+// Keep the region chosen in the header's location picker when opening the map.
+const initialRegion = new URLSearchParams(location.search).get('region')
+if (initialRegion) regionButtons.find(button => button.dataset.region === initialRegion)?.click()
+
 cards.forEach((card) => {
     card.addEventListener('click', (e) => {
         if (e.target.closest('a')) return // let the Directions link through

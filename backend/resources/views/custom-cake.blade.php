@@ -14,6 +14,7 @@
     @include('partials.seo-meta')
     @include('partials.favicon')
     @vite('resources/css/app.css')
+    @vite('resources/js/cake-preview.js')
 </head>
 <body class="min-h-screen bg-white text-navy-800">
 
@@ -68,10 +69,21 @@
             {{-- ---- step 1: cake details ---- --}}
             <section data-step="1">
                 {{-- live preview --}}
-                <div class="mx-auto w-56 rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-                    <svg id="cake-preview" viewBox="0 0 200 170" class="h-40 w-full" aria-hidden="true"></svg>
+                <div class="overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/60">
+                    <div class="flex items-start justify-between gap-3 px-5 pt-4">
+                        <span class="text-xs font-semibold uppercase tracking-widest text-brand-600">Sample cake preview - not an actual cake</span>
+                        <div class="flex shrink-0 flex-col gap-2">
+                            <button id="cake-reset-options" type="button" class="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-navy-800 focus-visible:ring-2 focus-visible:ring-brand-500">Reset cake</button>
+                        </div>
+                    </div>
+                    <div id="cake-3d" class="relative h-80 w-full" role="group" aria-label="Interactive cake preview">
+                        <svg id="cake-preview" viewBox="0 0 200 170" class="mx-auto h-full w-56" aria-hidden="true"></svg>
+                    </div>
+                    <p id="cake-preview-status" class="px-4 pb-4 text-center text-xs text-slate-500" aria-live="polite">Pick a size, frosting color and occasion to customize your cake.</p>
                 </div>
-                <p class="mt-2 text-center text-xs text-slate-400">A rough preview — pick a size, color &amp; occasion to update it.</p>
+                <p class="mt-2 text-center text-xs font-semibold text-slate-500">Sample only - not an actual cake. The final cake may look different.</p>
+                <p class="mt-1 text-center text-xs text-slate-400">Our team will confirm the final design and details with your quote.</p>
+                <p id="cake-decoration-note" class="mt-1 text-center text-xs text-slate-500" aria-live="polite">Choose a flavor and occasion to preview matching decorations.</p>
 
                 <div class="mt-8 grid gap-4 sm:grid-cols-2">
                     <label class="block">
@@ -110,6 +122,33 @@
                         </select>
                         <p data-error-for="size" class="mt-1 hidden text-xs text-red-600"></p>
                     </label>
+                </div>
+
+                <fieldset class="mt-4">
+                    <legend class="mb-2 text-sm font-semibold text-navy-800">Cake Shape</legend>
+                    <div class="grid grid-cols-3 gap-3">
+                        @foreach(['Round', 'Square', 'Rectangle'] as $shape)
+                            <label class="cursor-pointer">
+                                <input type="radio" name="shape" value="{{ $shape }}" class="peer sr-only" @checked(old('shape', 'Round') === $shape)>
+                                <span class="block rounded-xl border border-slate-300 px-3 py-3 text-center text-sm font-semibold transition peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-600 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500">{{ $shape }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">Size labels are approximate; final dimensions and servings will be confirmed in your quote.</p>
+                </fieldset>
+
+                <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                    <label for="cake-theme" class="mb-2 block text-sm font-semibold text-navy-800">Cake Theme</label>
+                    <select id="cake-theme" name="theme" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        @foreach(['None' => 'Classic / No theme', 'Anime' => 'Anime', 'Cartoon' => 'Cartoon', 'Superhero' => 'Superhero', 'Princess' => 'Princess', 'Space' => 'Space', 'Naruto' => 'Anime - Naruto', 'Luffy' => 'Anime - Luffy', 'Pikachu' => 'Pokemon - Pikachu', 'Hello Kitty' => 'Cartoon - Hello Kitty', 'SpongeBob' => 'Cartoon - SpongeBob', 'Mermaid' => 'Kids - Mermaid', 'Cocomelon' => 'Kids - Cocomelon', 'Unicorn' => 'Kids - Unicorn', 'Dinosaur' => 'Kids - Dinosaur', 'Custom' => 'Custom theme'] as $value => $label)
+                            <option value="{{ $value }}" @selected(old('theme', 'None') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <div id="cake-character-wrap" class="mt-3" @if(old('theme', 'None') === 'None') hidden @endif>
+                        <label for="cake-character" class="mb-1 block text-sm font-semibold text-navy-800">Character or theme name <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input id="cake-character" name="character_name" maxlength="100" value="{{ old('character_name') }}" placeholder="e.g. Naruto, Luffy, Pikachu, Hello Kitty" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        <p class="mt-2 text-xs text-slate-500">The preview shows a stylized sample topper. Tell us the exact character and upload a reference below for the final design.</p>
+                    </div>
                 </div>
 
                 <div class="mt-4">
@@ -266,6 +305,15 @@
     const form = document.getElementById('cake-form');
     const steps = Array.from(form.querySelectorAll('[data-step]'));
     let current = 1;
+
+    const themeSelect = document.getElementById('cake-theme');
+    function updateThemeFields() {
+        const active = themeSelect.value !== 'None';
+        document.getElementById('cake-character-wrap').hidden = !active;
+        document.getElementById('cake-character').disabled = !active;
+    }
+    themeSelect.addEventListener('change', updateThemeFields);
+    updateThemeFields();
 
     /* ---- wizard navigation ---- */
     function paintChips() {
@@ -448,6 +496,9 @@
             ['Needed by', form.needed_by.value],
             ['Flavor', form.flavor.value.trim()],
             ['Size', form.size.value],
+            ['Shape', form.shape.value],
+            ['Theme', form.theme.value === 'None' ? '' : form.theme.value],
+            ['Character', form.theme.value === 'None' ? '' : form.character_name.value.trim()],
             ['Frosting', color ? color.value : ''],
             ['Receive via', ccMode() === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'],
             ['Address', ccMode() === 'delivery' ? form.address.value.trim() : ''],
@@ -499,7 +550,8 @@
         const checked = form.querySelector('input[name="frosting_color"]:checked');
         const hex = checked ? checked.dataset.hex : '#fbe3c4';
         const tiers = tiersFor(size);
-        const baseW = widthFor(size);
+        const shape = form.shape.value;
+        const baseW = widthFor(size) * (shape === 'Rectangle' ? 1.15 : 1);
         const tierH = tiers === 1 ? 52 : (tiers === 2 ? 42 : 36);
         const cx = 100, bottom = 148;
         let parts = [`<ellipse cx="${cx}" cy="${bottom + 6}" rx="78" ry="10" fill="#e9dcc9"/>`];
@@ -507,6 +559,10 @@
             const w = baseW - t * 26;
             const y = bottom - tierH * (t + 1);
             parts.push(`<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${tierH}" rx="10" fill="${hex}" stroke="rgba(0,0,0,0.08)"/>`);
+            if (shape !== 'Round') {
+                parts.push(`<rect x="${cx - w / 2}" y="${y - 5}" width="${w}" height="12" rx="2" fill="${hex}" stroke="rgba(0,0,0,0.08)"/>`);
+                continue;
+            }
             parts.push(`<ellipse cx="${cx}" cy="${y}" rx="${w / 2}" ry="7" fill="${hex}" stroke="rgba(0,0,0,0.08)"/>`);
             parts.push(`<ellipse cx="${cx}" cy="${y}" rx="${w / 2 - 6}" ry="4.5" fill="rgba(255,255,255,0.45)"/>`);
         }
@@ -522,9 +578,25 @@
         svg.innerHTML = parts.join('');
     }
     form.addEventListener('change', (e) => {
-        if (['size', 'occasion'].includes(e.target.name) || e.target.name === 'frosting_color') renderCake();
+        if (['size', 'shape', 'occasion'].includes(e.target.name) || e.target.name === 'frosting_color') renderCake();
     });
     renderCake();
+
+    document.getElementById('cake-reset-options').addEventListener('click', () => {
+        ['occasion', 'needed_by', 'flavor', 'size', 'character_name'].forEach((name) => {
+            form.elements[name].value = '';
+            setError(name, '');
+        });
+        form.querySelectorAll('[name="frosting_color"]').forEach((input) => { input.checked = false; });
+        form.querySelectorAll('[name="shape"]').forEach((input) => { input.checked = input.value === 'Round'; });
+        themeSelect.value = 'None';
+        ['frosting_color', 'shape', 'theme'].forEach((name) => setError(name, ''));
+        // Notify both the dependent character field and the 3D preview.
+        themeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        renderCake();
+        form.dispatchEvent(new Event('cake:reset'));
+        document.getElementById('cake-decoration-note').textContent = 'Cake selections reset. Choose a flavor and occasion to start again.';
+    });
 
     paintChips();
     // A failed server validation reloads with errors — reopen the right step.

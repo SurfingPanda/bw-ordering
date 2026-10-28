@@ -242,7 +242,7 @@
                                         @if($cc->fulfillment_branch)
                                             <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">📍 {{ $cc->fulfillment_branch }}</span>
                                         @endif
-                                        @foreach(array_filter([$cc->occasion, $cc->flavor, $cc->size, $cc->frosting_color]) as $chip)
+                                        @foreach(array_filter([$cc->occasion, $cc->flavor, $cc->size, $cc->shape ?? 'Round', ($cc->theme && $cc->theme !== 'None') ? $cc->theme : null, $cc->character_name, $cc->frosting_color]) as $chip)
                                             <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $chip }}</span>
                                         @endforeach
                                         @if($cc->needed_by)

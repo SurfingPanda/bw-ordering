@@ -10,6 +10,49 @@ class CustomCakePageTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_themes_and_character_requests_are_saved(): void
+    {
+        foreach (['Anime', 'Cartoon', 'Superhero', 'Princess', 'Space', 'Custom', 'Naruto', 'Luffy', 'Pikachu', 'Hello Kitty', 'SpongeBob', 'Mermaid', 'Cocomelon', 'Unicorn', 'Dinosaur'] as $theme) {
+            $this->post('/custom-cake', array_merge($this->validRequest(), [
+                'theme' => $theme, 'character_name' => 'My favorite character',
+            ]))->assertSessionHasNoErrors();
+            $cake = CustomCakeRequest::latest('id')->first();
+            $this->assertSame($theme, $cake->theme);
+            $this->assertSame('My favorite character', $cake->character_name);
+        }
+        $this->post('/custom-cake', array_merge($this->validRequest(), [
+            'theme' => 'None', 'character_name' => 'Old selection',
+        ]))->assertSessionHasNoErrors();
+        $this->assertNull(CustomCakeRequest::latest('id')->first()->character_name);
+    }
+
+    public function test_theme_validation_rejects_unknown_themes_and_long_character_names(): void
+    {
+        $this->post('/custom-cake', array_merge($this->validRequest(), [
+            'theme' => 'Unknown', 'character_name' => str_repeat('x', 101),
+        ]))->assertSessionHasErrors(['theme', 'character_name']);
+        $this->assertSame(0, CustomCakeRequest::count());
+    }
+
+    public function test_cake_shapes_are_stored_and_invalid_shapes_are_rejected(): void
+    {
+        foreach (['Round', 'Square', 'Rectangle'] as $shape) {
+            $this->post('/custom-cake', array_merge($this->validRequest(), ['shape' => $shape]))
+                ->assertSessionHasNoErrors();
+            $this->assertSame($shape, CustomCakeRequest::latest('id')->first()->shape);
+        }
+
+        $this->post('/custom-cake', array_merge($this->validRequest(), ['shape' => 'Triangle']))
+            ->assertSessionHasErrors('shape');
+        $this->assertSame(3, CustomCakeRequest::count());
+    }
+
+    public function test_older_requests_default_to_round(): void
+    {
+        $this->post('/custom-cake', $this->validRequest())->assertSessionHasNoErrors();
+        $this->assertSame('Round', CustomCakeRequest::first()->shape);
+    }
+
     public function test_all_cake_detail_fields_are_required(): void
     {
         $this->post('/custom-cake', [

@@ -278,6 +278,17 @@
         let mode = 'delivery';
         let speed = 'standard';
         let branchId = null;
+        // Revalidate the saved preference against today's branches before using it.
+        try {
+            const preference = JSON.parse(localStorage.getItem('bw_location') || 'null');
+            const preferredStore = STORES.find(store => String(store.id) === String(preference?.id));
+            if (preferredStore) {
+                branchId = preferredStore.id;
+                if (preferredStore.fulfillment === 'pickup') mode = 'pickup';
+                document.getElementById('delivery_type').value = mode;
+                document.getElementById('fulfillment_store_id').value = branchId;
+            }
+        } catch { /* Continue with manual branch selection when storage is unavailable. */ }
         let voucherCode = payload.voucher || null;
         let payMethod = document.getElementById('payment_method').value;
 
@@ -568,6 +579,7 @@
         // ---- initial paint ----
         paintModeCards();
         paintSpeedCards();
+        renderSelectedBranchSummary();
         setPayMethod('qrph');
         renderSummary();
 
