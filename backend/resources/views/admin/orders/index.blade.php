@@ -11,6 +11,7 @@
         $statusLabel = ['pending' => 'Order Placed', 'preparing' => 'Preparing', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
         $statusStyle = ['pending' => 'bg-amber-100 text-amber-700', 'preparing' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-green-100 text-green-700', 'cancelled' => 'bg-red-100 text-red-700'];
         $paymentLabel = ['qrph' => 'QRPH', 'cash' => 'Cash on Pickup', 'paymongo' => 'Online (PayMongo)'];
+        $paymentChannelLabel = ['gcash' => 'GCash', 'card' => 'Card', 'qrph' => 'QR Ph'];
         $total = array_sum($counts);
     @endphp
 
@@ -56,7 +57,7 @@
                             <div class="mt-1.5 flex flex-wrap gap-1.5 text-xs text-slate-600">
                                 <span class="rounded-full bg-navy-50 px-2 py-0.5 font-semibold text-navy-700">{{ $order->delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery' }}</span>
                                 @if($order->payment_method)
-                                    <span class="rounded-full bg-navy-50 px-2 py-0.5 font-semibold text-navy-700">{{ $order->payment_method === 'cash' && $order->delivery_type !== 'pickup' ? 'Cash on Delivery' : ($paymentLabel[$order->payment_method] ?? $order->payment_method) }}</span>
+                                    <span class="rounded-full bg-navy-50 px-2 py-0.5 font-semibold text-navy-700">{{ $order->payment_method === 'cash' && $order->delivery_type !== 'pickup' ? 'Cash on Delivery' : ($paymentChannelLabel[$order->payment_channel] ?? $paymentLabel[$order->payment_method] ?? $order->payment_method) }}</span>
                                 @endif
                                 @if($order->fulfillment_branch)
                                     <span class="rounded-full bg-navy-50 px-2 py-0.5 font-semibold text-navy-700">📍 {{ $order->fulfillment_branch }}</span>

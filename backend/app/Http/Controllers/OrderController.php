@@ -42,7 +42,7 @@ class OrderController extends Controller
     /** Public: which online payment methods are available (drives the UI). */
     public function paymentConfig(PayMongoService $paymongo)
     {
-        return response()->json(['paymongo' => $paymongo->enabled()]);
+        return response()->json(['paymongo' => $paymongo->enabled(), 'methods' => $paymongo->nativeMethods()]);
     }
 
     /**
@@ -109,10 +109,11 @@ class OrderController extends Controller
         $resource = $request->json('data.attributes.data');
 
         if (in_array($type, ['checkout_session.payment.paid', 'payment.paid'], true)) {
-            $orderId = data_get($resource, 'attributes.metadata.order_id')
-                ?? data_get($resource, 'attributes.reference_number');
-            if ($orderId) {
-                Order::where('id', $orderId)->update(['payment_status' => 'paid']);
+            $reference = $type === 'payment.paid' ? data_get($resource, 'attributes.payment_intent_id') : data_get($resource, 'id');
+            $order = $reference ? Order::where('payment_method', 'paymongo')->where('payment_ref', $reference)->first() : null;
+            if ($order) {
+                try { $this->orders->reconcile($order); }
+                catch (\Throwable) { return response()->json(['message' => 'Verification temporarily unavailable.'], 502); }
             }
         }
 

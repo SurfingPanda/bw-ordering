@@ -22,6 +22,8 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'payment_ref',
+        'checkout_token',
+        'payment_channel',
         'delivery_type',
         'delivery_speed',
         'fulfillment_store_id',

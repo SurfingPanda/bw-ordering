@@ -35,13 +35,14 @@ return [
         ],
     ],
 
-    // PayMongo (hosted Checkout Sessions). When `secret` is unset, online
-    // payment is simply disabled and the app keeps using the manual QR / cash.
+    // PayMongo native checkout (legacy hosted sessions remain readable).
+    // Without the secret key, checkout offers cash only.
     'paymongo' => [
         'secret' => env('PAYMONGO_SECRET_KEY'),
+        'public' => env('PAYMONGO_PUBLIC_KEY'),
         'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
-        // Methods offered on the hosted page (PayMongo must enable each on the account).
-        'methods' => array_filter(array_map('trim', explode(',', env('PAYMONGO_METHODS', 'gcash,card,paymaya,grab_pay')))),
+        // Maya and other wallets are deliberately excluded.
+        'methods' => ['gcash', 'card', 'qrph'],
     ],
 
     // Where the frontend lives, for PayMongo success/cancel redirects.

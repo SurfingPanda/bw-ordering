@@ -91,9 +91,8 @@ class OrderCreationService
         }
         $fulfillmentStoreId = $store?->id;
         $fulfillmentBranch = $store ? $store->name.' — '.$store->address : null;
-        // Manual QRPH is treated as paid up front; cash is collected at delivery or pickup;
-        // PayMongo stays pending until the gateway confirms (webhook / return check).
-        $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
+        // Payment always starts pending; only gateway verification or staff collection marks it paid.
+        $payStatus = 'pending';
 
         // Trusted product lookup (non-archived only) — covers plain lines and
         // every product inside a bundle line.
@@ -294,6 +293,9 @@ class OrderCreationService
     public function reconcile(Order $order): Order
     {
         if ($order->payment_status !== 'paid' && $order->payment_ref && $this->paymongo->enabled()) {
+            if (str_starts_with($order->payment_ref, 'pi_')) {
+                return app(NativePaymentService::class)->reconcile($order);
+            }
             $session = $this->paymongo->getCheckoutSession($order->payment_ref);
             if ($this->paymongo->sessionIsPaid($session)) {
                 $order->update(['payment_status' => 'paid']);

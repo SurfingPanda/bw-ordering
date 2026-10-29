@@ -188,28 +188,22 @@
                     <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
                         <h2 class="mb-4 flex items-center gap-2 text-base font-bold text-navy-800"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 text-xs text-white">4</span>Payment Method</h2>
                         <div class="space-y-3">
-                            @if($paymongoEnabled)
-                                <button type="button" data-pay="paymongo" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
-                                    <span class="text-2xl">💳</span><span class="flex-1"><span class="block text-sm font-semibold text-navy-800">Pay online (GCash / Card / Maya)</span><span class="block text-xs text-slate-500">Secure checkout powered by PayMongo</span></span>
+                            @foreach(($onlineMethods ?? []) as $method)
+                                <button type="button" data-pay="{{ $method }}" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
+                                    <span class="text-2xl">{{ ['gcash' => '📱', 'card' => '💳', 'qrph' => '▦'][$method] }}</span><span class="flex-1"><span class="block text-sm font-semibold text-navy-800">{{ ['gcash' => 'GCash', 'card' => 'Credit / debit card', 'qrph' => 'QR Ph'][$method] }}</span><span class="block text-xs text-slate-500">{{ ['gcash' => 'Approve securely in GCash', 'card' => 'Visa / Mastercard · secure card payment', 'qrph' => 'Scan with your bank or e-wallet app'][$method] }}</span></span>
                                 </button>
-                            @endif
-                            <button type="button" data-pay="qrph" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
-                                <span class="text-2xl">🔳</span><span class="flex-1"><span class="block text-sm font-semibold text-navy-800">QRPH</span><span class="block text-xs text-slate-500">Scan with any bank or e-wallet app</span></span>
-                            </button>
+                            @endforeach
                             <button type="button" data-pay="cash" id="pay-cash-card" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
                                 <span class="text-2xl">💵</span><span class="flex-1"><span id="cash-method-label" class="block text-sm font-semibold text-navy-800">Cash on Delivery</span><span id="cash-method-help" class="block text-xs text-slate-500">Pay with cash when your order arrives</span></span>
                             </button>
                         </div>
-                        <input type="hidden" name="payment_method" id="payment_method" value="qrph">
+                        <input type="hidden" name="payment_method" id="payment_method" value="cash">
+                        <input type="hidden" name="payment_channel" id="payment_channel">
 
-                        <div id="qrph-panel" class="mt-4 hidden flex-col items-center gap-3 rounded-xl border border-slate-200 p-5 text-center">
-                            <img id="qrph-image" src="" alt="QRPH payment code" class="h-48 w-48 rounded-lg">
-                            <p class="text-sm font-semibold text-navy-800">Scan to pay <span id="qrph-amount"></span></p>
-                            <p class="text-xs text-slate-500">Open your bank or e-wallet app, scan this QRPH code to pay, then place your order.</p>
-                        </div>
                         <p id="cash-panel" class="mt-4 hidden rounded-xl border border-slate-200 p-4 text-sm text-slate-600">💵 Pay with cash when you pick up your order at the store. Please bring the exact amount if possible.</p>
-                        <p id="paymongo-panel" class="mt-4 hidden rounded-xl border border-slate-200 p-4 text-sm text-slate-600">💳 You'll be redirected to PayMongo's secure checkout, then brought back here once it's done.</p>
+                        <p id="paymongo-panel" class="mt-4 hidden rounded-xl border border-slate-200 p-4 text-sm text-slate-600">Your order details are already filled in. Complete payment securely; confirmation is checked automatically.</p>
                     </section>
+                    <p id="payment-error" role="alert" class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"></p>
 
                     <button type="submit" id="place-order" class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600">
                         Place Order
@@ -278,6 +272,8 @@
         </form>
     </dialog>
     @vite('resources/js/ph-address-picker.js')
+    <script id="native-checkout-config" type="application/json">@json(['createUrl' => route('checkout.payment.create'), 'csrf' => csrf_token()])</script>
+    @vite('resources/js/native-payments.js')
     <dialog id="delete-address-dialog" aria-labelledby="delete-address-title" aria-describedby="delete-address-description" class="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-3xl bg-white p-6 text-navy-800 shadow-2xl backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm">
         <h2 id="delete-address-title" class="text-xl font-bold">Delete this location?</h2>
         <p id="delete-address-description" class="mt-2 text-sm text-slate-500">Are you sure? This location will be removed from your account. Your previous orders will stay unchanged.</p>
@@ -540,13 +536,9 @@
 
             const placeBtn = document.getElementById('place-order');
             if (placeBtn) {
-                placeBtn.textContent = payMethod === 'qrph' ? `I've Paid · ${peso(t.total)}` : payMethod === 'paymongo' ? `Pay online · ${peso(t.total)}` : `Place Order · ${peso(t.total)}`;
+                placeBtn.textContent = `${({ gcash: 'Pay with GCash', card: 'Pay by card', qrph: 'Generate payment QR', cash: 'Place Order' })[payMethod] || 'Pay'} · ${peso(t.total)}`;
             }
 
-            if (payMethod === 'qrph') {
-                document.getElementById('qrph-amount').textContent = `Scan to pay ${peso(t.total)}`;
-                document.getElementById('qrph-image').src = `{{ route('checkout.qr') }}?amount=${t.total.toFixed(2)}`;
-            }
 
             return t;
         }
@@ -710,7 +702,8 @@
         // ---- payment method ----
         function setPayMethod(m) {
             payMethod = m;
-            document.getElementById('payment_method').value = m;
+            document.getElementById('payment_method').value = m === 'cash' ? 'cash' : 'paymongo';
+            document.getElementById('payment_channel').value = m === 'cash' ? '' : m;
             document.querySelectorAll('.pay-card').forEach(btn => {
                 const on = btn.dataset.pay === m;
                 btn.classList.toggle('border-brand-400', on);
@@ -718,10 +711,8 @@
                 btn.classList.toggle('ring-2', on);
                 btn.classList.toggle('border-slate-200', !on);
             });
-            document.getElementById('qrph-panel').classList.toggle('hidden', m !== 'qrph');
-            document.getElementById('qrph-panel').classList.toggle('flex', m === 'qrph');
             document.getElementById('cash-panel').classList.toggle('hidden', m !== 'cash');
-            document.getElementById('paymongo-panel').classList.toggle('hidden', m !== 'paymongo');
+            document.getElementById('paymongo-panel').classList.toggle('hidden', m === 'cash');
             renderSummary();
         }
         document.querySelectorAll('.pay-card').forEach(btn => btn.addEventListener('click', () => setPayMethod(btn.dataset.pay)));
@@ -754,10 +745,20 @@
         });
         document.getElementById('back-to-details').addEventListener('click', () => showStep('form'));
 
-        document.getElementById('checkout-form').addEventListener('submit', () => {
+        document.getElementById('checkout-form').addEventListener('submit', event => {
             document.getElementById('items_json').value = JSON.stringify(items.map(i => i.bundle_products
                 ? { bundle_products: i.bundle_products, qty: i.qty }
                 : { product_id: i.product_id, name: i.name, qty: i.qty }));
+            if (payMethod !== 'cash') {
+                event.preventDefault();
+                if (window.BWNativeCheckout) window.BWNativeCheckout(event.currentTarget);
+                else {
+                    const error = document.getElementById('payment-error');
+                    error.textContent = 'Payment is still loading. Please try again in a moment.';
+                    error.classList.remove('hidden');
+                }
+                return;
+            }
             document.getElementById('place-order').disabled = true;
             document.getElementById('place-order').textContent = 'Placing order…';
         });
@@ -766,7 +767,7 @@
         paintModeCards();
         paintSpeedCards();
         renderSelectedBranchSummary();
-        setPayMethod('qrph');
+        setPayMethod(@json(($onlineMethods ?? [])[0] ?? 'cash'));
         renderSummary();
 
         @if($step === 'payment')

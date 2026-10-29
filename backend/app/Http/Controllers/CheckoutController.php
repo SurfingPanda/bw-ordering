@@ -97,6 +97,7 @@ class CheckoutController extends Controller
             'error' => $error,
             'stores' => app(StoreController::class)->cachedList(),
             'paymongoEnabled' => $paymongo->enabled(),
+            'onlineMethods' => $paymongo->nativeMethods(),
             'qrPayload' => data_get($content, 'payment.qrPayload', ''),
             // Editable delivery fee / VAT (Site Editor → "Fees & Tax") so the
             // checkout totals preview matches what OrderCreationService charges.

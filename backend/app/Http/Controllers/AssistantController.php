@@ -131,7 +131,7 @@ class AssistantController extends Controller
         // Payment methods.
         if ($has('/\b(payment method|how (can|do) i pay|mode of payment|do you accept (gcash|card|cash|maya)|payment option)\b/')) {
             return $this->canned(
-                "You can pay cash on delivery or pickup, online with GCash, card, Maya, or GrabPay, or by QR Ph, where those are enabled. "
+                "You can pay cash on delivery or pickup, or use GCash, card, or QR Ph where enabled. "
                 ."Grab delivery fees are paid separately. Everything is confirmed at checkout."
             );
         }

@@ -103,6 +103,10 @@ Route::middleware('supabase.session')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])
         ->middleware('throttle:checkout')->name('checkout.store');
+    Route::post('/checkout/payment', [\App\Http\Controllers\CheckoutPaymentController::class, 'create'])->middleware('throttle:checkout')->name('checkout.payment.create');
+    Route::get('/checkout/payment/{id}', [\App\Http\Controllers\CheckoutPaymentController::class, 'show'])->name('checkout.payment.show');
+    Route::get('/checkout/payment/{id}/status', [\App\Http\Controllers\CheckoutPaymentController::class, 'status'])->middleware('throttle:60,1')->name('checkout.payment.status');
+    Route::post('/checkout/payment/{id}/pay', [\App\Http\Controllers\CheckoutPaymentController::class, 'pay'])->middleware('throttle:20,1')->name('checkout.payment.pay');
     Route::get('/my-orders', [MyOrdersController::class, 'index'])->name('my-orders');
 
     // Account settings (port of Profile.jsx) — two forms, two POSTs.

@@ -13,6 +13,7 @@
     $statusLabel = ['pending' => 'Order Placed', 'preparing' => 'Preparing', 'completed' => 'Delivered', 'cancelled' => 'Cancelled'];
     $statusStyle = ['pending' => 'bg-amber-100 text-amber-700', 'preparing' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-green-100 text-green-700', 'cancelled' => 'bg-red-100 text-red-700'];
     $paymentLabel = ['qrph' => 'QRPH', 'cash' => 'Cash on Pickup', 'paymongo' => 'Online (PayMongo)'];
+    $paymentChannelLabel = ['gcash' => 'GCash', 'card' => 'Card', 'qrph' => 'QR Ph'];
     $deliverySpeedLabel = ['grab' => 'Grab delivery · fee paid separately', 'standard' => 'Standard delivery', 'express' => 'Express delivery'];
     $isActive = fn ($o) => in_array($o->status, ['pending', 'preparing'], true);
     $trackIndex = fn ($status) => ['pending' => 0, 'preparing' => 1, 'completed' => 3][$status] ?? 0;
@@ -113,7 +114,7 @@
                                 <div class="mt-1.5 flex flex-wrap gap-1.5">
                                     <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $order->delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery' }}</span>
                                     @if($order->payment_method)
-                                        <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $order->payment_method === 'cash' && $order->delivery_type !== 'pickup' ? 'Cash on Delivery' : ($paymentLabel[$order->payment_method] ?? $order->payment_method) }}</span>
+                                        <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $order->payment_method === 'cash' && $order->delivery_type !== 'pickup' ? 'Cash on Delivery' : ($paymentChannelLabel[$order->payment_channel] ?? $paymentLabel[$order->payment_method] ?? $order->payment_method) }}</span>
                                     @endif
                                     @if($order->status !== 'cancelled')
                                         <span class="rounded-full px-2 py-0.5 text-[0.65rem] font-semibold {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' }}">
@@ -141,6 +142,7 @@
                         </div>
                     @endif
 
+                    <div id="order-details-{{ $order->id }}" class="order-details hidden">
                     <div class="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-slate-100 pt-4">
                         <div class="text-sm">
                             <p class="mb-1 font-semibold text-navy-800">{{ $itemCount }} item{{ $itemCount === 1 ? '' : 's' }}</p>
@@ -156,7 +158,7 @@
                         </div>
                     </div>
 
-                    <div class="order-details mt-3 hidden border-t border-slate-100 pt-4 text-xs text-slate-600">
+                    <div class="mt-3 border-t border-slate-100 pt-4 text-xs text-slate-600">
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="space-y-1">
                                 @if($order->address)<p><span class="font-semibold text-navy-700">📍 Deliver to:</span> {{ $order->address }}</p>@endif
@@ -189,13 +191,21 @@
                     </div>
 
                     <div class="mt-4 flex flex-wrap items-center gap-2">
-                        <button type="button" class="toggle-details text-sm font-medium text-brand-600 hover:underline">View Details</button>
                         <div class="ml-auto flex gap-2">
+                            @if($order->payment_method === 'paymongo' && $order->checkout_token && $order->payment_status !== 'paid' && $order->status !== 'cancelled')
+                                <a href="{{ route('checkout.payment.show', $order->id) }}" class="rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-600">Complete payment</a>
+                            @endif
                             <button type="button" class="reorder-btn rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-navy-700 transition hover:border-brand-400 hover:text-brand-600"
                                 data-items="{{ json_encode(array_map(fn ($i) => ['product_id' => $i['product_id'] ?? null, 'qty' => $i['qty'] ?? 1], $items)) }}">
                                 Reorder
                             </button>
                         </div>
+                    </div>
+                    </div>
+                    <div class="mt-3 flex justify-center border-t border-slate-100 pt-3">
+                        <button type="button" class="toggle-details flex h-9 w-9 items-center justify-center rounded-full border border-brand-200 bg-brand-50 text-brand-600 transition hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" aria-label="Show order details" title="Show order details" aria-expanded="false" aria-controls="order-details-{{ $order->id }}">
+                            <svg class="details-chevron h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
                     </div>
                 </div>
             @endforeach
@@ -362,7 +372,11 @@
     document.querySelectorAll('.toggle-details').forEach(btn => btn.addEventListener('click', () => {
         const details = btn.closest('.order-card').querySelector('.order-details');
         details.classList.toggle('hidden');
-        btn.textContent = details.classList.contains('hidden') ? 'View Details' : 'Hide details';
+        const expanded = !details.classList.contains('hidden');
+        btn.setAttribute('aria-expanded', String(expanded));
+        btn.querySelector('.details-chevron').classList.toggle('rotate-180', expanded);
+        btn.setAttribute('aria-label', expanded ? 'Hide order details' : 'Show order details');
+        btn.title = expanded ? 'Hide order details' : 'Show order details';
     }));
 
     document.querySelectorAll('.reorder-btn').forEach(btn => btn.addEventListener('click', () => {
