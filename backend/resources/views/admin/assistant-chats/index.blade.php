@@ -13,7 +13,10 @@
             : '—';
     @endphp
 
-    <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    {{-- Keep this workspace within the viewport. The individual panes, not
+         the browser page, own their scroll areas. --}}
+    <div class="flex min-h-0 flex-col md:h-[calc(100vh-12rem)]">
+    <div class="mb-5 shrink-0 flex flex-wrap items-end justify-between gap-3">
         <div>
             <p class="text-sm text-slate-500">Read-only transcripts from visitors using the public Moymoy AI assistant.</p>
         </div>
@@ -34,8 +37,9 @@
             <p class="mt-1 text-sm text-slate-500">Visitor conversations will appear here after they message Moymoy.</p>
         </div>
     @else
-        <div data-chat-inbox class="flex min-h-[580px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <aside data-chat-list class="flex w-full shrink-0 flex-col overflow-y-auto border-slate-200 md:w-[35%] md:min-w-[300px] md:max-w-[420px] md:border-r">
+        <div data-chat-inbox class="flex min-h-[580px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:min-h-0 md:flex-1">
+            <aside data-chat-list class="flex w-full shrink-0 flex-col overflow-hidden border-slate-200 md:w-[35%] md:min-w-[300px] md:max-w-[420px] md:border-r">
+                <div class="min-h-0 flex-1 overflow-y-auto">
                 @foreach($conversations as $conversation)
                     @php
                         $turns = $messages->get($conversation->conversation_id, collect());
@@ -54,6 +58,10 @@
                         </span>
                     </button>
                 @endforeach
+                </div>
+                @if($conversations->hasPages())
+                    <div class="shrink-0 border-t border-slate-200 bg-white px-3 py-2">{{ $conversations->links() }}</div>
+                @endif
             </aside>
 
             <section data-chat-detail class="hidden min-w-0 flex-1 flex-col overflow-y-auto md:flex">
@@ -86,8 +94,8 @@
                 @endforeach
             </section>
         </div>
-        <div class="mt-5">{{ $conversations->links() }}</div>
     @endif
+    </div>
 @endsection
 
 @section('scripts')

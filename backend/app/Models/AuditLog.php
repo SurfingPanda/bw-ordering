@@ -51,6 +51,7 @@ class AuditLog extends Model
         'order.payment_updated' => 'Order payment changed',
         'custom_cake.status_updated' => 'Custom cake status changed',
         'contact_message.status_updated' => 'Contact message status changed',
+        'site_rating.settings_updated' => 'Rating prompt settings updated',
     ];
 
     public function label(): string
