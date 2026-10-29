@@ -108,6 +108,8 @@ Route::middleware('supabase.session')->group(function () {
     // Account settings (port of Profile.jsx) — two forms, two POSTs.
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::post('/profile/info', [ProfileController::class, 'updateInfo'])->name('profile.info');
+    Route::post('/profile/addresses', [ProfileController::class, 'addAddress'])->middleware('throttle:20,1')->name('profile.addresses.store');
+    Route::delete('/profile/addresses', [ProfileController::class, 'deleteAddress'])->middleware('throttle:20,1')->name('profile.addresses.destroy');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
     // Admin shell (navy sidebar, matching the old AdminDashboard.jsx design).

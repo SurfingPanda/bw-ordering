@@ -13,7 +13,7 @@
     $statusLabel = ['pending' => 'Order Placed', 'preparing' => 'Preparing', 'completed' => 'Delivered', 'cancelled' => 'Cancelled'];
     $statusStyle = ['pending' => 'bg-amber-100 text-amber-700', 'preparing' => 'bg-orange-100 text-orange-700', 'completed' => 'bg-green-100 text-green-700', 'cancelled' => 'bg-red-100 text-red-700'];
     $paymentLabel = ['qrph' => 'QRPH', 'cash' => 'Cash on Pickup', 'paymongo' => 'Online (PayMongo)'];
-    $deliverySpeedLabel = ['standard' => 'Standard delivery', 'express' => 'Express delivery'];
+    $deliverySpeedLabel = ['grab' => 'Grab delivery · fee paid separately', 'standard' => 'Standard delivery', 'express' => 'Express delivery'];
     $isActive = fn ($o) => in_array($o->status, ['pending', 'preparing'], true);
     $trackIndex = fn ($status) => ['pending' => 0, 'preparing' => 1, 'completed' => 3][$status] ?? 0;
     $track = [['label' => 'Order Placed', 'icon' => '🧾'], ['label' => 'Preparing', 'icon' => '👨‍🍳'], ['label' => 'Out for Delivery', 'icon' => '🛵'], ['label' => 'Delivered', 'icon' => '📦']];
@@ -180,7 +180,7 @@
                                 @endif
                                 <div class="flex justify-between">
                                     <span>Delivery fee</span>
-                                    <span class="font-medium {{ $order->delivery == 0 ? 'text-green-700' : 'text-navy-800' }}">{{ $order->delivery_type === 'pickup' ? '—' : ($order->delivery == 0 ? 'FREE' : '₱'.number_format($order->delivery, 2)) }}</span>
+                                    <span class="font-medium text-navy-800">{{ $order->delivery_type === 'pickup' ? '—' : ($order->delivery_speed === 'grab' ? 'Paid separately via Grab' : ($order->delivery == 0 ? 'FREE' : '₱'.number_format($order->delivery, 2))) }}</span>
                                 </div>
                                 <div class="flex justify-between"><span>VAT (12%)</span><span class="font-medium text-navy-800">₱{{ number_format($order->vat, 2) }}</span></div>
                                 <div class="flex justify-between border-t border-slate-200 pt-1 text-sm font-bold text-navy-800"><span>Total</span><span>₱{{ number_format($order->total, 2) }}</span></div>

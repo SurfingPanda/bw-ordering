@@ -118,6 +118,64 @@ class ProfileController extends Controller
         return back()->with('info_success', 'Your information has been updated.');
     }
 
+    /** Add a delivery address to the authenticated account from checkout. */
+    public function addAddress(Request $request)
+    {
+        $data = $request->validate([
+            'label' => 'nullable|string|max:60',
+            'address' => 'required|string|max:500',
+        ]);
+        $address = trim($data['address']);
+        if ($address === '') {
+            return response()->json(['message' => 'Please enter a delivery address.'], 422);
+        }
+        $token = (string) $request->session()->get('supabase_access_token');
+        $raw = $this->auth->fetchUser($token);
+        if (! $raw || ($raw['id'] ?? null) !== ($this->supabaseUser($request)['id'] ?? null)) {
+            return response()->json(['message' => 'Could not access your account. Please sign in again.'], 401);
+        }
+        $addresses = $this->readAddresses((array) ($raw['user_metadata'] ?? []));
+        $existing = collect($addresses)->search(fn ($a) => mb_strtolower(trim($a['address'])) === mb_strtolower($address));
+        if ($existing !== false) {
+            return response()->json(['addresses' => $addresses, 'selected' => $existing]);
+        }
+        if (count($addresses) >= 20) {
+            return response()->json(['message' => 'You can save up to 20 addresses. Manage your addresses in My Profile.'], 422);
+        }
+        $addresses[] = ['label' => trim($data['label'] ?? ''), 'address' => $address];
+        [, $error] = $this->auth->updateUser($token, ['data' => ['addresses' => $addresses]]);
+        if ($error) {
+            return response()->json(['message' => 'Could not save your address. Please try again.'], 502);
+        }
+        return response()->json(['addresses' => $addresses, 'selected' => count($addresses) - 1]);
+    }
+
+    public function deleteAddress(Request $request)
+    {
+        $data = $request->validate([
+            'index' => 'required|integer|min:0',
+            'label' => 'nullable|string|max:60',
+            'address' => 'required|string|max:500',
+        ]);
+        $token = (string) $request->session()->get('supabase_access_token');
+        $raw = $this->auth->fetchUser($token);
+        if (! $raw || ($raw['id'] ?? null) !== ($this->supabaseUser($request)['id'] ?? null)) {
+            return response()->json(['message' => 'Could not access your account. Please sign in again.'], 401);
+        }
+        $addresses = $this->readAddresses((array) ($raw['user_metadata'] ?? []));
+        $entry = $addresses[$data['index']] ?? null;
+        if (! $entry || $entry['address'] !== $data['address'] || $entry['label'] !== ($data['label'] ?? '')) {
+            return response()->json(['message' => 'Your addresses have changed. Refresh this page and try again.'], 409);
+        }
+        array_splice($addresses, $data['index'], 1);
+        // Clear the legacy single-address field so deleting the last address stays deleted.
+        [, $error] = $this->auth->updateUser($token, ['data' => ['addresses' => $addresses, 'address' => null]]);
+        if ($error) {
+            return response()->json(['message' => 'Could not delete this location. Please try again.'], 502);
+        }
+        return response()->json(['addresses' => $addresses]);
+    }
+
     /** New password (the "Change password" form). */
     public function updatePassword(Request $request)
     {

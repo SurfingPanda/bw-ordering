@@ -119,13 +119,16 @@
                         <input type="hidden" name="delivery_type" id="delivery_type" value="delivery">
 
                         <div id="delivery-address-wrap" class="mt-5">
-                            <label class="mb-1 block text-sm font-semibold text-navy-800">📍 Delivery address</label>
-                            {{-- Prefilled from the profile's saved address (My Profile → Account
-                                 details) when set — still just a starting point, editable per order. --}}
-                            <textarea name="address" id="address" rows="2" placeholder="House / unit no., street, barangay, city" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">{{ $savedAddress ?? '' }}</textarea>
+                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <p id="saved-address-title" class="text-sm font-semibold text-navy-800">Your saved locations</p>
+                                <button type="button" id="add-delivery-address" aria-haspopup="dialog" aria-controls="delivery-address-dialog" class="text-xs font-semibold text-brand-600 hover:underline">+ Add new location</button>
+                            </div>
+                            <div id="saved-address-list" class="grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="saved-address-title"></div>
+                            <input type="hidden" name="address" id="address" value="{{ $savedAddress ?? '' }}">
+                            <p id="saved-address-empty" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">No saved locations yet. Add a location for delivery.</p>
                         </div>
 
-                        <div class="mt-5">
+                        <div id="pickup-branch-wrap" class="mt-5 hidden">
                             <label id="branch-label" class="mb-3 block text-sm font-semibold text-navy-800">📍 Choose a branch to deliver from</label>
                             <button type="button" id="find-nearest-branch"
                                 class="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
@@ -142,17 +145,11 @@
 
                         <div id="delivery-speed-wrap" class="mt-5">
                             <p class="mb-2 text-sm font-semibold text-navy-800">Delivery option</p>
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <button type="button" data-speed="standard" class="speed-card flex items-center justify-between rounded-xl border p-3 text-left transition">
-                                    <span><span class="block text-sm font-semibold text-navy-800">Standard Delivery</span><span class="block text-xs text-slate-500">30–45 mins</span></span>
-                                    <span class="standard-price text-sm font-bold text-brand-600"></span>
-                                </button>
-                                <button type="button" data-speed="express" class="speed-card flex items-center justify-between rounded-xl border p-3 text-left transition">
-                                    <span><span class="block text-sm font-semibold text-navy-800">Express Delivery</span><span class="block text-xs text-slate-500">15–25 mins</span></span>
-                                    <span class="express-price text-sm font-bold text-brand-600"></span>
-                                </button>
+                            <div class="rounded-xl border border-green-200 bg-green-50 p-4">
+                                <p class="text-sm font-bold text-green-800">Grab delivery</p>
+                                <p class="mt-1 text-sm text-slate-600">The Grab delivery fee is paid separately and is not included in your order total.</p>
                             </div>
-                            <input type="hidden" name="delivery_speed" id="delivery_speed" value="standard">
+                            <input type="hidden" name="delivery_speed" id="delivery_speed" value="grab">
                         </div>
                     </section>
 
@@ -244,6 +241,49 @@
         </main>
     </form>
 
+    <dialog id="delivery-address-dialog" aria-labelledby="delivery-address-dialog-title" class="m-auto max-h-[90vh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-3xl bg-white p-6 text-navy-800 shadow-2xl backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm sm:p-8">
+        <form id="delivery-address-form">
+            <h2 id="delivery-address-dialog-title" class="text-xl font-bold">Add a new location</h2>
+            <p class="mt-2 text-sm text-slate-500">Save an address to your account and use it for this delivery.</p>
+            <label for="delivery-address-label" class="mb-2 mt-5 block text-sm font-semibold">Label <span class="font-normal text-slate-400">(optional)</span></label>
+            <input type="text" id="delivery-address-label" maxlength="60" placeholder="Home, Work, etc." class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <label class="block text-sm font-semibold">Province / Metro Manila
+                    <select id="address-province" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province</option></select>
+                </label>
+                <label class="block text-sm font-semibold">City / Municipality
+                    <select id="address-city" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province first</option></select>
+                </label>
+                <label class="block text-sm font-semibold sm:col-span-2">Barangay
+                    <select id="address-barangay" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select city first</option></select>
+                </label>
+            </div>
+            <p id="address-area-status" class="mt-2 text-xs text-slate-500 empty:hidden" role="status"></p>
+            <button type="button" id="address-area-retry" hidden class="mt-2 text-xs font-semibold text-brand-600 underline">Retry loading locations</button>
+            <label for="new-delivery-address" class="mb-2 mt-4 block text-sm font-semibold">House / unit no., street &amp; subdivision</label>
+            <textarea id="new-delivery-address" rows="2" required maxlength="300" placeholder="e.g. Unit 2, 123 Mabini St., Sunny Village" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"></textarea>
+            <label for="delivery-address-landmark" class="mb-2 mt-4 block text-sm font-semibold">Nearby landmark <span class="font-normal text-slate-400">(optional)</span></label>
+            <input type="text" id="delivery-address-landmark" maxlength="120" placeholder="e.g. Near St. Joseph Church, beside the pharmacy" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+            <p class="mt-2 text-xs text-slate-500">A nearby church, school, shop, or building can help the rider find you.</p>
+            <p id="save-address-status" class="mt-3 text-sm text-slate-500 empty:hidden" role="status"></p>
+            <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+                <button type="button" id="cancel-delivery-address" class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold">Cancel</button>
+                <button type="submit" id="save-delivery-address" class="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Save location</button>
+            </div>
+        </form>
+    </dialog>
+    @vite('resources/js/ph-address-picker.js')
+    <dialog id="delete-address-dialog" aria-labelledby="delete-address-title" aria-describedby="delete-address-description" class="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-3xl bg-white p-6 text-navy-800 shadow-2xl backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm">
+        <h2 id="delete-address-title" class="text-xl font-bold">Delete this location?</h2>
+        <p id="delete-address-description" class="mt-2 text-sm text-slate-500">Are you sure? This location will be removed from your account. Your previous orders will stay unchanged.</p>
+        <p id="delete-address-detail" class="mt-4 break-words rounded-xl bg-slate-50 p-4 text-sm"></p>
+        <p id="delete-address-status" class="mt-3 text-sm text-red-600 empty:hidden" role="status"></p>
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" id="cancel-delete-address" autofocus class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold disabled:opacity-50">Cancel</button>
+            <button type="button" id="confirm-delete-address" class="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">Yes, delete</button>
+        </div>
+    </dialog>
+
     <script id="live-checkout-config" type="application/json">{!! json_encode(['qrUrl' => route('checkout.qr'), 'storeUrl' => route('checkout.store')]) !!}</script>
 
     {{-- Shared pricing formula + peso formatter (also used by menu.blade.php). --}}
@@ -251,6 +291,139 @@
 
     <script>
     (function () {
+        let savedAddresses = @json($savedAddresses ?? []);
+        const addressInput = document.getElementById('address');
+        const addressList = document.getElementById('saved-address-list');
+        const addressDialog = document.getElementById('delivery-address-dialog');
+        const addressForm = document.getElementById('delivery-address-form');
+        const newAddressInput = document.getElementById('new-delivery-address');
+        const addressLabel = document.getElementById('delivery-address-label');
+        const addressStatus = document.getElementById('save-address-status');
+        const saveAddressButton = document.getElementById('save-delivery-address');
+        let selectedAddressIndex = savedAddresses.length ? 0 : -1;
+        const deleteDialog = document.getElementById('delete-address-dialog');
+        const deleteConfirm = document.getElementById('confirm-delete-address');
+        const deleteCancel = document.getElementById('cancel-delete-address');
+        const deleteStatus = document.getElementById('delete-address-status');
+        let deletingIndex = null;
+        function renderAddresses() {
+            addressInput.value = savedAddresses[selectedAddressIndex]?.address || '';
+            addressList.replaceChildren();
+            document.getElementById('saved-address-empty').classList.toggle('hidden', savedAddresses.length > 0);
+            savedAddresses.forEach((saved, index) => {
+                const active = selectedAddressIndex === index;
+                const card = document.createElement('div');
+                card.className = `flex items-start gap-2 rounded-xl border p-4 transition ${active ? 'border-brand-500 bg-brand-50 ring-1 ring-inset ring-brand-500' : 'border-slate-200 hover:border-brand-300'}`;
+                const choice = document.createElement('label');
+                choice.className = 'flex min-w-0 flex-1 cursor-pointer items-start gap-3';
+                const radio = document.createElement('input');
+                radio.type = 'radio'; radio.name = 'saved_delivery_address'; radio.value = index;
+                radio.checked = active; radio.className = 'mt-1 shrink-0 accent-orange-500';
+                const text = document.createElement('span');
+                text.className = 'min-w-0';
+                const title = document.createElement('span');
+                title.className = 'block text-sm font-semibold text-navy-800';
+                title.textContent = saved.label || 'Delivery address';
+                const detail = document.createElement('span');
+                detail.className = 'mt-1 block break-words text-sm text-slate-500';
+                detail.textContent = saved.address;
+                text.append(title, detail); choice.append(radio, text);
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50 focus-visible:outline-red-600';
+                remove.title = 'Delete location';
+                const trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                trash.setAttribute('viewBox', '0 0 24 24');
+                trash.setAttribute('class', 'h-4 w-4');
+                trash.setAttribute('fill', 'none');
+                trash.setAttribute('stroke', 'currentColor');
+                trash.setAttribute('stroke-width', '1.8');
+                trash.setAttribute('stroke-linecap', 'round');
+                trash.setAttribute('stroke-linejoin', 'round');
+                trash.setAttribute('aria-hidden', 'true');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', 'M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6');
+                trash.append(path);
+                remove.append(trash);
+                remove.setAttribute('aria-label', `Delete ${saved.label || 'delivery address'}: ${saved.address}`);
+                remove.addEventListener('click', () => {
+                    deletingIndex = index;
+                    deleteStatus.textContent = '';
+                    document.getElementById('delete-address-detail').textContent = `${saved.label ? saved.label + ' — ' : ''}${saved.address}`;
+                    deleteDialog.showModal();
+                });
+                card.append(choice, remove);
+                radio.addEventListener('change', () => {
+                    selectedAddressIndex = index; renderAddresses();
+                    addressList.querySelector(`input[value="${index}"]`)?.focus({ preventScroll: true });
+                });
+                addressList.append(card);
+            });
+        }
+        deleteCancel.addEventListener('click', () => deleteDialog.close());
+        deleteDialog.addEventListener('cancel', event => { if (deleteConfirm.disabled) event.preventDefault(); });
+        deleteConfirm.addEventListener('click', async () => {
+            if (deleteConfirm.disabled || deletingIndex === null) return;
+            const entry = savedAddresses[deletingIndex];
+            const previous = savedAddresses[selectedAddressIndex];
+            deleteConfirm.disabled = true; deleteCancel.disabled = true;
+            deleteStatus.textContent = 'Deleting location…';
+            try {
+                const response = await fetch(@json(route('profile.addresses.destroy')), {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()) },
+                    body: JSON.stringify({ index: deletingIndex, label: entry.label, address: entry.address }),
+                });
+                const data = await response.json().catch(() => { throw new Error('Could not delete this location. Please refresh and sign in again.'); });
+                if (!response.ok) throw new Error(data.message || 'Could not delete this location. Please try again.');
+                savedAddresses = data.addresses;
+                selectedAddressIndex = savedAddresses.findIndex(saved => saved.address === previous?.address && saved.label === previous?.label);
+                if (selectedAddressIndex < 0) selectedAddressIndex = savedAddresses.length ? 0 : -1;
+                renderAddresses();
+                deleteDialog.close();
+                document.getElementById('add-delivery-address').focus();
+            } catch (error) { deleteStatus.textContent = error.message; }
+            finally { deleteConfirm.disabled = false; deleteCancel.disabled = false; }
+        });
+        document.getElementById('add-delivery-address').addEventListener('click', () => {
+            addressForm.reset(); addressStatus.textContent = ''; addressDialog.showModal(); newAddressInput.focus();
+            document.dispatchEvent(new Event('bw:address-open'));
+        });
+        document.getElementById('cancel-delivery-address').addEventListener('click', () => addressDialog.close());
+        addressDialog.addEventListener('cancel', event => { if (saveAddressButton.disabled) event.preventDefault(); });
+        addressForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (saveAddressButton.disabled) return;
+            if (!newAddressInput.value.trim()) { addressStatus.textContent = 'Please enter a delivery address.'; newAddressInput.focus(); return; }
+            const areaFields = ['address-barangay', 'address-city', 'address-province'].map(id => document.getElementById(id));
+            const missingArea = areaFields.find(field => field.disabled || !field.value);
+            if (missingArea) { addressStatus.textContent = 'Please select your province, city / municipality, and barangay.'; missingArea.focus(); return; }
+            const landmark = document.getElementById('delivery-address-landmark').value.trim();
+            const fullAddress = [newAddressInput.value.trim(), ...areaFields.map(field => field.selectedOptions[0].textContent), 'Philippines', ...(landmark ? [`Landmark: ${landmark}`] : [])].join(', ');
+            if (fullAddress.length > 500) { addressStatus.textContent = 'Please shorten your house and street details.'; return; }
+            saveAddressButton.disabled = true;
+            document.getElementById('cancel-delivery-address').disabled = true;
+            addressStatus.textContent = 'Saving address…';
+            try {
+                const response = await fetch(@json(route('profile.addresses.store')), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()) },
+                    body: JSON.stringify({ label: addressLabel.value, address: fullAddress }),
+                });
+                const data = await response.json().catch(() => { throw new Error('Could not save your address. Please refresh and sign in again.'); });
+                if (!response.ok) throw new Error(data.message || 'Could not save your address. Please try again.');
+                savedAddresses = data.addresses;
+                selectedAddressIndex = Number(data.selected);
+                renderAddresses();
+                addressDialog.close();
+            } catch (error) {
+                addressStatus.textContent = error.message || 'Could not save your address. Please try again.';
+            } finally {
+                saveAddressButton.disabled = false;
+                document.getElementById('cancel-delivery-address').disabled = false;
+            }
+        });
+        renderAddresses();
         const { peso, DELIVERY_FEE, EXPRESS_DELIVERY_FEE, computeTotals, renderTotalsHTML } = window.OrderPricing;
         // Default picture for items without an image (same as /menu); if it
         // fails to load, onerror clears the img leaving the plain gray box.
@@ -276,7 +449,7 @@
 
         let items = payload.items.map(i => ({ ...i }));
         let mode = 'delivery';
-        let speed = 'standard';
+        let speed = 'grab';
         let branchId = null;
         // Revalidate the saved preference against today's branches before using it.
         try {
@@ -353,8 +526,6 @@
 
             document.getElementById('summary-totals').innerHTML = renderTotalsHTML(t, { deliveryLabel: mode === 'pickup' ? 'Pickup' : 'Delivery Fee' });
 
-            document.querySelector('.standard-price').textContent = t.freeDelivery ? 'FREE' : peso(DELIVERY_FEE);
-            document.querySelector('.express-price').textContent = EXPRESS_DELIVERY_FEE > 0 ? peso(EXPRESS_DELIVERY_FEE) : 'FREE';
 
             const placeBtn = document.getElementById('place-order');
             if (placeBtn) {
@@ -380,6 +551,7 @@
                 btn.classList.toggle('border-slate-200', !on);
             });
             document.getElementById('delivery-address-wrap').classList.toggle('hidden', mode !== 'delivery');
+            document.getElementById('pickup-branch-wrap').classList.toggle('hidden', mode !== 'pickup');
             document.getElementById('delivery-speed-wrap').classList.toggle('hidden', mode !== 'delivery');
             document.getElementById('branch-label').textContent = mode === 'pickup' ? '📍 Choose a pickup branch' : '📍 Choose a branch to deliver from';
             document.getElementById('pay-cash-card').classList.toggle('hidden', mode !== 'pickup');
@@ -499,7 +671,7 @@
         function renderSelectedBranchSummary() {
             const el = document.getElementById('selected-branch-summary');
             const store = STORES.find(s => s.id === branchId);
-            if (!store) { el.classList.add('hidden'); return; }
+            if (!store || mode !== 'pickup') { el.classList.add('hidden'); return; }
             el.classList.remove('hidden');
             el.innerHTML = `<span class="block font-semibold text-navy-800">${mode === 'pickup' ? 'Pickup at' : 'Delivered by'} ${store.name}</span><span class="block text-slate-500">${store.address}</span>`;
         }
@@ -562,7 +734,7 @@
 
             if (!name || !phone || !email) { err.textContent = 'Please fill in your name, mobile number, and email.'; err.classList.remove('hidden'); return; }
             if (mode === 'delivery' && !document.getElementById('address').value.trim()) { err.textContent = 'Please enter a delivery address.'; err.classList.remove('hidden'); return; }
-            if (!branchId) { err.textContent = mode === 'pickup' ? 'Please choose a branch to pick up from.' : 'Please choose a branch to deliver from.'; err.classList.remove('hidden'); return; }
+            if (mode === 'pickup' && !branchId) { err.textContent = 'Please choose a branch to pick up from.'; err.classList.remove('hidden'); return; }
 
             showStep('payment');
         });

@@ -47,7 +47,7 @@ class OrderCreationService
             'voucher' => 'nullable|string',
             'payment_method' => 'nullable|in:qrph,cash,paymongo',
             'delivery_type' => 'nullable|in:delivery,pickup',
-            'delivery_speed' => 'nullable|in:standard,express',
+            'delivery_speed' => 'nullable|in:grab,standard,express',
             'fulfillment_store_id' => 'nullable|integer',
             'address' => 'nullable|string|max:500',
             'phone' => 'nullable|string|max:50',
@@ -66,7 +66,7 @@ class OrderCreationService
     {
         $deliveryType = $data['delivery_type'] ?? 'delivery';
         $payMethod = $data['payment_method'] ?? 'qrph';
-        $deliverySpeed = $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'standard');
+        $deliverySpeed = $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'grab');
 
         // Cash is only allowed for pickup orders.
         if ($payMethod === 'cash' && $deliveryType !== 'pickup') {
@@ -75,15 +75,15 @@ class OrderCreationService
             ]);
         }
 
-        // Every order must choose a fulfilling branch: the branch to pick up from,
-        // or the branch that delivers. Resolve it against the trusted stores table,
+        // Pickup requires a branch; delivery customers provide their address.
+        // Resolve an optional delivery branch against the trusted stores table,
         // enforce that the branch actually serves the chosen mode, and denormalize
         // its name + address onto the order so it stays displayable even if the
         // store later changes.
         $store = ! empty($data['fulfillment_store_id'])
             ? Store::find($data['fulfillment_store_id'])
             : null;
-        if (! $store) {
+        if (! $store && ($deliveryType === 'pickup' || ! empty($data['fulfillment_store_id']))) {
             throw ValidationException::withMessages([
                 'fulfillment_store_id' => $deliveryType === 'pickup'
                     ? 'Please choose a branch to pick up from.'
@@ -96,8 +96,8 @@ class OrderCreationService
                 'fulfillment_store_id' => "\u{201c}{$store->name}\u{201d} doesn\u{2019}t offer {$deliveryType}.",
             ]);
         }
-        $fulfillmentStoreId = $store->id;
-        $fulfillmentBranch = $store->name.' — '.$store->address;
+        $fulfillmentStoreId = $store?->id;
+        $fulfillmentBranch = $store ? $store->name.' — '.$store->address : null;
         // Manual QRPH is treated as paid up front; cash is collected at pickup;
         // PayMongo stays pending until the gateway confirms (webhook / return check).
         $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
@@ -183,7 +183,7 @@ class OrderCreationService
         // settings (site_content → `pricing`), read straight from the row — not
         // the 10-minute CMS cache — so a just-saved change applies to the very
         // next order. They fall back to the constants above when nothing is set.
-        if ($deliveryType === 'pickup' || ! $pricing['deliveryEnabled']) {
+        if ($deliveryType === 'pickup' || $deliverySpeed === 'grab' || ! $pricing['deliveryEnabled']) {
             $delivery = 0;
         } elseif ($deliverySpeed === 'express') {
             $delivery = $pricing['expressFee'];

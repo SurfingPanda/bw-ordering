@@ -52,7 +52,12 @@ class CheckoutController extends Controller
         // to the old unlabeled `address` string for accounts that saved
         // theirs before that feature existed and haven't resaved since.
         $savedAddresses = (array) data_get($authedUser, 'user_metadata.addresses', []);
-        $savedAddress = (string) ($savedAddresses[0]['address'] ?? data_get($authedUser, 'user_metadata.address', ''));
+        if (! $savedAddresses && trim((string) data_get($authedUser, 'user_metadata.address', '')) !== '') {
+            $savedAddresses = [['label' => '', 'address' => (string) data_get($authedUser, 'user_metadata.address')]];
+        }
+        $savedAddresses = collect($savedAddresses)->filter(fn ($a) => is_array($a) && is_string($a['address'] ?? null) && trim($a['address']) !== '')
+            ->map(fn ($a) => ['label' => (string) ($a['label'] ?? ''), 'address' => $a['address']])->values()->all();
+        $savedAddress = (string) ($savedAddresses[0]['address'] ?? '');
 
         $step = 'form';
         $order = null;
@@ -110,6 +115,7 @@ class CheckoutController extends Controller
             'user' => $user,
             'contactNumber' => $contactNumber,
             'savedAddress' => $savedAddress,
+            'savedAddresses' => $savedAddresses,
         ]);
     }
 

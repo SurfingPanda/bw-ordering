@@ -22,9 +22,9 @@
         el.innerHTML = renderTotalsHTML(t, { deliveryLabel, showFreeDeliveryHint });
 
     `voucher` is `null` or `{ type: 'percent'|'amount'|'freedel', value }`.
-    `deliveryMode`/`deliverySpeed` default to 'delivery'/'standard' — callers
+    `deliveryMode`/`deliverySpeed` default to 'delivery'/'grab' — callers
     that don't yet know the final fulfillment choice (like the /menu cart
-    preview, which always previews standard delivery pricing) can omit them.
+    preview, which excludes the separately paid Grab fee) can omit them.
 --}}
 @php($bwPricing = $pricing ?? \App\Models\SiteContent::pricingConfig($content ?? null))
 <script>
@@ -55,7 +55,8 @@ window.OrderPricing = (function () {
         var subtotal = Number(opts.subtotal) || 0;
         var voucher = opts.voucher || null;
         var mode = opts.deliveryMode || 'delivery';
-        var speed = opts.deliverySpeed || 'standard';
+        var speed = opts.deliverySpeed || 'grab';
+        var deliverySeparate = mode === 'delivery' && speed === 'grab';
 
         var discount = voucherDiscount(subtotal, voucher);
         var discounted = subtotal - discount;
@@ -64,19 +65,19 @@ window.OrderPricing = (function () {
             || (FREE_DELIVERY_MIN > 0 && subtotal >= FREE_DELIVERY_MIN)
             || !!(voucher && voucher.type === 'freedel');
         var delivery = 0;
-        if (mode === 'delivery' && DELIVERY_ENABLED) {
+        if (mode === 'delivery' && DELIVERY_ENABLED && !deliverySeparate) {
             delivery = speed === 'express' ? EXPRESS_DELIVERY_FEE : (freeDelivery ? 0 : DELIVERY_FEE);
         }
         var vat = VAT_ENABLED ? discounted * VAT_RATE : 0;
         var total = discounted + vat + delivery;
 
-        return { subtotal: subtotal, discount: discount, delivery: delivery, vat: vat, total: total, freeDelivery: freeDelivery };
+        return { subtotal: subtotal, discount: discount, delivery: delivery, vat: vat, total: total, freeDelivery: freeDelivery, deliverySeparate: deliverySeparate };
     }
 
     function renderTotalsHTML(t, opts) {
         opts = opts || {};
         var deliveryLabel = opts.deliveryLabel || 'Delivery';
-        var hint = opts.showFreeDeliveryHint && !t.freeDelivery && FREE_DELIVERY_MIN > 0
+        var hint = opts.showFreeDeliveryHint && !t.deliverySeparate && !t.freeDelivery && FREE_DELIVERY_MIN > 0
             ? '<p class="pt-1 text-xs text-brand-600">Add ' + peso(FREE_DELIVERY_MIN - t.subtotal) + ' more for free delivery 🚚</p>'
             : '';
         // VAT rate label: drop a trailing ".00" so "12%" not "12.00%".
@@ -87,7 +88,7 @@ window.OrderPricing = (function () {
         return `
             <div class="flex justify-between text-slate-600"><span>Subtotal</span><span class="font-semibold text-navy-800">${peso(t.subtotal)}</span></div>
             ${t.discount > 0 ? `<div class="flex justify-between text-green-600"><span>Discount</span><span class="font-semibold">−${peso(t.discount)}</span></div>` : ''}
-            <div class="flex justify-between text-slate-600"><span>${deliveryLabel}</span><span class="${t.delivery === 0 ? 'font-semibold text-green-600' : 'text-slate-500'}">${t.delivery === 0 ? 'FREE' : peso(t.delivery)}</span></div>
+            <div class="flex justify-between gap-3 text-slate-600"><span>${t.deliverySeparate ? 'Grab delivery' : deliveryLabel}</span><span class="${t.deliverySeparate ? 'text-slate-500' : t.delivery === 0 ? 'font-semibold text-green-600' : 'text-slate-500'}">${t.deliverySeparate ? 'Paid separately' : t.delivery === 0 ? 'FREE' : peso(t.delivery)}</span></div>
             ${vatRow}
             <div class="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-navy-800"><span>Total</span><span>${peso(t.total)}</span></div>
             ${hint}
