@@ -96,7 +96,11 @@
                 <div class="flex h-16 items-center justify-between px-4 sm:px-6">
                     <h2 class="text-lg font-bold text-navy-800">Order Online</h2>
                     <div class="flex items-center gap-4">
-                        @include('partials.location-picker', ['locationLight' => true])
+                        <button type="button" data-location-open aria-haspopup="dialog" aria-controls="location-dialog"
+                            class="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-xs font-semibold text-slate-500 transition hover:bg-brand-50 hover:text-brand-600 focus-visible:outline-brand-500">
+                            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                            <span>Change branch</span>
+                        </button>
                         @if($user)
                             @if($isAdmin)
                                 <a href="{{ route('admin.dashboard') }}" class="rounded-full bg-navy-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600">Admin</a>
@@ -1097,5 +1101,6 @@
         @include('partials._editor-bridge')
     @endif
     @include('partials.assistant-widget')
+    @include('partials.location-picker', ['locationRequired' => true, 'locationAutoOpen' => true])
 </body>
 </html>

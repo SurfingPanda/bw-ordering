@@ -33,6 +33,7 @@
         </div>
 
         {{-- primary switch: real orders vs. custom cake (Customize) requests --}}
+        <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex w-fit gap-1 rounded-full bg-slate-100 p-1" id="view-tabs">
             <button type="button" data-view="orders" class="view-btn rounded-full px-5 py-2 text-sm font-semibold transition">
                 🧾 Orders <span class="text-xs opacity-70">{{ $orders->count() }}</span>
@@ -42,14 +43,15 @@
             </button>
         </div>
 
-        <div id="orders-controls" class="flex flex-col gap-4">
-            <div class="flex flex-wrap gap-2" id="order-tabs">
+            <div class="flex flex-wrap gap-2 sm:ml-auto" id="order-tabs">
                 <button type="button" data-tab="all" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold transition">All Orders</button>
                 <button type="button" data-tab="active" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold transition">Active</button>
                 <button type="button" data-tab="completed" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold transition">Completed</button>
                 <button type="button" data-tab="cancelled" class="tab-btn rounded-full px-4 py-2 text-sm font-semibold transition">Cancelled</button>
             </div>
+        </div>
 
+        <div id="orders-controls">
             <div class="relative">
                 <input type="search" id="order-search" placeholder="Search orders by order number or item"
                     class="w-full rounded-full border border-slate-300 py-2.5 pl-4 pr-4 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
@@ -62,7 +64,7 @@
     {{-- Post-checkout confirmation: CheckoutController redirects here with
          ?placed=<order id>; the page JS also clears the client cart. --}}
     @if(request('placed'))
-        <div class="mb-6 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm">
+        <div id="order-placed-notification" role="status" class="mb-6 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm">
             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600">
                 <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7" /></svg>
             </span>
@@ -226,9 +228,13 @@
         @endphp
         <section>
             <p class="text-sm text-slate-500">Inquiries from the <a href="{{ route('custom-cake') }}" class="font-medium text-brand-600 hover:underline">Customize Your Cake</a> page — our team follows up with a quote.</p>
+            <p id="no-cake-match" class="hidden py-16 text-center text-sm text-slate-500">No cake requests match your search or filter.</p>
             <div class="mt-4 space-y-4">
                 @foreach($cakeRequests as $cc)
-                    <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <div class="cake-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+                         data-status="{{ $cc->status === 'closed' ? 'completed' : $cc->status }}"
+                         data-active="{{ in_array($cc->status, ['new', 'quoted'], true) ? '1' : '0' }}"
+                         data-search="{{ strtolower($cc->id.' '.$cc->description.' '.$cc->flavor.' '.$cc->occasion) }}">
                         <div class="flex flex-wrap items-start justify-between gap-2">
                             <div class="flex items-start gap-4">
                                 <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-2xl">🎂</span>
@@ -285,10 +291,12 @@
         });
         document.getElementById('view-orders').classList.toggle('hidden', view !== 'orders');
         document.getElementById('view-cakes').classList.toggle('hidden', view !== 'cakes');
-        document.getElementById('orders-controls').classList.toggle('hidden', view !== 'orders');
+        document.getElementById('order-search').placeholder = view === 'cakes'
+            ? 'Search cake requests by request number or details'
+            : 'Search orders by order number or item';
     }
 
-    document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => { view = btn.dataset.view; paintViews(); }));
+    document.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => { view = btn.dataset.view; visibleCount = PAGE_SIZE; paintViews(); applyFilters(); }));
 
     function paintTabs() {
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -315,6 +323,15 @@
 
     function applyFilters() {
         const q = (document.getElementById('order-search')?.value || '').trim().toLowerCase();
+        // Cake requests use new/quoted for active inquiries and closed for completed ones.
+        let cakeMatches = 0;
+        document.querySelectorAll('.cake-card').forEach(card => {
+            const byTab = tab === 'all' || (tab === 'active' ? card.dataset.active === '1' : card.dataset.status === tab);
+            const matches = byTab && (!q || card.dataset.search.includes(q));
+            card.classList.toggle('hidden', !matches);
+            if (matches) cakeMatches++;
+        });
+        document.getElementById('no-cake-match')?.classList.toggle('hidden', cakeMatches !== 0);
         const cards = Array.from(document.querySelectorAll('.order-card'));
         const matches = cards.filter(card => {
             const status = card.dataset.status;
@@ -362,6 +379,14 @@
     // old items.
     if (new URLSearchParams(window.location.search).get('placed')) {
         try { localStorage.removeItem('bw_cart'); localStorage.removeItem('bw_checkout'); } catch {}
+        window.setTimeout(() => {
+            document.getElementById('order-placed-notification')?.remove();
+        }, 5000);
+
+        // Refreshing the orders page should not show the confirmation again.
+        const url = new URL(window.location.href);
+        url.searchParams.delete('placed');
+        window.history.replaceState(window.history.state, '', url);
     }
 
     paintViews();

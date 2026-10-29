@@ -25,7 +25,6 @@
         </a>
 
         <div class="flex items-center gap-4">
-            @include('partials.location-picker')
             <a href="/" class="text-sm font-semibold text-white/90 transition hover:text-white">&larr; Back to home</a>
             @if($navCtaHref && $navCtaLabel)
                 <a href="{{ $navCtaHref }}" class="hidden rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 sm:block">

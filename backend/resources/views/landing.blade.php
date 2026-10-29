@@ -128,7 +128,6 @@
                 </ul>
 
                 <div class="hidden items-center gap-3 lg:flex">
-                    @include('partials.location-picker')
                     @if($user)
                         <a href="{{ $accountRoute }}" class="text-sm font-semibold text-white/90 transition hover:text-white">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
@@ -166,7 +165,6 @@
                     <li><a href="{{ $franchiseHref }}" class="block rounded-lg px-3 py-2 transition hover:bg-white/10 hover:text-white">Partner with us</a></li>
                 </ul>
                 <div class="mt-3 flex gap-3">
-                    @include('partials.location-picker')
                     @if($user)
                         <a href="{{ $accountRoute }}" class="flex-1 rounded-full border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white">
                             Hi, {{ explode(' ', trim($user['name'] ?? ''))[0] ?: 'Account' }}
