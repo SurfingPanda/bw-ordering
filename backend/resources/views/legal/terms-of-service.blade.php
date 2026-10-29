@@ -38,7 +38,7 @@
                 </div>
                 <div>
                     <h2 class="text-lg font-semibold text-navy-800">Payment</h2>
-                    <p class="mt-2">We accept cash on pickup and, where available, online payment via our payment partner. Cash orders are payable at the store upon pickup. Online payments are confirmed by our payment gateway before an order is marked paid.</p>
+                    <p class="mt-2">We accept cash on delivery or pickup and, where available, online payment via our payment partner. Cash orders are payable when delivered or collected at the store. Grab delivery fees are paid separately. Online payments are confirmed by our payment gateway before an order is marked paid.</p>
                 </div>
                 <div>
                     <h2 class="text-lg font-semibold text-navy-800">Delivery & pickup</h2>

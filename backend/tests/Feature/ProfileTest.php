@@ -64,7 +64,7 @@ class ProfileTest extends TestCase
             ->assertSee('Delivery address');
     }
 
-    public function test_saving_account_details_includes_the_address_in_the_supabase_update(): void
+    public function test_saving_account_details_keeps_addresses_in_mysql(): void
     {
         Http::fake([
             '*/rest/v1/profiles*' => Http::response(null, 201),
@@ -75,7 +75,7 @@ class ProfileTest extends TestCase
             ->post('/profile/info', [
                 'name' => 'Cara Customer',
                 'contact_number' => '0917 123 4567',
-                'address' => '456 Second St, Baguio City',
+                'addresses' => [['label' => 'Home', 'address' => '456 Second St, Baguio City']],
             ])
             ->assertRedirect()
             ->assertSessionHas('info_success');
@@ -83,8 +83,10 @@ class ProfileTest extends TestCase
         Http::assertSent(function ($request) {
             return str_contains($request->url(), '/auth/v1/user')
                 && $request->method() === 'PUT'
-                && $request['data']['address'] === '456 Second St, Baguio City';
+                && ! array_key_exists('addresses', $request['data'])
+                && ! array_key_exists('address', $request['data']);
         });
+        $this->assertSame('456 Second St, Baguio City', \App\Models\CustomerAddressBook::findOrFail('user-1')->addresses[0]['address']);
     }
 
     public function test_checkout_prefills_the_delivery_address_from_the_saved_profile(): void

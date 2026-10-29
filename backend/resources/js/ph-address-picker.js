@@ -9,17 +9,40 @@ let ready = false;
 let version = 0;
 let retryAction = null;
 const fallbackCache = new Map();
+const CACHE_PREFIX = 'bw_ph_address_lists_v1:';
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+const inFlight = new Map();
+function validRows(rows) {
+    return Array.isArray(rows) && rows.length > 0 && rows.every(row => row && typeof row.code === 'string' && typeof row.name === 'string');
+}
+function readCache(path) {
+    try {
+        const entry = JSON.parse(localStorage.getItem(CACHE_PREFIX + path) || 'null');
+        if (entry && Number.isFinite(entry.savedAt) && entry.savedAt <= Date.now()
+            && Date.now() - entry.savedAt < CACHE_TTL && validRows(entry.rows)) return entry.rows;
+        if (entry) localStorage.removeItem(CACHE_PREFIX + path);
+    } catch { /* Storage is optional; live requests still work. */ }
+    return null;
+}
+function writeCache(path, rows) {
+    if (!validRows(rows)) return;
+    try { localStorage.setItem(CACHE_PREFIX + path, JSON.stringify({ savedAt: Date.now(), rows })); }
+    catch { /* Quota or privacy settings must not prevent address selection. */ }
+}
 
 async function fallbackList(path) {
     if (fallbackCache.has(path)) return fallbackCache.get(path);
+    const saved = readCache(`fallback/${path}`);
+    if (saved) { fallbackCache.set(path, saved); return saved; }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     try {
         const response = await fetch(`https://psgc.gitlab.io/api/${path}/`, { signal: controller.signal, credentials: 'omit' });
         if (!response.ok) throw new Error('Fallback locations unavailable');
         const rows = await response.json();
-        if (!Array.isArray(rows)) throw new Error('Invalid fallback locations');
+        if (!validRows(rows)) throw new Error('Invalid fallback locations');
         fallbackCache.set(path, rows);
+        writeCache(`fallback/${path}`, rows);
         return rows;
     } finally { clearTimeout(timeout); }
 }
@@ -48,6 +71,14 @@ function populate(select, rows, message) {
 }
 async function load(path) {
     if (cache.has(path)) return cache.get(path);
+    const saved = readCache(path);
+    if (saved) { cache.set(path, saved); return saved; }
+    if (inFlight.has(path)) return inFlight.get(path);
+    const request = fetchLocations(path).finally(() => inFlight.delete(path));
+    inFlight.set(path, request);
+    return request;
+}
+async function fetchLocations(path) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
@@ -55,12 +86,14 @@ async function load(path) {
         if (!response.ok) throw new Error('Location service unavailable');
         const body = await response.json();
         const rows = Array.isArray(body) ? body : body.data;
-        if (!Array.isArray(rows) || !rows.every(row => typeof row.code === 'string' && typeof row.name === 'string')) throw new Error('Invalid locations');
+        if (!validRows(rows)) throw new Error('Invalid locations');
         cache.set(path, rows);
+        writeCache(path, rows);
         return rows;
     } catch {
         const rows = await fallback(path);
         cache.set(path, rows);
+        writeCache(path, rows);
         return rows;
     } finally { clearTimeout(timeout); }
 }

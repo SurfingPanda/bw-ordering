@@ -39,4 +39,18 @@ class OrderFulfillmentTest extends TestCase
             'payment_method' => 'cash',
         ], null);
     }
+
+    public function test_cash_on_delivery_creates_an_unpaid_order_without_charging_the_grab_fee(): void
+    {
+        $product = Product::create(['name' => 'Bread', 'price' => 50]);
+        $order = app(OrderCreationService::class)->create([
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+            'delivery_type' => 'delivery', 'payment_method' => 'cash', 'delivery_speed' => 'grab',
+            'address' => '123 Bakery Street, Angeles City',
+        ], ['id' => 'customer-1', 'name' => 'Customer', 'email' => 'customer@example.com']);
+        $this->assertSame('cash', $order->payment_method);
+        $this->assertSame('pending', $order->payment_status);
+        $this->assertSame(0.0, (float) $order->delivery);
+        $this->assertSame((float) $order->subtotal + (float) $order->vat, (float) $order->total);
+    }
 }

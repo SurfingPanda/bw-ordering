@@ -34,8 +34,8 @@
                 <div class="flex justify-between">
                     <dt class="text-slate-500">Payment</dt>
                     <dd class="font-semibold text-navy-800">
-                        {{ ['qrph' => 'QRPH', 'cash' => 'Cash on Pickup', 'paymongo' => 'Online (PayMongo)'][$order->payment_method] ?? 'Cash' }}
-                        <span class="{{ $order->payment_status === 'paid' ? 'text-green-600' : 'text-amber-600' }}"> · {{ $order->payment_status === 'paid' ? 'Paid' : 'Pay on pickup' }}</span>
+                        {{ ['qrph' => 'QRPH', 'cash' => $order->delivery_type === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery', 'paymongo' => 'Online (PayMongo)'][$order->payment_method] ?? 'Cash' }}
+                        <span class="{{ $order->payment_status === 'paid' ? 'text-green-600' : 'text-amber-600' }}"> · {{ $order->payment_status === 'paid' ? 'Paid' : ($order->payment_method === 'cash' ? ($order->delivery_type === 'pickup' ? 'Pay on pickup' : 'Pay on delivery') : 'Awaiting payment') }}</span>
                     </dd>
                 </div>
                 <div class="flex justify-between border-t border-slate-200 pt-2 text-base"><dt class="font-bold text-navy-800">Total</dt><dd class="font-bold text-brand-600">₱{{ number_format($order->total, 2) }}</dd></div>
@@ -121,7 +121,10 @@
                         <div id="delivery-address-wrap" class="mt-5">
                             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                                 <p id="saved-address-title" class="text-sm font-semibold text-navy-800">Your saved locations</p>
-                                <button type="button" id="add-delivery-address" aria-haspopup="dialog" aria-controls="delivery-address-dialog" class="text-xs font-semibold text-brand-600 hover:underline">+ Add new location</button>
+                                <button type="button" id="add-delivery-address" aria-haspopup="dialog" aria-controls="delivery-address-dialog" class="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
+                                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add new location
+                                </button>
                             </div>
                             <div id="saved-address-list" class="grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="saved-address-title"></div>
                             <input type="hidden" name="address" id="address" value="{{ $savedAddress ?? '' }}">
@@ -129,14 +132,16 @@
                         </div>
 
                         <div id="pickup-branch-wrap" class="mt-5 hidden">
-                            <label id="branch-label" class="mb-3 block text-sm font-semibold text-navy-800">📍 Choose a branch to deliver from</label>
+                            <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <label id="branch-label" class="block text-sm font-semibold text-navy-800">📍 Choose a pickup branch</label>
                             <button type="button" id="find-nearest-branch"
-                                class="mb-2 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
+                                class="ml-auto inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
                                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" />
                                 </svg>
                                 Find nearest store
                             </button>
+                            </div>
                             <p id="nearest-branch-status" class="mb-2 hidden text-xs" role="status"></p>
                             <input type="text" id="branch-search" placeholder="Search by branch name, area, or city" class="mb-3 hidden w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
                             <div id="branch-list" class="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2"></div>
@@ -191,8 +196,8 @@
                             <button type="button" data-pay="qrph" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
                                 <span class="text-2xl">🔳</span><span class="flex-1"><span class="block text-sm font-semibold text-navy-800">QRPH</span><span class="block text-xs text-slate-500">Scan with any bank or e-wallet app</span></span>
                             </button>
-                            <button type="button" data-pay="cash" id="pay-cash-card" class="pay-card hidden flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
-                                <span class="text-2xl">💵</span><span class="flex-1"><span class="block text-sm font-semibold text-navy-800">Cash on Pickup</span><span class="block text-xs text-slate-500">Pay with cash when you pick up your order</span></span>
+                            <button type="button" data-pay="cash" id="pay-cash-card" class="pay-card flex w-full items-center gap-3 rounded-xl border p-4 text-left transition">
+                                <span class="text-2xl">💵</span><span class="flex-1"><span id="cash-method-label" class="block text-sm font-semibold text-navy-800">Cash on Delivery</span><span id="cash-method-help" class="block text-xs text-slate-500">Pay with cash when your order arrives</span></span>
                             </button>
                         </div>
                         <input type="hidden" name="payment_method" id="payment_method" value="qrph">
@@ -307,6 +312,10 @@
         const deleteStatus = document.getElementById('delete-address-status');
         let deletingIndex = null;
         function renderAddresses() {
+            const addLocationButton = document.getElementById('add-delivery-address');
+            addLocationButton.hidden = savedAddresses.length >= 2;
+            addLocationButton.classList.toggle('inline-flex', savedAddresses.length < 2);
+            addLocationButton.classList.toggle('hidden', savedAddresses.length >= 2);
             addressInput.value = savedAddresses[selectedAddressIndex]?.address || '';
             addressList.replaceChildren();
             document.getElementById('saved-address-empty').classList.toggle('hidden', savedAddresses.length > 0);
@@ -352,7 +361,8 @@
                     document.getElementById('delete-address-detail').textContent = `${saved.label ? saved.label + ' — ' : ''}${saved.address}`;
                     deleteDialog.showModal();
                 });
-                card.append(choice, remove);
+                card.append(choice);
+                if (savedAddresses.length > 1) card.append(remove);
                 radio.addEventListener('change', () => {
                     selectedAddressIndex = index; renderAddresses();
                     addressList.querySelector(`input[value="${index}"]`)?.focus({ preventScroll: true });
@@ -386,6 +396,7 @@
             finally { deleteConfirm.disabled = false; deleteCancel.disabled = false; }
         });
         document.getElementById('add-delivery-address').addEventListener('click', () => {
+            if (savedAddresses.length >= 2) return;
             addressForm.reset(); addressStatus.textContent = ''; addressDialog.showModal(); newAddressInput.focus();
             document.dispatchEvent(new Event('bw:address-open'));
         });
@@ -554,8 +565,11 @@
             document.getElementById('pickup-branch-wrap').classList.toggle('hidden', mode !== 'pickup');
             document.getElementById('delivery-speed-wrap').classList.toggle('hidden', mode !== 'delivery');
             document.getElementById('branch-label').textContent = mode === 'pickup' ? '📍 Choose a pickup branch' : '📍 Choose a branch to deliver from';
-            document.getElementById('pay-cash-card').classList.toggle('hidden', mode !== 'pickup');
-            if (mode !== 'pickup' && payMethod === 'cash') setPayMethod('qrph');
+            document.getElementById('cash-method-label').textContent = mode === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery';
+            document.getElementById('cash-method-help').textContent = mode === 'pickup' ? 'Pay with cash when you pick up your order' : 'Pay with cash when your order arrives';
+            document.getElementById('cash-panel').textContent = mode === 'pickup'
+                ? 'Pay with cash at the store when you pick up your order. Please bring the exact amount if possible.'
+                : 'Pay for your order in cash when it arrives. The Grab delivery fee is paid separately. Please prepare the exact amount if possible.';
             renderBranches();
         }
         document.querySelectorAll('.mode-card').forEach(btn => btn.addEventListener('click', () => {

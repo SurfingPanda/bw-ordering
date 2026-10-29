@@ -58,7 +58,7 @@ class OrderCreationService
     /**
      * Create an order for a (possibly guest) user from already-validated data
      * (see rules() above). Throws ValidationException on any business-rule
-     * violation (sold out, unknown branch, cash-for-delivery, etc.) — callers
+     * violation (sold out, unknown branch, etc.) — callers
      * let it propagate so Laravel renders it the normal way for their context
      * (422 JSON for the API, redirect-back-with-errors for the web form).
      */
@@ -67,13 +67,6 @@ class OrderCreationService
         $deliveryType = $data['delivery_type'] ?? 'delivery';
         $payMethod = $data['payment_method'] ?? 'qrph';
         $deliverySpeed = $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'grab');
-
-        // Cash is only allowed for pickup orders.
-        if ($payMethod === 'cash' && $deliveryType !== 'pickup') {
-            throw ValidationException::withMessages([
-                'payment_method' => 'Cash is only available for pickup orders.',
-            ]);
-        }
 
         // Pickup requires a branch; delivery customers provide their address.
         // Resolve an optional delivery branch against the trusted stores table,
@@ -98,7 +91,7 @@ class OrderCreationService
         }
         $fulfillmentStoreId = $store?->id;
         $fulfillmentBranch = $store ? $store->name.' — '.$store->address : null;
-        // Manual QRPH is treated as paid up front; cash is collected at pickup;
+        // Manual QRPH is treated as paid up front; cash is collected at delivery or pickup;
         // PayMongo stays pending until the gateway confirms (webhook / return check).
         $payStatus = $payMethod === 'qrph' ? 'paid' : 'pending';
 

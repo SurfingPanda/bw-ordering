@@ -956,6 +956,9 @@
             });
 
             document.querySelectorAll('.checkout-btn').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('cursor-not-allowed', 'opacity-60');
+                btn.textContent = 'Proceed to Checkout';
                 btn.onclick = () => {
                     const summary = {
                         // A still-verified bundle is submitted as its product-id
@@ -1063,6 +1066,13 @@
         // The Moymoy assistant widget writes bw_cart directly — re-read it and
         // re-render so the cart panel and product cards reflect the add.
         window.addEventListener('bw-cart-changed', () => { cart = readCart(); renderAll(); });
+        // Back/Forward restores the old DOM, including the disabled "Loading…" button.
+        window.addEventListener('pageshow', event => {
+            if (!event.persisted) return;
+            cart = readCart();
+            confirmRemoveId = null;
+            renderAll();
+        });
 
         // ---- account dropdown (mirrors Menu.jsx's MenuHeader: click to
         // toggle, outside-click or Escape closes) ----

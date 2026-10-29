@@ -113,11 +113,11 @@
                                 <div class="mt-1.5 flex flex-wrap gap-1.5">
                                     <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $order->delivery_type === 'pickup' ? '🏪 Pickup' : '🚚 Delivery' }}</span>
                                     @if($order->payment_method)
-                                        <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $paymentLabel[$order->payment_method] ?? $order->payment_method }}</span>
+                                        <span class="rounded-full bg-navy-50 px-2 py-0.5 text-[0.65rem] font-semibold text-navy-700">{{ $order->payment_method === 'cash' && $order->delivery_type !== 'pickup' ? 'Cash on Delivery' : ($paymentLabel[$order->payment_method] ?? $order->payment_method) }}</span>
                                     @endif
                                     @if($order->status !== 'cancelled')
                                         <span class="rounded-full px-2 py-0.5 text-[0.65rem] font-semibold {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' }}">
-                                            {{ $order->payment_status === 'paid' ? '✓ Paid' : ($order->payment_method === 'cash' ? 'Pay at pickup' : 'Awaiting payment') }}
+                                            {{ $order->payment_status === 'paid' ? '✓ Paid' : ($order->payment_method === 'cash' ? ($order->delivery_type === 'pickup' ? 'Pay at pickup' : 'Pay on delivery') : 'Awaiting payment') }}
                                         </span>
                                     @endif
                                 </div>

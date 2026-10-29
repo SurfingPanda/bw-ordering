@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\SupabaseAuthService;
+use App\Services\DeliveryAddressService;
 use Illuminate\Http\Request;
 
 /**
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
  */
 class ProfileController extends Controller
 {
-    public function __construct(private SupabaseAuthService $auth)
+    public function __construct(private SupabaseAuthService $auth, private DeliveryAddressService $addresses)
     {
     }
 
@@ -36,32 +37,13 @@ class ProfileController extends Controller
                 'email' => $raw['email'] ?? ($sessionUser['email'] ?? ''),
                 'name' => $meta['full_name'] ?? $meta['name'] ?? ($sessionUser['name'] ?? ''),
                 'contact' => (string) ($meta['contact_number'] ?? ''),
-                'addresses' => $this->readAddresses($meta),
+                'addresses' => $this->addresses->read((string) $sessionUser['id'], $raw ? $meta : null),
                 'avatar' => trim((string) ($meta['avatar_url'] ?? '')),
                 'memberSince' => $raw['created_at'] ?? null,
                 'providers' => $providers,
             ],
             'nav' => $this->navConfig((array) app(SiteContentController::class)->cachedData()),
         ]);
-    }
-
-    /**
-     * Labeled addresses (Home/Work/Partner/etc.) live under user_metadata's
-     * `addresses` key as an array of {label, address}. Older accounts only
-     * ever saved a single unlabeled `address` string — read that as one
-     * label-less entry so nothing saved before this feature existed appears
-     * to have vanished.
-     */
-    private function readAddresses(array $meta): array
-    {
-        $addresses = (array) ($meta['addresses'] ?? []);
-        if (! $addresses && trim((string) ($meta['address'] ?? '')) !== '') {
-            $addresses = [['label' => '', 'address' => (string) $meta['address']]];
-        }
-
-        return collect($addresses)
-            ->map(fn ($a) => ['label' => (string) ($a['label'] ?? ''), 'address' => (string) ($a['address'] ?? '')])
-            ->values()->all();
     }
 
     /** Name + contact number (the "Account details" form). */
@@ -73,7 +55,7 @@ class ProfileController extends Controller
         $data = $request->validateWithBag('info', [
             'name' => 'required|string|min:2|max:120',
             'contact_number' => 'required|string|max:20',
-            'addresses' => 'nullable|array',
+            'addresses' => 'nullable|array|max:2',
             'addresses.*.label' => 'nullable|string|max:60',
             'addresses.*.address' => 'nullable|string|max:500',
         ], [], ['contact_number' => 'contact number']);
@@ -103,11 +85,11 @@ class ProfileController extends Controller
         [, $error] = $this->auth->updateUser($token, ['data' => [
             'full_name' => trim($data['name']),
             'contact_number' => $contact, // user-entered form, for display
-            'addresses' => $addresses,
         ]]);
         if ($error) {
             return back()->withErrors(['name' => $error], 'info')->withInput();
         }
+        $this->addresses->replace((string) $user['id'], $addresses);
 
         // Keep the session copy (menu header greeting, phone-number gate) in sync.
         $request->session()->put('supabase_user', array_merge(
@@ -129,25 +111,9 @@ class ProfileController extends Controller
         if ($address === '') {
             return response()->json(['message' => 'Please enter a delivery address.'], 422);
         }
-        $token = (string) $request->session()->get('supabase_access_token');
-        $raw = $this->auth->fetchUser($token);
-        if (! $raw || ($raw['id'] ?? null) !== ($this->supabaseUser($request)['id'] ?? null)) {
-            return response()->json(['message' => 'Could not access your account. Please sign in again.'], 401);
-        }
-        $addresses = $this->readAddresses((array) ($raw['user_metadata'] ?? []));
-        $existing = collect($addresses)->search(fn ($a) => mb_strtolower(trim($a['address'])) === mb_strtolower($address));
-        if ($existing !== false) {
-            return response()->json(['addresses' => $addresses, 'selected' => $existing]);
-        }
-        if (count($addresses) >= 20) {
-            return response()->json(['message' => 'You can save up to 20 addresses. Manage your addresses in My Profile.'], 422);
-        }
-        $addresses[] = ['label' => trim($data['label'] ?? ''), 'address' => $address];
-        [, $error] = $this->auth->updateUser($token, ['data' => ['addresses' => $addresses]]);
-        if ($error) {
-            return response()->json(['message' => 'Could not save your address. Please try again.'], 502);
-        }
-        return response()->json(['addresses' => $addresses, 'selected' => count($addresses) - 1]);
+        return response()->json($this->addresses->add(
+            (string) $this->supabaseUser($request)['id'], trim($data['label'] ?? ''), $address,
+        ));
     }
 
     public function deleteAddress(Request $request)
@@ -157,23 +123,9 @@ class ProfileController extends Controller
             'label' => 'nullable|string|max:60',
             'address' => 'required|string|max:500',
         ]);
-        $token = (string) $request->session()->get('supabase_access_token');
-        $raw = $this->auth->fetchUser($token);
-        if (! $raw || ($raw['id'] ?? null) !== ($this->supabaseUser($request)['id'] ?? null)) {
-            return response()->json(['message' => 'Could not access your account. Please sign in again.'], 401);
-        }
-        $addresses = $this->readAddresses((array) ($raw['user_metadata'] ?? []));
-        $entry = $addresses[$data['index']] ?? null;
-        if (! $entry || $entry['address'] !== $data['address'] || $entry['label'] !== ($data['label'] ?? '')) {
-            return response()->json(['message' => 'Your addresses have changed. Refresh this page and try again.'], 409);
-        }
-        array_splice($addresses, $data['index'], 1);
-        // Clear the legacy single-address field so deleting the last address stays deleted.
-        [, $error] = $this->auth->updateUser($token, ['data' => ['addresses' => $addresses, 'address' => null]]);
-        if ($error) {
-            return response()->json(['message' => 'Could not delete this location. Please try again.'], 502);
-        }
-        return response()->json(['addresses' => $addresses]);
+        return response()->json(['addresses' => $this->addresses->delete(
+            (string) $this->supabaseUser($request)['id'], $data['index'], $data['label'] ?? '', $data['address'],
+        )]);
     }
 
     /** New password (the "Change password" form). */

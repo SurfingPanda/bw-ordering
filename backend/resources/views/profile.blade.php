@@ -147,7 +147,7 @@
                 <template data-address-template>
                     @include('profile._address-row', ['i' => '__IDX__', 'addr' => ['label' => '', 'address' => '']])
                 </template>
-                <p class="mt-2 text-xs text-slate-400">Saved here so checkout can prefill it — you can still edit it per order. Add one for each place you order to, e.g. Home, Work, Partner's place.</p>
+                <p class="mt-2 text-xs text-slate-400">Save up to two delivery addresses, such as Home and Work, to use at checkout.</p>
             </div>
             <button type="submit" data-save-button disabled
                 class="rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-brand-500/30 transition hover:from-brand-600 hover:to-brand-600 focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:shadow-none">
@@ -243,6 +243,9 @@
         const rows = form.querySelector('[data-address-rows]');
         const template = form.querySelector('[data-address-template]');
         let addressIndex = rows.children.length;
+        const addAddress = form.querySelector('[data-add-address]');
+        const updateAddressLimit = () => { addAddress.hidden = rows.children.length >= 2; };
+        updateAddressLimit();
 
         const markDirty = () => { saveButton.disabled = false; };
 
@@ -250,8 +253,10 @@
         form.addEventListener('change', markDirty);
 
         form.querySelector('[data-add-address]').addEventListener('click', () => {
+            if (rows.children.length >= 2) return;
             const html = template.innerHTML.split('__IDX__').join(String(addressIndex++));
             rows.insertAdjacentHTML('beforeend', html);
+            updateAddressLimit();
             markDirty();
         });
 
@@ -259,6 +264,7 @@
             const removeBtn = e.target.closest('[data-remove-address]');
             if (!removeBtn) return;
             removeBtn.closest('[data-address-row]').remove();
+            updateAddressLimit();
             markDirty();
         });
 

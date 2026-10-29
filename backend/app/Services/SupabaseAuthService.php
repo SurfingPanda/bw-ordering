@@ -95,6 +95,7 @@ class SupabaseAuthService
     /** Best-effort server-side session revocation; failures are non-fatal. */
     public function logout(string $accessToken): void
     {
+        Cache::forget($this->profileCacheKey($accessToken));
         try {
             $this->http()->withToken($accessToken)->post('/auth/v1/logout');
         } catch (\Throwable) {
@@ -115,7 +116,23 @@ class SupabaseAuthService
             return null;
         }
 
-        return $resp->ok() && $resp->json('id') ? $resp->json() : null;
+        $user = $resp->ok() && $resp->json('id') ? $resp->json() : null;
+        if ($user) {
+            Cache::put($this->profileCacheKey($accessToken), $user, 300);
+        }
+        return $user;
+    }
+
+    /** Checkout only needs profile data; session middleware still handles authentication. */
+    public function fetchCachedUser(string $accessToken): ?array
+    {
+        if ($accessToken === '') return null;
+        return Cache::get($this->profileCacheKey($accessToken)) ?? $this->fetchUser($accessToken);
+    }
+
+    private function profileCacheKey(string $accessToken): string
+    {
+        return 'sb_checkout_profile_'.hash('sha256', $accessToken);
     }
 
     /**
@@ -125,6 +142,8 @@ class SupabaseAuthService
      */
     public function updateUser(string $accessToken, array $payload): array
     {
+        // Address changes must be reflected by the very next checkout visit.
+        Cache::forget($this->profileCacheKey($accessToken));
         try {
             $resp = $this->http()->withToken($accessToken)->put('/auth/v1/user', $payload);
         } catch (\Throwable) {
@@ -137,7 +156,12 @@ class SupabaseAuthService
             return [null, is_string($error) && $error !== '' ? $error : 'The update was rejected. Please try again.'];
         }
 
-        return [$resp->json(), null];
+        $user = $resp->json();
+        Cache::forget($this->profileCacheKey($accessToken));
+        if (! empty($user['id']) && isset($user['user_metadata'])) {
+            Cache::put($this->profileCacheKey($accessToken), $user, 300);
+        }
+        return [$user, null];
     }
 
     /**
@@ -314,6 +338,9 @@ class SupabaseAuthService
             return null;
         }
 
+        // The login/refresh response already contains the profile; avoid fetching it again.
+        Cache::put($this->profileCacheKey($body['access_token']), $body['user'], 300);
+
         return [
             'access_token' => $body['access_token'],
             'refresh_token' => $body['refresh_token'] ?? null,
@@ -358,6 +385,7 @@ class SupabaseAuthService
             return null;
         }
 
+        Cache::put($this->profileCacheKey($jwt), $resp->json(), 300);
         $user = $this->normalize($resp->json('id'), $resp->json('email'), $resp->json('user_metadata') ?? []);
         Cache::put($cacheKey, $user, 300); // 5 min; access tokens live ~1h
 

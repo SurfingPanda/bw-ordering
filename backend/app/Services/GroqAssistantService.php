@@ -295,7 +295,7 @@ class GroqAssistantService
                 .($pc['freeDeliveryMin'] > 0 ? ', free for orders of ₱'.$num($pc['freeDeliveryMin']).' or more.' : '.');
             $lines[] = "- Express delivery is a flat ₱{$num($pc['expressFee'])} (never free).";
         }
-        $lines[] = '- Cash payment is pickup only. Online payment (GCash / card / Maya / GrabPay) and QR Ph are available where enabled.';
+        $lines[] = '- Cash on delivery and cash on pickup are available. Online payment (GCash / card / Maya / GrabPay) and QR Ph are available where enabled. Grab delivery fees are paid separately.';
         if ($pc['vatEnabled']) {
             $lines[] = "- All prices shown include {$num($pc['vatRate'])}% VAT.";
         }

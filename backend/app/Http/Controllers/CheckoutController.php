@@ -8,6 +8,7 @@ use App\Services\OrderCreationService;
 use App\Services\PayMongoService;
 use App\Services\QrphService;
 use App\Services\SupabaseAuthService;
+use App\Services\DeliveryAddressService;
 use Endroid\QrCode\Builder\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -41,22 +42,12 @@ class CheckoutController extends Controller
             return redirect()->route('menu', ['staff' => 'blocked']);
         }
 
-        // The session user only keeps id/email/name — contact number and
-        // saved address live in Supabase user_metadata, so fetch once to
-        // prefill "Mobile Number" and the delivery address textarea.
+        // Contact details come from the account; saved addresses live in MySQL.
         $token = (string) $request->session()->get('supabase_access_token');
-        $authedUser = $token !== '' ? $auth->fetchUser($token) : null;
+        $authedUser = $token !== '' ? $auth->fetchCachedUser($token) : null;
         $contactNumber = (string) data_get($authedUser, 'user_metadata.contact_number', '');
-        // Profile now supports several labeled addresses (Home/Work/etc.) —
-        // this single textarea just prefills with the first one. Falls back
-        // to the old unlabeled `address` string for accounts that saved
-        // theirs before that feature existed and haven't resaved since.
-        $savedAddresses = (array) data_get($authedUser, 'user_metadata.addresses', []);
-        if (! $savedAddresses && trim((string) data_get($authedUser, 'user_metadata.address', '')) !== '') {
-            $savedAddresses = [['label' => '', 'address' => (string) data_get($authedUser, 'user_metadata.address')]];
-        }
-        $savedAddresses = collect($savedAddresses)->filter(fn ($a) => is_array($a) && is_string($a['address'] ?? null) && trim($a['address']) !== '')
-            ->map(fn ($a) => ['label' => (string) ($a['label'] ?? ''), 'address' => $a['address']])->values()->all();
+        $savedAddresses = app(DeliveryAddressService::class)->read((string) $user['id'],
+            $authedUser ? (array) ($authedUser['user_metadata'] ?? []) : null);
         $savedAddress = (string) ($savedAddresses[0]['address'] ?? '');
 
         $step = 'form';
