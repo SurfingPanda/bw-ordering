@@ -43,7 +43,7 @@
         <p class="mt-3 text-xs text-slate-500">Distance is approximate. Delivery availability is confirmed at checkout.</p>
         </div>
         <div id="location-footer" class="mt-5 border-t border-slate-100 pt-4">
-            <button type="button" data-location-close class="w-full rounded-full bg-navy-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-navy-700 focus-visible:outline-brand-500">Close</button>
+            <button type="button" data-location-close @if ($locationRequired ?? false) disabled @endif class="w-full rounded-full bg-navy-800 px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-navy-700 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:hover:bg-slate-300">Close</button>
         </div>
     </dialog>
 @endonce

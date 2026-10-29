@@ -12,6 +12,7 @@ const required = dialog.dataset.required === 'true';
 const closeButton = document.querySelector('[data-location-close]');
 const originalOverflow = document.body.style.overflow;
 const key = 'bw_location';
+const MAX_BRANCH_DISTANCE_KM = 25;
 let stores = null;
 let selected = null;
 let pendingSelection = null;
@@ -75,6 +76,9 @@ function save(store) {
     updateLabels();
     window.dispatchEvent(new CustomEvent('bw:location-changed', { detail: selected }));
 }
+function updateContinueButton() {
+    closeButton.disabled = required && !pendingSelection;
+}
 function coordinates(store) {
     return store.latitude != null && store.longitude != null && store.latitude !== '' && store.longitude !== ''
         && Number.isFinite(Number(store.latitude)) && Number.isFinite(Number(store.longitude));
@@ -90,13 +94,16 @@ function distance(store) {
 function render() {
     if (!stores) return;
     const query = search.value.trim().toLowerCase();
-    const matches = stores.filter(store => (!region.value || store.region === region.value)
+    const matches = stores.filter(store => distance(store) <= MAX_BRANCH_DISTANCE_KM
+        && (!region.value || store.region === region.value)
         && [store.name, store.address, store.region].some(value => String(value || '').toLowerCase().includes(query)));
     if (position) matches.sort((a, b) => distance(a) - distance(b));
     results.replaceChildren();
     status.textContent = matches.length
-        ? `${matches.length} ${matches.length === 1 ? 'branch' : 'branches'}${position ? ', nearest first' : ''}. Select a branch below.`
-        : 'No branches match this area. Try another city or choose All regions.';
+        ? `${matches.length} ${matches.length === 1 ? 'branch' : 'branches'} within ${MAX_BRANCH_DISTANCE_KM} km, nearest first. Select a branch below.`
+        : stores.some(coordinates)
+            ? `No branches within ${MAX_BRANCH_DISTANCE_KM} km match this area. Try another city or choose All regions.`
+            : 'No branches with mapped locations are available right now.';
     for (const store of matches) {
         const button = document.createElement('button');
         button.type = 'button';
@@ -132,6 +139,7 @@ function render() {
     closeButton.textContent = pendingSelection && String(pendingSelection.id) !== String(selected?.id)
         ? 'Confirm branch'
         : selected ? 'Keep current branch' : 'Start ordering';
+    updateContinueButton();
 }
 async function loadStores() {
     if (stores) return true;
@@ -154,6 +162,7 @@ async function loadStores() {
 }
 async function openLocation() {
     pendingSelection = selected;
+    updateContinueButton();
     relocate.disabled = false;
     relocate.querySelector('span').textContent = 'Locate me';
     const version = ++requestVersion;
@@ -239,7 +248,6 @@ function requestLocation(refresh = false) {
         region.value = ''; search.value = '';
         render();
         document.getElementById('location-title').focus({ preventScroll: true });
-        if (!stores.some(coordinates)) status.textContent = 'Branches have no map pins yet. Search your city or choose a region.';
     }, error => {
         if (version !== requestVersion) return;
         relocate.disabled = false;
