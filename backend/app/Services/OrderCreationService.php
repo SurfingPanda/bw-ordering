@@ -50,6 +50,8 @@ class OrderCreationService
             'delivery_speed' => 'nullable|in:grab,standard,express',
             'fulfillment_store_id' => 'nullable|integer',
             'address' => 'nullable|string|max:500',
+            'delivery_latitude' => 'required_with:delivery_longitude|nullable|numeric|between:-90,90',
+            'delivery_longitude' => 'required_with:delivery_latitude|nullable|numeric|between:-180,180',
             'phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
         ];
@@ -199,6 +201,8 @@ class OrderCreationService
             'fulfillment_store_id' => $fulfillmentStoreId,
             'fulfillment_branch' => $fulfillmentBranch,
             'address' => $deliveryType === 'pickup' ? null : ($data['address'] ?? null),
+            'delivery_latitude' => $deliveryType === 'pickup' ? null : ($data['delivery_latitude'] ?? null),
+            'delivery_longitude' => $deliveryType === 'pickup' ? null : ($data['delivery_longitude'] ?? null),
             'notes' => $data['notes'] ?? null,
             'subtotal' => round($subtotal, 2),
             'discount' => round($discount, 2),

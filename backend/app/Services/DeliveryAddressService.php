@@ -28,7 +28,14 @@ class DeliveryAddressService
                 }
                 $book->addresses = collect($rows)
                     ->filter(fn ($row) => is_array($row) && is_string($row['address'] ?? null) && trim($row['address']) !== '')
-                    ->map(fn ($row) => ['label' => trim((string) ($row['label'] ?? '')), 'address' => trim($row['address'])])
+                    ->map(function ($row) {
+                        $address = ['label' => trim((string) ($row['label'] ?? '')), 'address' => trim($row['address'])];
+                        if (is_numeric($row['latitude'] ?? null) && is_numeric($row['longitude'] ?? null)) {
+                            $address['latitude'] = (float) $row['latitude'];
+                            $address['longitude'] = (float) $row['longitude'];
+                        }
+                        return $address;
+                    })
                     ->values()->all();
                 $book->imported_at = now();
                 $book->save();
@@ -37,18 +44,31 @@ class DeliveryAddressService
         }, 3);
     }
 
-    public function add(string $userId, string $label, string $address): array
+    public function add(string $userId, string $label, string $address, ?float $latitude = null, ?float $longitude = null): array
     {
         $this->book($userId);
-        return DB::transaction(function () use ($userId, $label, $address) {
+        return DB::transaction(function () use ($userId, $label, $address, $latitude, $longitude) {
             $book = CustomerAddressBook::whereKey($userId)->lockForUpdate()->firstOrFail();
             $rows = $book->addresses;
             $existing = collect($rows)->search(fn ($row) => mb_strtolower(trim($row['address'])) === mb_strtolower($address));
-            if ($existing !== false) return ['addresses' => $rows, 'selected' => $existing];
+            if ($existing !== false) {
+                $rows[$existing]['label'] = $label;
+                if ($latitude !== null && $longitude !== null) {
+                    $rows[$existing]['latitude'] = $latitude;
+                    $rows[$existing]['longitude'] = $longitude;
+                }
+                $book->update(['addresses' => $rows, 'imported_at' => now()]);
+                return ['addresses' => $rows, 'selected' => $existing];
+            }
             if (count($rows) >= 2) {
                 throw ValidationException::withMessages(['address' => 'You can save up to 2 addresses. Delete a location before adding another.']);
             }
-            $rows[] = ['label' => $label, 'address' => $address];
+            $entry = ['label' => $label, 'address' => $address];
+            if ($latitude !== null && $longitude !== null) {
+                $entry['latitude'] = $latitude;
+                $entry['longitude'] = $longitude;
+            }
+            $rows[] = $entry;
             $book->update(['addresses' => $rows, 'imported_at' => now()]);
             return ['addresses' => $rows, 'selected' => count($rows) - 1];
         }, 3);

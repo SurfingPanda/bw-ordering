@@ -29,6 +29,8 @@ class Order extends Model
         'fulfillment_store_id',
         'fulfillment_branch',
         'address',
+        'delivery_latitude',
+        'delivery_longitude',
         'notes',
         'subtotal',
         'discount',

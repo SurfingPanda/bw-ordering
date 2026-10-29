@@ -117,6 +117,7 @@
                             </button>
                         </div>
                         <input type="hidden" name="delivery_type" id="delivery_type" value="delivery">
+                        <div id="selected-branch-summary" class="mt-4 hidden rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-sm"></div>
 
                         <div id="delivery-address-wrap" class="mt-5">
                             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -128,6 +129,8 @@
                             </div>
                             <div id="saved-address-list" class="grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="saved-address-title"></div>
                             <input type="hidden" name="address" id="address" value="{{ $savedAddress ?? '' }}">
+                            <input type="hidden" name="delivery_latitude" id="checkout-delivery-latitude">
+                            <input type="hidden" name="delivery_longitude" id="checkout-delivery-longitude">
                             <p id="saved-address-empty" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-sm text-slate-500">No saved locations yet. Add a location for delivery.</p>
                         </div>
 
@@ -222,8 +225,6 @@
                     <ul id="summary-items" class="mt-4 space-y-3"></ul>
                     <a href="{{ route('menu') }}" class="mt-3 inline-block text-xs font-semibold text-brand-600 hover:underline">+ Add more items</a>
 
-                    <div id="selected-branch-summary" class="mt-4 hidden rounded-xl border border-brand-100 bg-brand-50/50 p-3 text-xs"></div>
-
                     <div class="mt-4 border-t border-slate-100 pt-4">
                         <div class="flex gap-2">
                             <input type="text" id="voucher-code-input" placeholder="Voucher code" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
@@ -244,8 +245,29 @@
         <form id="delivery-address-form">
             <h2 id="delivery-address-dialog-title" class="text-xl font-bold">Add a new location</h2>
             <p class="mt-2 text-sm text-slate-500">Save an address to your account and use it for this delivery.</p>
-            <label for="delivery-address-label" class="mb-2 mt-5 block text-sm font-semibold">Label <span class="font-normal text-slate-400">(optional)</span></label>
-            <input type="text" id="delivery-address-label" maxlength="60" placeholder="Home, Work, etc." class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+            <p id="delivery-address-label-title" class="mb-2 mt-5 block text-sm font-semibold">Label <span class="font-normal text-slate-400">(optional)</span></p>
+            <div class="grid grid-cols-3 gap-2" role="group" aria-labelledby="delivery-address-label-title">
+                <button type="button" data-address-label="Home" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Home</button>
+                <button type="button" data-address-label="Work" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Work</button>
+                <button type="button" data-address-label="Partner" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Partner</button>
+            </div>
+            <input type="hidden" id="delivery-address-label" value="">
+            <div class="mt-5">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold">Pin your delivery location</p>
+                        <p class="mt-1 text-xs text-slate-500">Use your current location or tap the map to place the pin.</p>
+                    </div>
+                    <button type="button" id="locate-delivery-address" class="inline-flex shrink-0 items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                        <span>Locate me</span>
+                    </button>
+                </div>
+                <div id="delivery-address-map" class="h-56 overflow-hidden rounded-xl border border-slate-200 bg-slate-100" role="application" aria-label="Map. Tap to pin your delivery location."></div>
+                <p id="delivery-address-map-status" class="mt-2 min-h-4 text-xs text-slate-500" role="status" aria-live="polite">Tap the map to drop a pin.</p>
+                <input type="hidden" id="new-address-latitude">
+                <input type="hidden" id="new-address-longitude">
+            </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <label class="block text-sm font-semibold">Province / Metro Manila
                     <select id="address-province" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province</option></select>
@@ -272,6 +294,7 @@
         </form>
     </dialog>
     @vite('resources/js/ph-address-picker.js')
+    @vite('resources/js/delivery-address-map.js')
     <script id="native-checkout-config" type="application/json">@json(['createUrl' => route('checkout.payment.create'), 'csrf' => csrf_token()])</script>
     @vite('resources/js/native-payments.js')
     <dialog id="delete-address-dialog" aria-labelledby="delete-address-title" aria-describedby="delete-address-description" class="m-auto w-[calc(100%_-_2rem)] max-w-md rounded-3xl bg-white p-6 text-navy-800 shadow-2xl backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm">
@@ -294,11 +317,14 @@
     (function () {
         let savedAddresses = @json($savedAddresses ?? []);
         const addressInput = document.getElementById('address');
+        const checkoutLatitude = document.getElementById('checkout-delivery-latitude');
+        const checkoutLongitude = document.getElementById('checkout-delivery-longitude');
         const addressList = document.getElementById('saved-address-list');
         const addressDialog = document.getElementById('delivery-address-dialog');
         const addressForm = document.getElementById('delivery-address-form');
         const newAddressInput = document.getElementById('new-delivery-address');
         const addressLabel = document.getElementById('delivery-address-label');
+        const addressLabelChoices = [...document.querySelectorAll('.address-label-choice')];
         const addressStatus = document.getElementById('save-address-status');
         const saveAddressButton = document.getElementById('save-delivery-address');
         let selectedAddressIndex = savedAddresses.length ? 0 : -1;
@@ -307,12 +333,31 @@
         const deleteCancel = document.getElementById('cancel-delete-address');
         const deleteStatus = document.getElementById('delete-address-status');
         let deletingIndex = null;
+        function chooseAddressLabel(label) {
+            addressLabel.value = label;
+            addressLabelChoices.forEach(button => {
+                const active = button.dataset.addressLabel === label;
+                button.setAttribute('aria-pressed', String(active));
+                button.classList.toggle('border-brand-500', active);
+                button.classList.toggle('bg-brand-50', active);
+                button.classList.toggle('text-brand-700', active);
+                button.classList.toggle('font-semibold', active);
+                button.classList.toggle('border-slate-300', !active);
+                button.classList.toggle('text-slate-600', !active);
+                button.classList.toggle('font-medium', !active);
+            });
+        }
+        addressLabelChoices.forEach(button => button.addEventListener('click', () => {
+            chooseAddressLabel(button.dataset.addressLabel);
+        }));
         function renderAddresses() {
             const addLocationButton = document.getElementById('add-delivery-address');
             addLocationButton.hidden = savedAddresses.length >= 2;
             addLocationButton.classList.toggle('inline-flex', savedAddresses.length < 2);
             addLocationButton.classList.toggle('hidden', savedAddresses.length >= 2);
             addressInput.value = savedAddresses[selectedAddressIndex]?.address || '';
+            checkoutLatitude.value = savedAddresses[selectedAddressIndex]?.latitude ?? '';
+            checkoutLongitude.value = savedAddresses[selectedAddressIndex]?.longitude ?? '';
             addressList.replaceChildren();
             document.getElementById('saved-address-empty').classList.toggle('hidden', savedAddresses.length > 0);
             savedAddresses.forEach((saved, index) => {
@@ -393,7 +438,7 @@
         });
         document.getElementById('add-delivery-address').addEventListener('click', () => {
             if (savedAddresses.length >= 2) return;
-            addressForm.reset(); addressStatus.textContent = ''; addressDialog.showModal(); newAddressInput.focus();
+            addressForm.reset(); chooseAddressLabel(''); addressStatus.textContent = ''; addressDialog.showModal(); newAddressInput.focus();
             document.dispatchEvent(new Event('bw:address-open'));
         });
         document.getElementById('cancel-delivery-address').addEventListener('click', () => addressDialog.close());
@@ -415,7 +460,12 @@
                 const response = await fetch(@json(route('profile.addresses.store')), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': @json(csrf_token()) },
-                    body: JSON.stringify({ label: addressLabel.value, address: fullAddress }),
+                    body: JSON.stringify({
+                        label: addressLabel.value,
+                        address: fullAddress,
+                        latitude: document.getElementById('new-address-latitude').value || null,
+                        longitude: document.getElementById('new-address-longitude').value || null,
+                    }),
                 });
                 const data = await response.json().catch(() => { throw new Error('Could not save your address. Please refresh and sign in again.'); });
                 if (!response.ok) throw new Error(data.message || 'Could not save your address. Please try again.');
@@ -567,9 +617,12 @@
         document.querySelectorAll('.mode-card').forEach(btn => btn.addEventListener('click', () => {
             mode = btn.dataset.mode;
             document.getElementById('delivery_type').value = mode;
-            branchId = null;
-            document.getElementById('fulfillment_store_id').value = '';
+            const selectedStore = STORES.find(store => String(store.id) === String(branchId));
+            const fulfillsMode = selectedStore && ((selectedStore.fulfillment || 'both') === 'both' || (selectedStore.fulfillment || 'both') === mode);
+            if (!fulfillsMode) branchId = null;
+            document.getElementById('fulfillment_store_id').value = branchId || '';
             paintModeCards();
+            renderSelectedBranchSummary();
             renderSummary();
         }));
 
@@ -608,7 +661,7 @@
                 list.innerHTML = `<p class="col-span-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">No branches match “${q}”.</p>`;
                 return;
             }
-            if (branchId && !serving.some(s => s.id === branchId)) branchId = null;
+            if (branchId && !serving.some(s => String(s.id) === String(branchId))) branchId = null;
 
             list.innerHTML = matches.map(s => `
                 <button type="button" data-branch="${s.id}" class="branch-card flex items-start gap-3 rounded-xl border p-3 text-left transition ${branchId === s.id ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'}">
@@ -676,10 +729,16 @@
 
         function renderSelectedBranchSummary() {
             const el = document.getElementById('selected-branch-summary');
-            const store = STORES.find(s => s.id === branchId);
-            if (!store || mode !== 'pickup') { el.classList.add('hidden'); return; }
+            const store = STORES.find(s => String(s.id) === String(branchId));
+            if (!store) { el.classList.add('hidden'); el.replaceChildren(); return; }
             el.classList.remove('hidden');
-            el.innerHTML = `<span class="block font-semibold text-navy-800">${mode === 'pickup' ? 'Pickup at' : 'Delivered by'} ${store.name}</span><span class="block text-slate-500">${store.address}</span>`;
+            const heading = document.createElement('span');
+            heading.className = 'block font-semibold text-navy-800';
+            heading.textContent = `${mode === 'pickup' ? 'Pickup at' : 'Delivery from'} ${store.name}`;
+            const address = document.createElement('span');
+            address.className = 'mt-1 block text-slate-600';
+            address.textContent = store.address;
+            el.replaceChildren(heading, address);
         }
 
         // ---- voucher ----
@@ -739,7 +798,7 @@
 
             if (!name || !phone || !email) { err.textContent = 'Please fill in your name, mobile number, and email.'; err.classList.remove('hidden'); return; }
             if (mode === 'delivery' && !document.getElementById('address').value.trim()) { err.textContent = 'Please enter a delivery address.'; err.classList.remove('hidden'); return; }
-            if (mode === 'pickup' && !branchId) { err.textContent = 'Please choose a branch to pick up from.'; err.classList.remove('hidden'); return; }
+            if (!branchId) { err.textContent = mode === 'pickup' ? 'Please choose a branch to pick up from.' : 'Please go back to the menu and choose a nearby branch for delivery.'; err.classList.remove('hidden'); return; }
 
             showStep('payment');
         });

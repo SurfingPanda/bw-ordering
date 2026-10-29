@@ -36,6 +36,8 @@ if (checkoutConfig) {
                 fulfillment_store_id: fields.get('fulfillment_store_id') || null,
                 voucher: fields.get('voucher') || null, phone: fields.get('phone'),
                 address: fields.get('address'), notes: fields.get('notes'),
+                delivery_latitude: fields.get('delivery_latitude') || null,
+                delivery_longitude: fields.get('delivery_longitude') || null,
                 customer_name: document.getElementById('cust_name').value.trim(),
                 customer_email: document.getElementById('cust_email').value.trim(),
             };

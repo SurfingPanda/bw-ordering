@@ -58,13 +58,22 @@ class ProfileController extends Controller
             'addresses' => 'nullable|array|max:2',
             'addresses.*.label' => 'nullable|string|max:60',
             'addresses.*.address' => 'nullable|string|max:500',
+            'addresses.*.latitude' => 'nullable|numeric|between:-90,90',
+            'addresses.*.longitude' => 'nullable|numeric|between:-180,180',
         ], [], ['contact_number' => 'contact number']);
 
         // Repeater rows may include ones the visitor added then left blank —
         // drop anything with no address text (a label alone isn't a saved
         // address), then reindex.
         $addresses = collect($data['addresses'] ?? [])
-            ->map(fn ($a) => ['label' => trim((string) ($a['label'] ?? '')), 'address' => trim((string) ($a['address'] ?? ''))])
+            ->map(function ($a) {
+                $address = ['label' => trim((string) ($a['label'] ?? '')), 'address' => trim((string) ($a['address'] ?? ''))];
+                if (isset($a['latitude'], $a['longitude'])) {
+                    $address['latitude'] = (float) $a['latitude'];
+                    $address['longitude'] = (float) $a['longitude'];
+                }
+                return $address;
+            })
             ->filter(fn ($a) => $a['address'] !== '')
             ->values()->all();
 
@@ -106,6 +115,8 @@ class ProfileController extends Controller
         $data = $request->validate([
             'label' => 'nullable|string|max:60',
             'address' => 'required|string|max:500',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
         $address = trim($data['address']);
         if ($address === '') {
@@ -113,6 +124,8 @@ class ProfileController extends Controller
         }
         return response()->json($this->addresses->add(
             (string) $this->supabaseUser($request)['id'], trim($data['label'] ?? ''), $address,
+            isset($data['latitude'], $data['longitude']) ? (float) $data['latitude'] : null,
+            isset($data['latitude'], $data['longitude']) ? (float) $data['longitude'] : null,
         ));
     }
 
