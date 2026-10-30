@@ -153,6 +153,16 @@
         filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 24px rgba(255, 176, 87, 0.55));
     }
 }
+
+/* Keep the delivery address dialog scrollable on short screens without
+   showing a scrollbar over the map or its sticky action buttons. */
+.delivery-address-dialog {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.delivery-address-dialog::-webkit-scrollbar {
+    display: none;
+}
 .animate-bake { animation: bake-glow 3.2s ease-in-out infinite; }
 
 /* Soft playful tilt for the 🚧 barrier. */

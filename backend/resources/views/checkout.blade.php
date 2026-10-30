@@ -241,53 +241,70 @@
         </main>
     </form>
 
-    <dialog id="delivery-address-dialog" aria-labelledby="delivery-address-dialog-title" class="m-auto max-h-[90vh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-3xl bg-white p-6 text-navy-800 shadow-2xl backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm sm:p-8">
+    <dialog id="delivery-address-dialog" aria-labelledby="delivery-address-dialog-title" class="delivery-address-dialog m-auto max-h-[calc(100dvh-1rem)] w-[calc(100%_-_1rem)] max-w-6xl overflow-y-auto overscroll-contain rounded-2xl bg-gradient-to-br from-white via-white to-orange-50/40 p-4 text-navy-800 shadow-2xl ring-1 ring-white/80 backdrop:bg-navy-950/50 backdrop:backdrop-blur-sm sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%_-_2rem)] sm:rounded-3xl sm:p-8">
         <form id="delivery-address-form">
-            <h2 id="delivery-address-dialog-title" class="text-xl font-bold">Add a new location</h2>
-            <p class="mt-2 text-sm text-slate-500">Save an address to your account and use it for this delivery.</p>
-            <p id="delivery-address-label-title" class="mb-2 mt-5 block text-sm font-semibold">Label <span class="font-normal text-slate-400">(optional)</span></p>
-            <div class="grid grid-cols-3 gap-2" role="group" aria-labelledby="delivery-address-label-title">
-                <button type="button" data-address-label="Home" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Home</button>
-                <button type="button" data-address-label="Work" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Work</button>
-                <button type="button" data-address-label="Partner" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-300">Partner</button>
+            <div class="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-orange-50 via-white to-sky-50 p-3 sm:p-4">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-md shadow-brand-500/20">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                </span>
+                <div>
+                    <h2 id="delivery-address-dialog-title" class="text-xl font-bold tracking-tight">Add a new location</h2>
+                    <p class="mt-1 text-sm text-slate-500">Save an address to your account and use it for this delivery.</p>
+                </div>
+            </div>
+            <div class="mt-4 rounded-2xl border border-orange-100 bg-orange-50/50 p-3 sm:mt-5 sm:p-4">
+                <p id="delivery-address-label-title" class="mb-2 block text-sm font-semibold">Label <span class="font-normal text-slate-400">(optional)</span></p>
+                <div class="grid grid-cols-3 gap-2" role="group" aria-labelledby="delivery-address-label-title">
+                    <button type="button" data-address-label="Home" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-navy-500">Home</button>
+                    <button type="button" data-address-label="Work" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-navy-500">Work</button>
+                    <button type="button" data-address-label="Partner" aria-pressed="false" class="address-label-choice rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:border-navy-500">Partner</button>
+                </div>
             </div>
             <input type="hidden" id="delivery-address-label" value="">
-            <div class="mt-5">
-                <div class="mb-2 flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-sm font-semibold">Pin your delivery location</p>
-                        <p class="mt-1 text-xs text-slate-500">Use your current location or tap the map to place the pin.</p>
+            <div class="mt-4 grid items-start gap-4 sm:mt-5 sm:gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(380px,0.9fr)]">
+                <section class="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50/90 to-white p-3 shadow-sm sm:p-4">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold">Pin your delivery location</p>
+                            <p class="mt-1 text-xs text-slate-500">Use your current location or tap the map to place the pin.</p>
+                        </div>
+                        <button type="button" id="locate-delivery-address" class="inline-flex shrink-0 items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                            <span>Locate me</span>
+                        </button>
                     </div>
-                    <button type="button" id="locate-delivery-address" class="inline-flex shrink-0 items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-60">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-                        <span>Locate me</span>
-                    </button>
+                    <div id="delivery-address-map" class="h-56 overflow-hidden rounded-xl border border-sky-200 bg-sky-100 shadow-inner sm:h-64 lg:h-[min(48vh,420px)]" role="application" aria-label="Map. Tap to pin your delivery location."></div>
+                    <p id="delivery-address-map-status" class="mt-2 min-h-4 text-xs text-slate-500" role="status" aria-live="polite">Tap the map to drop a pin.</p>
+                    <input type="hidden" id="new-address-latitude">
+                    <input type="hidden" id="new-address-longitude">
+                </section>
+                <div class="space-y-4 rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm sm:p-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="block text-sm font-semibold">Province / Metro Manila
+                            <select id="address-province" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province</option></select>
+                        </label>
+                        <label class="block text-sm font-semibold">City / Municipality
+                            <select id="address-city" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province first</option></select>
+                        </label>
+                        <label class="block text-sm font-semibold sm:col-span-2">Barangay
+                            <select id="address-barangay" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select city first</option></select>
+                        </label>
+                    </div>
+                    <p id="address-area-status" class="text-xs text-slate-500 empty:hidden" role="status"></p>
+                    <button type="button" id="address-area-retry" hidden class="text-xs font-semibold text-brand-600 underline">Retry loading locations</button>
+                    <div>
+                        <label for="new-delivery-address" class="mb-2 block text-sm font-semibold">House / unit no., street &amp; subdivision</label>
+                        <textarea id="new-delivery-address" rows="2" required maxlength="300" placeholder="e.g. Unit 2, 123 Mabini St., Sunny Village" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"></textarea>
+                    </div>
+                    <div>
+                        <label for="delivery-address-landmark" class="mb-2 block text-sm font-semibold">Nearby landmark <span class="font-normal text-slate-400">(optional)</span></label>
+                        <input type="text" id="delivery-address-landmark" maxlength="120" placeholder="e.g. Near St. Joseph Church, beside the pharmacy" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+                        <p class="mt-2 text-xs text-slate-500">A nearby church, school, shop, or building can help the rider find you.</p>
+                    </div>
                 </div>
-                <div id="delivery-address-map" class="h-56 overflow-hidden rounded-xl border border-slate-200 bg-slate-100" role="application" aria-label="Map. Tap to pin your delivery location."></div>
-                <p id="delivery-address-map-status" class="mt-2 min-h-4 text-xs text-slate-500" role="status" aria-live="polite">Tap the map to drop a pin.</p>
-                <input type="hidden" id="new-address-latitude">
-                <input type="hidden" id="new-address-longitude">
             </div>
-            <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <label class="block text-sm font-semibold">Province / Metro Manila
-                    <select id="address-province" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province</option></select>
-                </label>
-                <label class="block text-sm font-semibold">City / Municipality
-                    <select id="address-city" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select province first</option></select>
-                </label>
-                <label class="block text-sm font-semibold sm:col-span-2">Barangay
-                    <select id="address-barangay" required disabled class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal disabled:bg-slate-50"><option value="">Select city first</option></select>
-                </label>
-            </div>
-            <p id="address-area-status" class="mt-2 text-xs text-slate-500 empty:hidden" role="status"></p>
-            <button type="button" id="address-area-retry" hidden class="mt-2 text-xs font-semibold text-brand-600 underline">Retry loading locations</button>
-            <label for="new-delivery-address" class="mb-2 mt-4 block text-sm font-semibold">House / unit no., street &amp; subdivision</label>
-            <textarea id="new-delivery-address" rows="2" required maxlength="300" placeholder="e.g. Unit 2, 123 Mabini St., Sunny Village" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"></textarea>
-            <label for="delivery-address-landmark" class="mb-2 mt-4 block text-sm font-semibold">Nearby landmark <span class="font-normal text-slate-400">(optional)</span></label>
-            <input type="text" id="delivery-address-landmark" maxlength="120" placeholder="e.g. Near St. Joseph Church, beside the pharmacy" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
-            <p class="mt-2 text-xs text-slate-500">A nearby church, school, shop, or building can help the rider find you.</p>
             <p id="save-address-status" class="mt-3 text-sm text-slate-500 empty:hidden" role="status"></p>
-            <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <div class="sticky bottom-0 z-10 -mx-4 mt-4 flex justify-end gap-3 border-t border-slate-100 bg-white/95 px-4 pb-1 pt-3 backdrop-blur sm:-mx-8 sm:mt-5 sm:px-8 sm:pt-4">
                 <button type="button" id="cancel-delivery-address" class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold">Cancel</button>
                 <button type="submit" id="save-delivery-address" class="rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Save location</button>
             </div>
@@ -338,12 +355,15 @@
             addressLabelChoices.forEach(button => {
                 const active = button.dataset.addressLabel === label;
                 button.setAttribute('aria-pressed', String(active));
-                button.classList.toggle('border-brand-500', active);
-                button.classList.toggle('bg-brand-50', active);
-                button.classList.toggle('text-brand-700', active);
+                button.classList.toggle('border-navy-800', active);
+                button.classList.toggle('bg-navy-800', active);
+                button.classList.toggle('bg-white', !active);
+                button.classList.toggle('text-white', active);
+                button.classList.toggle('shadow-md', active);
                 button.classList.toggle('font-semibold', active);
                 button.classList.toggle('border-slate-300', !active);
                 button.classList.toggle('text-slate-600', !active);
+                button.classList.toggle('shadow-sm', !active);
                 button.classList.toggle('font-medium', !active);
             });
         }

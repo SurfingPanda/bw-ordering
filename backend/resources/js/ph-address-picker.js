@@ -5,6 +5,7 @@ const status = document.getElementById('address-area-status');
 const retry = document.getElementById('address-area-retry');
 const cache = new Map();
 let cities = [];
+let provinces = [];
 let ready = false;
 let version = 0;
 let retryAction = null;
@@ -110,10 +111,11 @@ async function initialize() {
     reset(province, 'Loading provinces…');
     status.textContent = 'Loading Philippine locations…';
     try {
-        const [provinces, allCities] = await Promise.all([load('provinces'), load('cities-municipalities')]);
+        const [provinceRows, allCities] = await Promise.all([load('provinces'), load('cities-municipalities')]);
         if (current !== version) return;
         cities = allCities;
-        populate(province, [...provinces, { code: 'NCR', name: 'Metro Manila' }], 'Select province / Metro Manila');
+        provinces = [...provinceRows, { code: 'NCR', name: 'Metro Manila' }];
+        populate(province, [...provinces], 'Select province / Metro Manila');
         ready = true; status.textContent = '';
     } catch { if (current === version) error(initialize); }
 }
@@ -131,14 +133,92 @@ async function loadBarangays() {
     const current = ++version;
     retry.hidden = true; status.textContent = '';
     reset(barangay, city.value ? 'Loading barangays…' : 'Select city first');
-    if (!city.value) return;
+    if (!city.value) return false;
     try {
         const rows = await load(`cities-municipalities/${encodeURIComponent(city.value)}/barangays`);
-        if (current !== version) return;
+        if (current !== version) return false;
         populate(barangay, rows, rows.length ? 'Select barangay' : 'No barangays available');
         if (!rows.length) error(loadBarangays);
-    } catch { if (current === version) error(loadBarangays); }
+        return rows.length > 0;
+    } catch {
+        if (current === version) error(loadBarangays);
+        return false;
+    }
 }
 city.addEventListener('change', loadBarangays);
 retry.addEventListener('click', () => retryAction?.());
 document.addEventListener('bw:address-open', initialize);
+
+function normalizeAreaName(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/\b(city|municipality|province|region|of)\b/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+async function fillAreasFromCurrentLocation(coords) {
+    if (!ready) await initialize();
+    const current = ++version;
+    retry.hidden = true;
+    status.textContent = 'Finding your province, city, and barangay…';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+        const params = new URLSearchParams({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            localityLanguage: 'en',
+        });
+        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`, {
+            signal: controller.signal,
+            credentials: 'omit',
+        });
+        if (!response.ok) throw new Error('Could not find address areas');
+        const area = await response.json();
+        if (current !== version) return;
+        if (area.countryCode !== 'PH') {
+            status.textContent = 'Location detected. Choose the Philippine address fields manually.';
+            return;
+        }
+
+        const administrative = (area.localityInfo?.administrative || []).map(item => item?.name).filter(Boolean);
+        const provinceNames = [area.principalSubdivision, ...administrative];
+        const provinceRow = provinces.find(row => provinceNames.some(name => normalizeAreaName(name) === normalizeAreaName(row.name)));
+        if (!provinceRow) {
+            status.textContent = 'Could not match the province. Please choose it from the list.';
+            return;
+        }
+
+        province.value = provinceRow.code;
+        province.dispatchEvent(new Event('change'));
+        const cityCandidates = [area.city, area.locality, ...administrative.slice().reverse()].filter(Boolean);
+        const provinceCities = cities.filter(row => provinceRow.code === 'NCR'
+            ? isNcr(row)
+            : !isNcr(row) && normalizeAreaName(row.province) === normalizeAreaName(provinceRow.name));
+        const cityRow = cityCandidates
+            .map(name => provinceCities.find(row => normalizeAreaName(row.name) === normalizeAreaName(name)))
+            .find(Boolean);
+        if (!cityRow) {
+            status.textContent = `Province set to ${provinceRow.name}. Choose the city or municipality from the list.`;
+            return;
+        }
+
+        city.value = cityRow.code;
+        if (!await loadBarangays()) return;
+        const barangayCandidates = [area.locality, ...administrative.slice().reverse()].filter(Boolean);
+        const barangayRow = barangayCandidates
+            .map(name => [...barangay.options].find(option => option.value && normalizeAreaName(option.textContent) === normalizeAreaName(name)))
+            .find(Boolean);
+        if (barangayRow) barangay.value = barangayRow.value;
+        status.textContent = barangayRow
+            ? 'Address areas filled from your pin. Check them before saving.'
+            : `Province and city filled for ${cityRow.name}. Choose the barangay from the list.`;
+    } catch {
+        if (current === version) status.textContent = 'Could not look up the address areas. You can choose them from the lists.';
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+document.addEventListener('bw:address-pin-located', event => {
+    fillAreasFromCurrentLocation(event.detail);
+});

@@ -12,6 +12,16 @@ if (container) {
     let maplibregl = null
     let loading = null
 
+    function readPin() {
+        if (!latitudeInput.value || !longitudeInput.value) return null
+        const latitude = Number(latitudeInput.value)
+        const longitude = Number(longitudeInput.value)
+        return Number.isFinite(latitude) && Number.isFinite(longitude)
+            && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+            ? { latitude, longitude }
+            : null
+    }
+
     function updatePin(latitude, longitude, moveMap = false) {
         latitudeInput.value = latitude.toFixed(7)
         longitudeInput.value = longitude.toFixed(7)
@@ -55,11 +65,11 @@ if (container) {
                     attributionControl: false,
                 })
                 map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+                map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
                 map.on('click', event => updatePin(event.lngLat.lat, event.lngLat.lng))
                 map.on('load', () => {
-                    const latitude = Number(latitudeInput.value)
-                    const longitude = Number(longitudeInput.value)
-                    if (Number.isFinite(latitude) && Number.isFinite(longitude)) updatePin(latitude, longitude, true)
+                    const pin = readPin()
+                    if (pin) updatePin(pin.latitude, pin.longitude, true)
                 })
             }).catch(() => {
                 status.textContent = 'Could not load the map. You can still use Locate me and enter your address below.'
@@ -69,10 +79,9 @@ if (container) {
         await loading
         if (map) requestAnimationFrame(() => {
             map.resize()
-            const latitude = Number(latitudeInput.value)
-            const longitude = Number(longitudeInput.value)
-            if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-                updatePin(latitude, longitude)
+            const pin = readPin()
+            if (pin) {
+                updatePin(pin.latitude, pin.longitude)
             } else {
                 marker?.remove()
                 marker = null
@@ -100,6 +109,9 @@ if (container) {
             }
             navigator.geolocation.getCurrentPosition(position => {
                 updatePin(position.coords.latitude, position.coords.longitude, true)
+                document.dispatchEvent(new CustomEvent('bw:address-pin-located', {
+                    detail: { latitude: position.coords.latitude, longitude: position.coords.longitude },
+                }))
                 locateButton.disabled = false
                 locateLabel.textContent = 'Locate me'
             }, error => {
