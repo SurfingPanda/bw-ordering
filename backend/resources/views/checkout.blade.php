@@ -142,13 +142,15 @@
                                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" /><line x1="12" y1="2" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="22" /><line x1="2" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="22" y2="12" />
                                 </svg>
-                                Find nearest store
+                                <span id="find-nearest-label">Find nearest store</span>
                             </button>
                             </div>
                             <p id="nearest-branch-status" class="mb-2 hidden text-xs" role="status"></p>
                             <input type="text" id="branch-search" placeholder="Search by branch name, area, or city" class="mb-3 hidden w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
-                            <div id="branch-list" class="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2"></div>
+                            <div id="branch-list" class="scrollbar-hidden grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2"></div>
                             <input type="hidden" name="fulfillment_store_id" id="fulfillment_store_id">
+                            <input type="hidden" name="delivery_origin_latitude" id="delivery-origin-latitude">
+                            <input type="hidden" name="delivery_origin_longitude" id="delivery-origin-longitude">
                         </div>
 
                         <div id="delivery-speed-wrap" class="mt-5">
@@ -528,15 +530,24 @@
         let mode = 'delivery';
         let speed = 'grab';
         let branchId = null;
+        let pickupBranchId = null;
+        let deliveryBranchId = null;
+        let deliveryPosition = null;
+        let preferredDeliveryStoreId = null;
         // Revalidate the saved preference against today's branches before using it.
         try {
             const preference = JSON.parse(localStorage.getItem('bw_location') || 'null');
             const preferredStore = STORES.find(store => String(store.id) === String(preference?.id));
             if (preferredStore) {
-                branchId = preferredStore.id;
-                if (preferredStore.fulfillment === 'pickup') mode = 'pickup';
+                if (preferredStore.fulfillment === 'pickup') {
+                    branchId = preferredStore.id;
+                    pickupBranchId = preferredStore.id;
+                    mode = 'pickup';
+                } else {
+                    preferredDeliveryStoreId = preferredStore.id;
+                }
                 document.getElementById('delivery_type').value = mode;
-                document.getElementById('fulfillment_store_id').value = branchId;
+                document.getElementById('fulfillment_store_id').value = branchId || '';
             }
         } catch { /* Continue with manual branch selection when storage is unavailable. */ }
         let voucherCode = payload.voucher || null;
@@ -624,8 +635,10 @@
                 btn.classList.toggle('border-slate-200', !on);
             });
             document.getElementById('delivery-address-wrap').classList.toggle('hidden', mode !== 'delivery');
-            document.getElementById('pickup-branch-wrap').classList.toggle('hidden', mode !== 'pickup');
+            document.getElementById('pickup-branch-wrap').classList.remove('hidden');
             document.getElementById('delivery-speed-wrap').classList.toggle('hidden', mode !== 'delivery');
+            document.getElementById('find-nearest-label').textContent = mode === 'pickup' ? 'Find nearest store' : 'Find nearby stores';
+            if (mode === 'delivery') document.getElementById('branch-label').textContent = 'Choose a delivery branch within 25 km';
             document.getElementById('branch-label').textContent = mode === 'pickup' ? '📍 Choose a pickup branch' : '📍 Choose a branch to deliver from';
             document.getElementById('cash-method-label').textContent = mode === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery';
             document.getElementById('cash-method-help').textContent = mode === 'pickup' ? 'Pay with cash when you pick up your order' : 'Pay with cash when your order arrives';
@@ -635,14 +648,25 @@
             renderBranches();
         }
         document.querySelectorAll('.mode-card').forEach(btn => btn.addEventListener('click', () => {
-            mode = btn.dataset.mode;
+            const nextMode = btn.dataset.mode;
+            if (nextMode === mode) return;
+            if (mode === 'pickup') pickupBranchId = branchId;
+            else deliveryBranchId = branchId;
+            mode = nextMode;
+            branchId = mode === 'pickup' ? pickupBranchId : deliveryBranchId;
             document.getElementById('delivery_type').value = mode;
-            const selectedStore = STORES.find(store => String(store.id) === String(branchId));
-            const fulfillsMode = selectedStore && ((selectedStore.fulfillment || 'both') === 'both' || (selectedStore.fulfillment || 'both') === mode);
-            if (!fulfillsMode) branchId = null;
             document.getElementById('fulfillment_store_id').value = branchId || '';
+            document.getElementById('delivery-origin-latitude').value = mode === 'delivery' && deliveryPosition ? deliveryPosition.latitude : '';
+            document.getElementById('delivery-origin-longitude').value = mode === 'delivery' && deliveryPosition ? deliveryPosition.longitude : '';
+            document.getElementById('branch-search').value = '';
             paintModeCards();
             renderSelectedBranchSummary();
+            const selectedStore = STORES.find(store => String(store.id) === String(branchId));
+            if (mode === 'delivery' && deliveryPosition && selectedStore) {
+                setNearestBranchStatus(`Delivery store: ${selectedStore.name} - ${storeDistance(selectedStore).toFixed(1)} km away`);
+            } else {
+                setNearestBranchStatus('');
+            }
             renderSummary();
         }));
 
@@ -666,13 +690,31 @@
         function servingStores() {
             return STORES.filter(s => (s.fulfillment || 'both') === 'both' || (s.fulfillment || 'both') === mode);
         }
+        function storeDistance(store, latitude = deliveryPosition?.latitude, longitude = deliveryPosition?.longitude) {
+            if (latitude == null || longitude == null || store.latitude == null || store.longitude == null
+                || store.latitude === '' || store.longitude === '') return Infinity;
+            const lat = Number(store.latitude), lng = Number(store.longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Infinity;
+            return haversineKm(latitude, longitude, lat, lng);
+        }
         function renderBranches() {
             const list = document.getElementById('branch-list');
             const q = (document.getElementById('branch-search').value || '').trim().toLowerCase();
-            const serving = servingStores();
+            if (mode === 'delivery' && !deliveryPosition) {
+                document.getElementById('branch-search').classList.add('hidden');
+                list.innerHTML = '<p class="col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-navy-700">Locate your current position to see delivery stores within 25 km.</p>';
+                return;
+            }
+            const serving = mode === 'delivery'
+                ? servingStores().filter(store => storeDistance(store) <= 25).sort((a, b) => storeDistance(a) - storeDistance(b))
+                : servingStores();
             document.getElementById('branch-search').classList.toggle('hidden', serving.length <= 5);
             const matches = !q ? serving : serving.filter(s => [s.name, s.address, s.region].some(f => (f || '').toLowerCase().includes(q)));
 
+            if (!serving.length && mode === 'delivery') {
+                list.innerHTML = '<p class="col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">No delivery stores are within 25 km of your location. Delivery is unavailable for this address.</p>';
+                return;
+            }
             if (!serving.length) {
                 list.innerHTML = `<p class="col-span-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">No branches offer ${mode} right now. Please try ${mode === 'pickup' ? 'delivery' : 'pickup'} or check the <a href="/stores" class="font-semibold text-brand-600 hover:underline">store locator</a>.</p>`;
                 return;
@@ -681,15 +723,23 @@
                 list.innerHTML = `<p class="col-span-2 rounded-xl border border-slate-200 p-4 text-sm text-slate-500">No branches match “${q}”.</p>`;
                 return;
             }
-            if (branchId && !serving.some(s => String(s.id) === String(branchId))) branchId = null;
+            if (branchId && !serving.some(s => String(s.id) === String(branchId))) {
+                branchId = null;
+                if (mode === 'delivery') deliveryBranchId = null;
+                else pickupBranchId = null;
+                document.getElementById('fulfillment_store_id').value = '';
+                renderSelectedBranchSummary();
+            }
 
             list.innerHTML = matches.map(s => `
-                <button type="button" data-branch="${s.id}" class="branch-card flex items-start gap-3 rounded-xl border p-3 text-left transition ${branchId === s.id ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'}">
+                <button type="button" data-branch="${s.id}" class="branch-card flex items-start gap-3 rounded-xl border p-3 text-left transition ${String(branchId) === String(s.id) ? 'border-brand-400 bg-brand-50/60 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-brand-200'}">
                     <span class="mt-0.5">📍</span>
-                    <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold text-navy-800">${s.name}</span><span class="block text-xs text-slate-500">${s.address}</span></span>
+                    <span class="min-w-0 flex-1"><span class="block truncate text-sm font-semibold text-navy-800">${s.name}</span><span class="block text-xs text-slate-500">${s.address}</span>${mode === 'delivery' ? `<span class="mt-1 block text-xs font-semibold text-brand-600">${storeDistance(s).toFixed(1)} km away</span>` : ''}</span>
                 </button>`).join('');
             list.querySelectorAll('[data-branch]').forEach(btn => btn.addEventListener('click', () => {
-                branchId = Number(btn.dataset.branch);
+                branchId = btn.dataset.branch;
+                if (mode === 'delivery') deliveryBranchId = branchId;
+                else pickupBranchId = branchId;
                 document.getElementById('fulfillment_store_id').value = branchId;
                 renderBranches();
                 renderSelectedBranchSummary();
@@ -716,6 +766,16 @@
         }
 
         nearestBranchBtn.addEventListener('click', () => {
+            if (mode === 'delivery') {
+                deliveryPosition = null;
+                branchId = null;
+                deliveryBranchId = null;
+                document.getElementById('fulfillment_store_id').value = '';
+                document.getElementById('delivery-origin-latitude').value = '';
+                document.getElementById('delivery-origin-longitude').value = '';
+                renderBranches();
+                renderSelectedBranchSummary();
+            }
             if (!navigator.geolocation) { setNearestBranchStatus('Location is not supported by this browser.', true); return; }
             nearestBranchBtn.disabled = true;
             setNearestBranchStatus('Locating you…');
@@ -724,18 +784,43 @@
                     nearestBranchBtn.disabled = false;
                     const { latitude: lat, longitude: lng } = pos.coords;
                     // Only branches that serve the current mode and have a map pin.
-                    const pinned = servingStores().filter(s => Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)));
+                    const pinned = servingStores().filter(s => s.latitude != null && s.longitude != null && s.latitude !== '' && s.longitude !== ''
+                        && Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)));
                     if (!pinned.length) { setNearestBranchStatus('No branches have map pins yet.', true); return; }
                     const dist = (s) => haversineKm(lat, lng, Number(s.latitude), Number(s.longitude));
-                    const nearest = pinned.reduce((best, s) => dist(s) < dist(best) ? s : best);
-                    branchId = Number(nearest.id);
+                    let nearest;
+                    if (mode === 'delivery') {
+                        deliveryPosition = { latitude: lat, longitude: lng };
+                        document.getElementById('delivery-origin-latitude').value = lat;
+                        document.getElementById('delivery-origin-longitude').value = lng;
+                        const nearby = pinned.map(store => ({ store, distance: dist(store) }))
+                            .filter(item => item.distance <= 25)
+                            .sort((a, b) => a.distance - b.distance);
+                        if (!nearby.length) {
+                            branchId = null;
+                            deliveryBranchId = null;
+                            document.getElementById('fulfillment_store_id').value = '';
+                            renderBranches();
+                            renderSelectedBranchSummary();
+                            setNearestBranchStatus('No delivery stores are within 25 km of your location.', true);
+                            return;
+                        }
+                        const preferred = nearby.find(item => String(item.store.id) === String(preferredDeliveryStoreId));
+                        nearest = preferred?.store || nearby[0].store;
+                        preferredDeliveryStoreId = null;
+                    } else {
+                        nearest = pinned.reduce((best, store) => dist(store) < dist(best) ? store : best);
+                    }
+                    branchId = nearest.id;
+                    if (mode === 'delivery') deliveryBranchId = branchId;
+                    else pickupBranchId = branchId;
                     document.getElementById('fulfillment_store_id').value = branchId;
                     document.getElementById('branch-search').value = '';
                     renderBranches();
                     renderSelectedBranchSummary();
                     document.querySelector(`#branch-list [data-branch="${branchId}"]`)?.scrollIntoView({ block: 'nearest' });
                     const km = dist(nearest);
-                    setNearestBranchStatus(`Nearest store: ${nearest.name} — ${km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km'} away`);
+                    setNearestBranchStatus(`${mode === 'delivery' ? 'Delivery store' : 'Nearest store'}: ${nearest.name} - ${km.toFixed(1)} km away`);
                 },
                 (err) => {
                     nearestBranchBtn.disabled = false;
@@ -818,7 +903,11 @@
 
             if (!name || !phone || !email) { err.textContent = 'Please fill in your name, mobile number, and email.'; err.classList.remove('hidden'); return; }
             if (mode === 'delivery' && !document.getElementById('address').value.trim()) { err.textContent = 'Please enter a delivery address.'; err.classList.remove('hidden'); return; }
-            if (!branchId) { err.textContent = mode === 'pickup' ? 'Please choose a branch to pick up from.' : 'Please go back to the menu and choose a nearby branch for delivery.'; err.classList.remove('hidden'); return; }
+            const selectedStore = STORES.find(store => String(store.id) === String(branchId));
+            if (!branchId || (mode === 'delivery' && (!deliveryPosition || !selectedStore || storeDistance(selectedStore) > 25))) {
+                err.textContent = mode === 'pickup' ? 'Please choose a branch to pick up from.' : 'Locate your current position and choose a delivery store within 25 km.';
+                err.classList.remove('hidden'); return;
+            }
 
             showStep('payment');
         });

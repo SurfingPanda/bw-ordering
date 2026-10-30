@@ -52,6 +52,8 @@ class OrderCreationService
             'address' => 'nullable|string|max:500',
             'delivery_latitude' => 'required_with:delivery_longitude|nullable|numeric|between:-90,90',
             'delivery_longitude' => 'required_with:delivery_latitude|nullable|numeric|between:-180,180',
+            'delivery_origin_latitude' => 'nullable|numeric|between:-90,90',
+            'delivery_origin_longitude' => 'nullable|numeric|between:-180,180',
             'phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
         ];
@@ -70,15 +72,12 @@ class OrderCreationService
         $payMethod = $data['payment_method'] ?? 'qrph';
         $deliverySpeed = $deliveryType === 'pickup' ? null : ($data['delivery_speed'] ?? 'grab');
 
-        // Pickup requires a branch; delivery customers provide their address.
-        // Resolve an optional delivery branch against the trusted stores table,
-        // enforce that the branch actually serves the chosen mode, and denormalize
-        // its name + address onto the order so it stays displayable even if the
-        // store later changes.
+        // Resolve the fulfillment branch against trusted store data, and
+        // enforce the delivery radius again on the server before creating an order.
         $store = ! empty($data['fulfillment_store_id'])
             ? Store::find($data['fulfillment_store_id'])
             : null;
-        if (! $store && ($deliveryType === 'pickup' || ! empty($data['fulfillment_store_id']))) {
+        if (! $store && in_array($deliveryType, ['delivery', 'pickup'], true)) {
             throw ValidationException::withMessages([
                 'fulfillment_store_id' => $deliveryType === 'pickup'
                     ? 'Please choose a branch to pick up from.'
@@ -90,6 +89,33 @@ class OrderCreationService
             throw ValidationException::withMessages([
                 'fulfillment_store_id' => "\u{201c}{$store->name}\u{201d} doesn\u{2019}t offer {$deliveryType}.",
             ]);
+        }
+        if ($deliveryType === 'delivery') {
+            $originLatitude = $data['delivery_origin_latitude'] ?? null;
+            $originLongitude = $data['delivery_origin_longitude'] ?? null;
+            if ($originLatitude === null || $originLongitude === null) {
+                throw ValidationException::withMessages([
+                    'fulfillment_store_id' => 'Locate your current position to confirm a delivery branch within 25 km.',
+                ]);
+            }
+            if (! is_numeric($store->latitude) || ! is_numeric($store->longitude)) {
+                throw ValidationException::withMessages([
+                    'fulfillment_store_id' => 'This branch has no mapped location and cannot accept delivery orders.',
+                ]);
+            }
+            $toRadians = static fn ($degrees) => ((float) $degrees) * M_PI / 180;
+            $lat1 = (float) $originLatitude;
+            $lng1 = (float) $originLongitude;
+            $lat2 = (float) $store->latitude;
+            $lng2 = (float) $store->longitude;
+            $a = sin($toRadians($lat2 - $lat1) / 2) ** 2
+                + cos($toRadians($lat1)) * cos($toRadians($lat2)) * sin($toRadians($lng2 - $lng1) / 2) ** 2;
+            $distanceKm = 2 * 6371 * asin(sqrt(min(1, $a)));
+            if ($distanceKm > 25) {
+                throw ValidationException::withMessages([
+                    'fulfillment_store_id' => 'Delivery is only available from a branch within 25 km of your location.',
+                ]);
+            }
         }
         $fulfillmentStoreId = $store?->id;
         $fulfillmentBranch = $store ? $store->name.' — '.$store->address : null;

@@ -38,6 +38,8 @@ if (checkoutConfig) {
                 address: fields.get('address'), notes: fields.get('notes'),
                 delivery_latitude: fields.get('delivery_latitude') || null,
                 delivery_longitude: fields.get('delivery_longitude') || null,
+                delivery_origin_latitude: fields.get('delivery_origin_latitude') || null,
+                delivery_origin_longitude: fields.get('delivery_origin_longitude') || null,
                 customer_name: document.getElementById('cust_name').value.trim(),
                 customer_email: document.getElementById('cust_email').value.trim(),
             };
